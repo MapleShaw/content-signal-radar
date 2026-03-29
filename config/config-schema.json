@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "User configuration for Maple Signal Radar. Stored at ~/.follow-builders/config.json",
+  "type": "object",
+  "properties": {
+    "platform": {
+      "type": "string",
+      "enum": ["openclaw", "other"],
+      "description": "Detected platform: openclaw or other"
+    },
+    "language": {
+      "type": "string",
+      "enum": ["en", "zh", "bilingual"],
+      "default": "zh",
+      "description": "Output language"
+    },
+    "timezone": {
+      "type": "string",
+      "default": "Asia/Shanghai",
+      "description": "IANA timezone string"
+    },
+    "frequency": {
+      "type": "string",
+      "enum": ["daily", "weekly"],
+      "default": "daily",
+      "description": "How often to deliver the radar"
+    },
+    "deliveryTime": {
+      "type": "string",
+      "default": "09:00",
+      "description": "Time of day to deliver in HH:MM format"
+    },
+    "weeklyDay": {
+      "type": "string",
+      "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+      "default": "monday",
+      "description": "Day of week for weekly delivery"
+    },
+    "delivery": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["stdout", "telegram", "email"],
+          "default": "stdout"
+        },
+        "chatId": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        }
+      }
+    },
+    "focusTopics": {
+      "type": "array",
+      "description": "Topics the radar should prioritize",
+      "items": { "type": "string" },
+      "default": ["AI 产品", "agent", "内容机会", "个人品牌"]
+    },
+    "contentGoals": {
+      "type": "array",
+      "description": "What this radar is optimizing for",
+      "items": {
+        "type": "string",
+        "enum": ["x_posts", "xiaohongshu_topics", "product_insights", "learning"]
+      },
+      "default": ["x_posts", "xiaohongshu_topics", "product_insights"]
+    },
+    "outputSections": {
+      "type": "array",
+      "description": "Sections to include in the final output",
+      "items": {
+        "type": "string",
+        "enum": ["brief", "x_angles", "xiaohongshu_topics", "product_signals", "action_items", "raw_links"]
+      },
+      "default": ["brief", "x_angles", "xiaohongshu_topics", "product_signals", "action_items"]
+    },
+    "scoring": {
+      "type": "object",
+      "description": "Simple weighting used during remixing",
+      "properties": {
+        "relevance": { "type": "number", "default": 0.35 },
+        "writeability": { "type": "number", "default": 0.25 },
+        "actionability": { "type": "number", "default": 0.25 },
+        "novelty": { "type": "number", "default": 0.15 },
+        "minimum": { "type": "number", "default": 0.6 }
+      }
+    },
+    "onboardingComplete": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

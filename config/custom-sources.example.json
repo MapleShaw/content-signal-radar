@@ -1,0 +1,27 @@
+{
+  "x_accounts": [
+    { "name": "Example Creator", "handle": "example" }
+  ],
+  "blogs": [
+    {
+      "name": "Example Blog",
+      "type": "scrape",
+      "indexUrl": "https://example.com/blog",
+      "articleBaseUrl": "https://example.com/blog/",
+      "fetchMethod": "http"
+    }
+  ],
+  "podcasts": [
+    {
+      "name": "Example Podcast",
+      "type": "youtube_channel",
+      "url": "https://www.youtube.com/@example",
+      "channelHandle": "example"
+    }
+  ],
+  "zh_creators": {
+    "enabled": false,
+    "notes": "Reserved placeholder for Chinese creators / product sources. Can later include WeChat OA, Jike, 少数派, B站, newsletters, blogs, or hand-maintained RSS/URL lists.",
+    "sources": []
+  }
+}

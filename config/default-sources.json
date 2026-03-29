@@ -1,0 +1,105 @@
+{
+  "profiles": {
+    "default": {
+      "description": "Inherited default profile from the original follow-builders repo",
+      "podcasts": [
+        {
+          "name": "Latent Space",
+          "type": "youtube_channel",
+          "url": "https://www.youtube.com/@LatentSpacePod",
+          "channelHandle": "LatentSpacePod"
+        },
+        {
+          "name": "Training Data",
+          "type": "youtube_playlist",
+          "url": "https://www.youtube.com/playlist?list=PLOhHNjZItNnMm5tdW61JpnyxeYH5NDDx8",
+          "playlistId": "PLOhHNjZItNnMm5tdW61JpnyxeYH5NDDx8"
+        },
+        {
+          "name": "No Priors",
+          "type": "youtube_channel",
+          "url": "https://www.youtube.com/@NoPriorsPodcast",
+          "channelHandle": "NoPriorsPodcast"
+        },
+        {
+          "name": "Unsupervised Learning",
+          "type": "youtube_channel",
+          "url": "https://www.youtube.com/@RedpointAI",
+          "channelHandle": "RedpointAI"
+        },
+        {
+          "name": "Data Driven NYC",
+          "type": "youtube_channel",
+          "url": "https://www.youtube.com/@DataDrivenNYC/videos",
+          "channelHandle": "DataDrivenNYC"
+        },
+        {
+          "name": "AI & I by Every",
+          "type": "youtube_playlist",
+          "url": "https://www.youtube.com/playlist?list=PLuMcoKK9mKgHtW_o9h5sGO2vXrffKHwJL",
+          "playlistId": "PLuMcoKK9mKgHtW_o9h5sGO2vXrffKHwJL"
+        }
+      ],
+      "blogs": [
+        {
+          "name": "Anthropic Engineering",
+          "type": "scrape",
+          "indexUrl": "https://www.anthropic.com/engineering",
+          "articleBaseUrl": "https://www.anthropic.com/engineering/",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Claude Blog",
+          "type": "scrape",
+          "indexUrl": "https://claude.com/blog",
+          "articleBaseUrl": "https://claude.com/blog/",
+          "fetchMethod": "http"
+        }
+      ],
+      "x_accounts": [
+        { "name": "Andrej Karpathy", "handle": "karpathy" },
+        { "name": "Swyx", "handle": "swyx" },
+        { "name": "Josh Woodward", "handle": "joshwoodward" },
+        { "name": "Kevin Weil", "handle": "kevinweil" },
+        { "name": "Peter Yang", "handle": "petergyang" },
+        { "name": "Nan Yu", "handle": "thenanyu" },
+        { "name": "Madhu Guru", "handle": "realmadhuguru" },
+        { "name": "Amanda Askell", "handle": "AmandaAskell" },
+        { "name": "Cat Wu", "handle": "_catwu" },
+        { "name": "Thariq", "handle": "trq212" },
+        { "name": "Google Labs", "handle": "GoogleLabs" },
+        { "name": "Amjad Masad", "handle": "amasad" },
+        { "name": "Guillermo Rauch", "handle": "rauchg" },
+        { "name": "Alex Albert", "handle": "alexalbert__" },
+        { "name": "Aaron Levie", "handle": "levie" },
+        { "name": "Ryo Lu", "handle": "ryolu_" },
+        { "name": "Garry Tan", "handle": "garrytan" },
+        { "name": "Matt Turck", "handle": "mattturck" },
+        { "name": "Zara Zhang", "handle": "zarazhangrui" },
+        { "name": "Nikunj Kothari", "handle": "nikunj" },
+        { "name": "Peter Steinberger", "handle": "steipete" },
+        { "name": "Dan Shipper", "handle": "danshipper" },
+        { "name": "Aditya Agarwal", "handle": "adityaag" },
+        { "name": "Sam Altman", "handle": "sama" },
+        { "name": "Claude", "handle": "claudeai" }
+      ]
+    },
+    "maple": {
+      "description": "Maple-focused additions for product, agent, creator, and distribution signals",
+      "x_accounts": [
+        { "name": "Cat Wu", "handle": "_catwu" },
+        { "name": "Zara Zhang", "handle": "zarazhangrui" },
+        { "name": "Pieter Levels", "handle": "levelsio" },
+        { "name": "Dan Koe", "handle": "thedankoe" },
+        { "name": "Tuan Dinh", "handle": "tdinh_me" },
+        { "name": "Lex Fridman", "handle": "lexfridman" },
+        { "name": "Lee Robinson", "handle": "leeerob" },
+        { "name": "Peter Steinberger", "handle": "steipete" },
+        { "name": "Naval", "handle": "naval" },
+        { "name": "Greg Isenberg", "handle": "gregisenberg" }
+      ],
+      "blogs": [],
+      "podcasts": []
+    }
+  }
+}

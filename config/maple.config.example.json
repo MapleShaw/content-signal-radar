@@ -1,0 +1,57 @@
+{
+  "name": "Content Signal Radar",
+  "platform": "openclaw",
+  "language": "zh",
+  "timezone": "Asia/Shanghai",
+  "frequency": "daily",
+  "deliveryTime": "09:00",
+  "delivery": { "method": "stdout" },
+  "focusTopics": ["agent", "AI 产品", "personal brand", "creator tools", "AI 出海"],
+  "contentGoals": ["product_insights", "x_posts", "learning"],
+  "outputSections": ["brief", "x_angles", "product_signals", "x_drafts", "action_items"],
+  "outputMode": "balanced",
+  "sourceProfiles": ["default", "maple"],
+  "disabledSections": ["xiaohongshu_topics"],
+  "reservedSourceProfiles": ["zh_creators"],
+  "sourceWeights": {
+    "_catwu": 1.2,
+    "zarazhangrui": 1.25,
+    "levelsio": 1.15,
+    "thedankoe": 1.0,
+    "tdinh_me": 1.0,
+    "lexfridman": 0.95,
+    "leeerob": 1.2,
+    "steipete": 1.1,
+    "naval": 1.0,
+    "gregisenberg": 1.0,
+    "rauchg": 1.15,
+    "karpathy": 1.1
+  },
+  "sourceWeightReasons": {
+    "zarazhangrui": "高密度 agent / builder 信号，且和你的关注方向高度一致",
+    "_catwu": "产品与 builder 视角兼具，噪音相对低",
+    "leeerob": "AI 产品、开发者工具、分发视角稳定",
+    "levelsio": "独立开发 + 分发 + 出海视角强",
+    "rauchg": "产品范式变化和 platform 视角常有高信号",
+    "steipete": "开发者工具与 AI 工作流洞察稳定",
+    "karpathy": "技术方向权重大，但不一定每天都直接可写"
+  },
+  "scoring": {
+    "relevance": 0.35,
+    "writeability": 0.18,
+    "actionability": 0.2,
+    "novelty": 0.12,
+    "engagement": 0.07,
+    "recency": 0.08,
+    "minimum": 0.62,
+    "sourceWeightCap": 1.3
+  },
+  "limits": {
+    "brief": 5,
+    "x_angles": 3,
+    "product_signals": 3,
+    "x_drafts": 2,
+    "action_items": 3
+  },
+  "onboardingComplete": true
+}

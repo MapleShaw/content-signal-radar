@@ -1,0 +1,14 @@
+{
+  "enabled": false,
+  "description": "Placeholder for Chinese creator / product sources.",
+  "suggested_types": [
+    "wechat_oa",
+    "jike",
+    "shaoshupai",
+    "bilibili",
+    "newsletter",
+    "blog",
+    "rss"
+  ],
+  "sources": []
+}
