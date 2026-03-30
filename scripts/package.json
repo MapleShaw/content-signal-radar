@@ -1,5 +1,5 @@
 {
-  "name": "follow-builders-scripts",
+  "name": "content-signal-radar-scripts",
   "version": "1.0.0",
   "description": "Scripts for Follow Builders skill — feed generation, digest preparation, delivery",
   "type": "module",

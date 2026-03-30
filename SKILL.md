@@ -1,5 +1,5 @@
 ---
-name: follow-builders
+name: content-signal-radar
 description: AI builders digest — monitors top AI builders on X and YouTube podcasts, remixes their content into digestible summaries. Use when the user wants AI industry insights, builder updates, or invokes /ai. No API keys or dependencies required — all content is fetched from a central feed.
 ---
 
@@ -35,7 +35,7 @@ Save the detected platform in config.json as `"platform": "openclaw"` or `"platf
 
 ## First Run — Onboarding
 
-Check if `~/.follow-builders/config.json` exists and has `onboardingComplete: true`.
+Check if `~/.content-signal-radar/config.json` exists and has `onboardingComplete: true`.
 If NOT, run the onboarding flow:
 
 ### Step 1: Introduction
@@ -129,8 +129,8 @@ All content is fetched centrally. Skip to Step 6.
 Create the .env file with only the delivery key they need:
 
 ```bash
-mkdir -p ~/.follow-builders
-cat > ~/.follow-builders/.env << 'ENVEOF'
+mkdir -p ~/.content-signal-radar
+cat > ~/.content-signal-radar/.env << 'ENVEOF'
 # Telegram bot token (only if using Telegram delivery)
 # TELEGRAM_BOT_TOKEN=paste_your_token_here
 
@@ -167,7 +167,7 @@ No need to edit any files — just tell me what you want."
 
 Save the config (include all fields — fill in the user's choices):
 ```bash
-cat > ~/.follow-builders/config.json << 'CFGEOF'
+cat > ~/.content-signal-radar/config.json << 'CFGEOF'
 {
   "platform": "<openclaw or other>",
   "language": "<en, zh, or bilingual>",
@@ -223,7 +223,7 @@ openclaw cron add \
   --cron "<cron expression>" \
   --tz "<user IANA timezone>" \
   --session isolated \
-  --message "Run the follow-builders skill: execute prepare-digest.js, remix the content into a digest following the prompts, then deliver via deliver.js" \
+  --message "Run the content-signal-radar skill: execute prepare-digest.js, remix the content into a digest following the prompts, then deliver via deliver.js" \
   --announce \
   --channel <channel name> \
   --to "<target ID>" \
@@ -310,7 +310,7 @@ This workflow runs on cron schedule or when the user invokes `/ai`.
 
 ### Step 1: Load Config
 
-Read `~/.follow-builders/config.json` for user preferences.
+Read `~/.content-signal-radar/config.json` for user preferences.
 
 ### Step 2: Run the prepare script
 
@@ -434,20 +434,20 @@ open an issue at https://github.com/zarazhangrui/follow-builders."
 
 ### Prompt Changes
 When a user wants to customize how their digest sounds, copy the relevant prompt
-file to `~/.follow-builders/prompts/` and edit it there. This way their
+file to `~/.content-signal-radar/prompts/` and edit it there. This way their
 customization persists and won't be overwritten by central updates.
 
 ```bash
-mkdir -p ~/.follow-builders/prompts
-cp ${CLAUDE_SKILL_DIR}/prompts/<filename>.md ~/.follow-builders/prompts/<filename>.md
+mkdir -p ~/.content-signal-radar/prompts
+cp ${CLAUDE_SKILL_DIR}/prompts/<filename>.md ~/.content-signal-radar/prompts/<filename>.md
 ```
 
-Then edit `~/.follow-builders/prompts/<filename>.md` with the user's requested changes.
+Then edit `~/.content-signal-radar/prompts/<filename>.md` with the user's requested changes.
 
 - "Make summaries shorter/longer" → Edit `summarize-podcast.md` or `summarize-tweets.md`
 - "Focus more on [X]" → Edit the relevant prompt file
 - "Change the tone to [X]" → Edit the relevant prompt file
-- "Reset to default" → Delete the file from `~/.follow-builders/prompts/`
+- "Reset to default" → Delete the file from `~/.content-signal-radar/prompts/`
 
 ### Info Requests
 - "Show my settings" → Read and display config.json in a friendly format

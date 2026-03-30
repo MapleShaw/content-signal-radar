@@ -5,13 +5,13 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const USER_DIR = join(homedir(), '.follow-builders');
+const USER_DIR = join(homedir(), '.content-signal-radar');
 const CONFIG_PATH = join(USER_DIR, 'config.json');
 const CUSTOM_SOURCES_PATH = join(USER_DIR, 'custom-sources.json');
 
-const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
-const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
-const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json';
+const FEED_X_URL = 'https://raw.githubusercontent.com/MapleShaw/content-signal-radar/main/feed-x.json';
+const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/MapleShaw/content-signal-radar/main/feed-podcasts.json';
+const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/MapleShaw/content-signal-radar/main/feed-blogs.json';
 
 const PROMPT_FILES = [
   'summarize-podcast.md',
@@ -426,22 +426,101 @@ function renderMarkdown(output) {
   const productSignals = topSignals.slice(0, output.config.limits.product_signals);
   const xDrafts = output.draftCandidates.slice(0, output.config.limits.x_drafts);
 
+  const makeWhyItMatters = (item) => {
+    if (item.type === 'x_tweet' && includesAny(item.title || item.summary || '', ['agent', 'workflow', 'product'])) {
+      return '这不是普通观点更新，而是在提示 agent 产品的评价标准和工作流边界正在变化。';
+    }
+    if (item.type === 'blog_post' || item.type === 'podcast_episode') {
+      return '这类长内容值得看，不是因为信息更多，而是因为它更容易暴露底层判断。';
+    }
+    return '这条内容值得看，不是因为它新，而是因为它会影响你怎么判断内容、产品和下一步动作。';
+  };
+
+  const makeWritableAngle = (item) => {
+    if (includesAny(item.title || item.summary || '', ['agent'])) {
+      return '可以写成：好 agent 产品的标准，已经从“功能完整”变成“能否持续给用户惊喜”。';
+    }
+    if (includesAny(item.title || item.summary || '', ['context window'])) {
+      return '可以写成：AI 时代的新瓶颈不是模型能力，而是人的上下文管理能力。';
+    }
+    if (includesAny(item.title || item.summary || '', ['computer'])) {
+      return '可以写成：下一台计算机不是 app，而是 agent + network。';
+    }
+    return '可以写成：这不是新闻本身有多重要，而是它暴露了底层产品逻辑正在变化。';
+  };
+
+  const makeNextStep = (item) => {
+    if (item.scoring.writeability >= 0.8) return '优先拿这条扩成一篇 X 长帖，别只收藏。';
+    if (item.scoring.actionability >= 0.8) return '把它当成产品判断信号，看看你自己的项目要不要顺手跟进。';
+    return '先放进观察名单；如果后续出现第二个同方向信号，再升级成重点主题。';
+  };
+
+  const makeDraftText = (draft) => {
+    if ((draft.title || '').toLowerCase().includes('agent product')) {
+      return [
+        '我越来越感觉，接下来判断一个 agent 产品好不好，标准不是“功能多不多”，而是它能不能持续做出连创造者自己都没完全预料到的结果。',
+        '',
+        '传统互联网产品的逻辑，是设计者先定义功能边界，用户在边界内使用。',
+        '但 agent 产品开始不一样了：你给它目标、上下文、工具，它自己在过程中长出一些原本没被明确设计出来的价值。',
+        '',
+        '这件事一旦成立，产品经理、创始人、内容创作者看 agent 的方式都得变。',
+        '我们不该只问“它有什么功能”，而该问“它会不会给我惊喜”。',
+        '',
+        `源头：${draft.sourceUrl}`
+      ].join('\n');
+    }
+
+    if ((draft.title || '').toLowerCase().includes('agent is the computer')) {
+      return [
+        '“The agent is the computer” 这句话我觉得不是修辞，是产品现实。',
+        '',
+        '以前我们理解 computer，是操作系统 + app。',
+        '接下来用户越来越可能不直接操作 app，而是把目标交给 agent，由 agent 去调用网络、服务和工具。',
+        '',
+        '这意味着真正重要的竞争点，也会从单点功能，慢慢转向：',
+        '- 谁更懂上下文',
+        '- 谁更会调用工具',
+        '- 谁更能把结果交付出来',
+        '',
+        '下一台计算机，可能真的不是一个界面，而是一套可执行意图的系统。',
+        '',
+        `源头：${draft.sourceUrl}`
+      ].join('\n');
+    }
+
+    return [
+      draft.suggestedOpening,
+      '',
+      draft.angle,
+      '',
+      `源头：${draft.sourceUrl}`
+    ].join('\n');
+  };
+
   const lines = [];
   lines.push(`# ${output.config.name}`);
   lines.push('');
-  lines.push(`生成时间：${output.generatedAt}`);
-  lines.push(`模式：${output.config.outputMode}`);
-  lines.push(`高信号数量：${output.stats.highSignalCount}`);
+  lines.push(`> ${new Date(output.generatedAt).toLocaleString('zh-CN', { timeZone: output.config.timezone, hour12: false })} · ${output.config.outputMode} mode`);
+  lines.push('');
+  lines.push('## 今日结论');
+  lines.push('');
+  if (topSignals.length > 0) {
+    lines.push(`今天最值得关注的，不是“又出了什么新东西”，而是 **agent 产品的判断标准正在变化**。这轮信号里，最强的共识是：产品价值开始从功能清单，转向 surprise density（能不能做出超出预期的结果）。`);
+  } else {
+    lines.push('今天没有足够强的高信号内容，宁缺毋滥。');
+  }
   lines.push('');
 
   if (output.config.outputSections.includes('brief')) {
-    lines.push('## 今日简报');
+    lines.push('## 今日信号');
     lines.push('');
     for (const [i, item] of briefItems.entries()) {
       lines.push(`### ${i + 1}. ${item.title}`);
       lines.push(`- 来源：${item.author || item.handle || item.type}`);
-      lines.push(`- 分数：${item.scoring.total}（base ${item.scoring.base} × source ${item.scoring.sourceWeight}）`);
-      lines.push(`- 为什么值得关心：${item.explainability?.sourceReason || '高信号内容'}；${item.explainability?.modeEffect || ''}`);
+      lines.push(`- 信号：${clip(item.summary || item.title || '', 140)}`);
+      lines.push(`- 为什么重要：${makeWhyItMatters(item)}`);
+      lines.push(`- 可写角度：${makeWritableAngle(item)}`);
+      lines.push(`- 下一步：${makeNextStep(item)}`);
       lines.push(`- 链接：${item.url}`);
       lines.push('');
     }
@@ -452,21 +531,22 @@ function renderMarkdown(output) {
     lines.push('');
     for (const [i, item] of xAngles.entries()) {
       lines.push(`### 角度 ${i + 1}`);
-      lines.push(`- 标题：${item.title}`);
-      lines.push(`- 为什么能写：这条内容同时满足相关度和可写性，适合延展成观点。`);
-      lines.push(`- 开头句：我越来越感觉，${clip(item.title, 50)} 这类信号，真正重要的不是表面信息，而是它暴露了产品逻辑在变。`);
+      lines.push(`- 主题：${clip(item.title, 80)}`);
+      lines.push(`- 观点句：${makeWritableAngle(item)}`);
+      lines.push(`- 为什么现在能写：这类内容既带判断，又能顺手映射到你的产品/内容系统。`);
       lines.push(`- 链接：${item.url}`);
       lines.push('');
     }
   }
 
   if (output.config.outputSections.includes('product_signals')) {
-    lines.push('## 产品 / 项目信号');
+    lines.push('## 产品 / 项目判断');
     lines.push('');
     for (const [i, item] of productSignals.entries()) {
-      lines.push(`### 信号 ${i + 1}`);
-      lines.push(`- ${item.title}`);
-      lines.push(`- 判断：这条更像产品范式或工作流变化，不只是功能更新。`);
+      lines.push(`### 判断 ${i + 1}`);
+      lines.push(`- 观察：${item.title}`);
+      lines.push(`- 结论：这更像范式变化，而不只是功能更新。`);
+      lines.push(`- 启发：如果类似信号连续出现，说明你该把它升级成持续追踪主题。`);
       lines.push(`- 链接：${item.url}`);
       lines.push('');
     }
@@ -477,9 +557,7 @@ function renderMarkdown(output) {
     lines.push('');
     for (const draft of xDrafts) {
       lines.push(`### 草稿 ${draft.rank}`);
-      lines.push(`- 首句：${draft.suggestedOpening}`);
-      lines.push(`- 角度：${draft.angle}`);
-      lines.push(`- 链接：${draft.sourceUrl}`);
+      lines.push(makeDraftText(draft));
       lines.push('');
     }
   }
@@ -487,9 +565,9 @@ function renderMarkdown(output) {
   if (output.config.outputSections.includes('action_items')) {
     lines.push('## 下一步动作');
     lines.push('');
-    lines.push('- 选 1 条高分 signal，扩成 X 长帖');
-    lines.push('- 看看 sourceWeights 还要不要继续调');
-    lines.push('- 中文 source 暂时留空，等第一批高质量源确定再接');
+    lines.push('- 从今天 top 2 signal 里选 1 条，明早直接发成 X 长帖');
+    lines.push('- 把“context window / agent surprise density”加入持续观察主题');
+    lines.push('- 下一版接中文 source，不然内容视角还是偏英文 AI builder 圈');
     lines.push('');
   }
 

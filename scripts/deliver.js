@@ -11,8 +11,8 @@
 //   node deliver.js --message "digest text"
 //   node deliver.js --file /path/to/digest.txt
 //
-// The script reads delivery config from ~/.follow-builders/config.json
-// and API keys from ~/.follow-builders/.env
+// The script reads delivery config from ~/.content-signal-radar/config.json
+// and API keys from ~/.content-signal-radar/.env
 //
 // Delivery methods:
 //   - "telegram": sends via Telegram Bot API (needs TELEGRAM_BOT_TOKEN + chat ID)
@@ -28,7 +28,7 @@ import { config as loadEnv } from 'dotenv';
 
 // -- Constants ---------------------------------------------------------------
 
-const USER_DIR = join(homedir(), '.follow-builders');
+const USER_DIR = join(homedir(), '.content-signal-radar');
 const CONFIG_PATH = join(USER_DIR, 'config.json');
 const ENV_PATH = join(USER_DIR, '.env');
 
