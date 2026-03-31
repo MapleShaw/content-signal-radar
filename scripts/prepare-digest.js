@@ -9,9 +9,9 @@ const USER_DIR = join(homedir(), '.content-signal-radar');
 const CONFIG_PATH = join(USER_DIR, 'config.json');
 const CUSTOM_SOURCES_PATH = join(USER_DIR, 'custom-sources.json');
 
-const FEED_X_URL = 'https://raw.githubusercontent.com/MapleShaw/content-signal-radar/main/feed-x.json';
-const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/MapleShaw/content-signal-radar/main/feed-podcasts.json';
-const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/MapleShaw/content-signal-radar/main/feed-blogs.json';
+const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
+const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
+const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json';
 
 const PROMPT_FILES = [
   'summarize-podcast.md',
