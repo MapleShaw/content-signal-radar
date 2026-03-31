@@ -288,16 +288,51 @@ function lowSignalPenalty(text = '') {
 function classifySignalIntent(text = '', type = '') {
   const t = text.toLowerCase();
 
-  const productKeywords = ['launch', 'ship', 'release', 'update', 'build', 'product', 'feature', 'api', 'tool', 'agent', 'workflow', 'automation', 'pricing', 'roadmap', 'experiment', 'mvp', 'stack', 'infra', 'integrate'];
-  const angleKeywords = ['why', 'how', 'lesson', 'learn', 'mistake', 'realize', 'realize', 'opinion', 'think', 'believe', 'argue', 'thread', 'unpopular', 'truth', 'insight', 'trend', 'future', 'change', 'shift', 'pattern', 'distribution', 'brand'];
-
-  const isProduct = productKeywords.some(k => t.includes(k));
-  const isAngle = angleKeywords.some(k => t.includes(k));
-
   if (type === 'blog_post' || type === 'podcast_episode') return 'product_signal';
+
+  // Product signal: concrete actions, tools, launches, technical signals
+  const productPatterns = [
+    /\b(launch|ship|release|deploy|update|build|built|building)\b/,
+    /\b(product|feature|api|sdk|cli|tool|plugin|integration)\b/,
+    /\b(agent|workflow|automation|pipeline|infra|stack)\b/,
+    /\b(pricing|revenue|mrr|arr|monetiz|paid|subscription)\b/,
+    /\b(roadmap|mvp|experiment|prototype|demo)\b/,
+    /\b(claude|gpt|gemini|llm|model|inference|fine.?tun)\b/,
+    /\b(github|npm|docker|vercel|aws|supabase)\b/,
+    /support(s|ed|ing)?\s+\w+/,
+    /now\s+(support|available|live|works)/,
+  ];
+
+  // X angle: opinion, insight, judgment, narrative — writable as a take
+  const anglePatterns = [
+    /\b(why|how|when|what if)\b.*\?/,
+    /\b(lesson|learn|mistake|realize|notice|observe)\b/,
+    /\b(opinion|think|believe|argue|feel|predict)\b/,
+    /\b(unpopular|contrarian|honest|truth|real talk)\b/,
+    /\b(insight|trend|shift|change|pattern|signal)\b/,
+    /\b(future|next|coming|emerging)\b/,
+    /\b(distribution|brand|audience|creator|personal)\b/,
+    /\b(opportunity|risk|bet|warning|danger)\b/,
+    /\b(huge|massive|major|critical|important)\s+\w+/,
+    /there\s+is\s+a\s+(huge|big|great|massive)/,
+    /\bimagine\s+if\b/,
+    /\b(one.way door|tipping point|turning point)\b/,
+  ];
+
+  const isProduct = productPatterns.some(p => p.test(t));
+  const isAngle = anglePatterns.some(p => p.test(t));
+
+  // Security signals → always product (actionable)
+  if (/\b(attack|vulnerability|malware|supply.chain|exploit|breach)\b/.test(t)) return 'product_signal';
+
   if (isProduct && isAngle) return 'both';
   if (isProduct) return 'product_signal';
   if (isAngle) return 'x_angle';
+
+  // Fallback: short punchy tweets with no clear category → x_angle (pithy takes)
+  const wordCount = t.trim().split(/\s+/).length;
+  if (wordCount <= 15) return 'x_angle';
+
   return 'neither';
 }
 
@@ -527,75 +562,149 @@ function renderMarkdown(output) {
   ).slice(0, 5);
   const xDrafts = output.draftCandidates.slice(0, output.config.limits.x_drafts);
 
+  // Signal topic extraction: returns a short topic label from text
+  const extractTopic = (text = '') => {
+    const t = text.toLowerCase();
+    if (/supply.chain|npm|axios|malware|attack|security|vulnerab/.test(t)) return 'security';
+    if (/context.window|memory|token.limit|long.context/.test(t)) return 'context';
+    if (/agent(?:s)?/.test(t)) return 'agent';
+    if (/lark|enterprise|github enterprise|teams|slack/.test(t)) return 'enterprise_workflow';
+    if (/claude code|codex|cursor|copilot|coding agent/.test(t)) return 'coding_agent';
+    if (/brand|audience|creator|newsletter|content/.test(t)) return 'creator';
+    if (/revenue|mrr|arr|pricing|monetiz/.test(t)) return 'revenue';
+    if (/indie|solopreneur|bootstrapped|side.project/.test(t)) return 'indie';
+    if (/distribution|growth|viral|reach|impression/.test(t)) return 'distribution';
+    if (/model|llm|inference|training|fine.?tun/.test(t)) return 'model';
+    if (/product|launch|ship|release|feature|roadmap/.test(t)) return 'product';
+    if (/workflow|automation|tool|stack|infra/.test(t)) return 'workflow';
+    return 'general';
+  };
+
   const makeWhyItMatters = (item) => {
-    if (item.type === 'x_tweet' && includesAny(item.title || item.summary || '', ['agent', 'workflow', 'product'])) {
-      return '这不是普通观点更新,而是在提示 agent 产品的评价标准和工作流边界正在变化。';
-    }
+    const text = item.title || item.summary || '';
+    const topic = extractTopic(text);
+    const map = {
+      security: '供应链攻击的信号值得立刻检查自己的依赖;这类事件往往波及面比报道的更广。',
+      context: 'AI 时代的新瓶颈正在从模型能力转向上下文管理,这会直接影响产品和工作流的设计。',
+      agent: '这不是功能更新,而是 agent 的评价框架在变——从"能不能做"变成"能不能超出预期"。',
+      enterprise_workflow: 'AI 开始接管企业日常工具链,这个方向的产品机会比 to-C 更可预期。',
+      coding_agent: '编码 agent 覆盖范围每扩大一步,工程师的工作边界就在重新定义。',
+      creator: '个人创作者的竞争优势正在从内容量转向信号密度和观点深度。',
+      revenue: '从 0 到 MRR 的路径在变——分发和定价比功能复杂度更关键。',
+      indie: '独立开发者的最大优势是速度和决策链条短;这类信号能直接映射到自己项目。',
+      distribution: '触达本身正在成为稀缺资源;这条信号值得拆解背后的分发逻辑。',
+      model: '模型能力的跳跃窗口正在压缩,留给产品层差异化的时间也在变少。',
+      product: '这条内容暴露了一个产品判断的转折点,值得对照自己的项目想一遍。',
+      workflow: '工作流的自动化边界每扩张一轮,就会改变谁在做什么、谁的时间更值钱。',
+      general: '这条内容值得看,不是因为它新,而是因为它能帮你校准方向判断。'
+    };
     if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      return '这类长内容值得看,不是因为信息更多,而是因为它更容易暴露底层判断。';
+      return `长内容往往比推文更能暴露底层逻辑。${map[topic] || map.general}`;
     }
-    return '这条内容值得看,不是因为它新,而是因为它会影响你怎么判断内容、产品和下一步动作。';
+    return map[topic] || map.general;
   };
 
   const makeWritableAngle = (item) => {
-    if (includesAny(item.title || item.summary || '', ['agent'])) {
-      return '可以写成:好 agent 产品的标准,已经从"功能完整"变成"能否持续给用户惊喜"。';
-    }
-    if (includesAny(item.title || item.summary || '', ['context window'])) {
-      return '可以写成:AI 时代的新瓶颈不是模型能力,而是人的上下文管理能力。';
-    }
-    if (includesAny(item.title || item.summary || '', ['computer'])) {
-      return '可以写成:下一台计算机不是 app,而是 agent + network。';
-    }
-    return '可以写成:这不是新闻本身有多重要,而是它暴露了底层产品逻辑正在变化。';
+    const text = item.title || item.summary || '';
+    const topic = extractTopic(text);
+    const map = {
+      security: `可以写成:下次你用 npm install 的时候,你信任的不是代码,是整条供应链。`,
+      context: `可以写成:模型够用了,但人的上下文管理能力成了新瓶颈。`,
+      agent: `可以写成:好 agent 不是功能更多,而是能持续给你惊喜——这个标准正在改变产品评价方式。`,
+      enterprise_workflow: `可以写成:AI 真正开始改变企业效率的标志,不是新工具上线,而是旧工具开始被替换。`,
+      coding_agent: `可以写成:当 agent 能写大部分代码,工程师真正在做的事情正在变成别的什么。`,
+      creator: `可以写成:发布量不再是护城河,能持续输出高密度观点才是。`,
+      revenue: `可以写成:独立产品的定价时刻比想象中来得早,也比想象中更容易搞错。`,
+      indie: `可以写成:小团队的最大优势是不需要开会就能改方向。`,
+      distribution: `可以写成:分发能力比产品能力更难复制,这才是真正的护城河。`,
+      model: `可以写成:模型能力快速拉平意味着产品差异化的窗口正在变窄。`,
+      product: `可以写成:产品的好坏越来越不取决于功能多少,而是判断正不正确。`,
+      workflow: `可以写成:workflow 自动化每推进一步,就意味着有一类人的工作方式要被重新定义。`,
+      general: `可以写成:把这条信号延伸一步——你的产品/内容里有没有同样的逻辑在悄悄生效？`
+    };
+    return map[topic] || map.general;
   };
 
   const makeNextStep = (item) => {
-    if (item.scoring.writeability >= 0.8) return '优先拿这条扩成一篇 X 长帖,别只收藏。';
-    if (item.scoring.actionability >= 0.8) return '把它当成产品判断信号,看看你自己的项目要不要顺手跟进。';
-    return '先放进观察名单;如果后续出现第二个同方向信号,再升级成重点主题。';
+    if (item.scoring.writeability >= 0.8) return '这条可写性高,优先拿来扩成 X 长帖。';
+    if (item.scoring.actionability >= 0.8) return '直接对照自己的项目检查一遍,别只是收藏。';
+    if (item.scoring.relevance >= 0.9) return '高相关性信号,加入持续观察列表。';
+    return '先放进观察名单;如果下周出现第二个同方向信号,升级成重点主题。';
   };
 
   const makeDraftText = (draft) => {
-    if ((draft.title || '').toLowerCase().includes('agent product')) {
-      return [
-        '我越来越感觉,接下来判断一个 agent 产品好不好,标准不是"功能多不多",而是它能不能持续做出连创造者自己都没完全预料到的结果。',
-        '',
-        '传统互联网产品的逻辑,是设计者先定义功能边界,用户在边界内使用。',
-        '但 agent 产品开始不一样了:你给它目标、上下文、工具,它自己在过程中长出一些原本没被明确设计出来的价值。',
-        '',
-        '这件事一旦成立,产品经理、创始人、内容创作者看 agent 的方式都得变。',
-        '我们不该只问"它有什么功能",而该问"它会不会给我惊喜"。',
-        '',
-        `源头:${draft.sourceUrl}`
-      ].join('\n');
-    }
+    const text = (draft.title || '') + ' ' + (draft.summary || '');
+    const topic = extractTopic(text);
+    const url = draft.sourceUrl;
+    const author = draft.author ? `@${draft.author}` : '';
 
-    if ((draft.title || '').toLowerCase().includes('agent is the computer')) {
-      return [
-        '"The agent is the computer" 这句话我觉得不是修辞,是产品现实。',
-        '',
-        '以前我们理解 computer,是操作系统 + app。',
-        '接下来用户越来越可能不直接操作 app,而是把目标交给 agent,由 agent 去调用网络、服务和工具。',
-        '',
-        '这意味着真正重要的竞争点,也会从单点功能,慢慢转向:',
-        '- 谁更懂上下文',
-        '- 谁更会调用工具',
-        '- 谁更能把结果交付出来',
-        '',
-        '下一台计算机,可能真的不是一个界面,而是一套可执行意图的系统。',
-        '',
-        `源头:${draft.sourceUrl}`
-      ].join('\n');
-    }
+    const templates = {
+      security: [
+        `npm axios 供应链攻击——300M 周下载量，你的项目大概率受影响。`,
+        ``,
+        `这类攻击的逻辑很简单：不攻击你写的代码，攻击你信任的代码。`,
+        `你用 npm install 的那一刻，你信任的是整条依赖链，不只是你自己。`,
+        ``,
+        `现在建议做的事：`,
+        `1. 检查 package-lock.json 里的 axios 版本`,
+        `2. 扫描依赖有没有来路不明的 postinstall 脚本`,
+        `3. 对高频更新的依赖建立版本锁定习惯`,
+        ``,
+        `来源：${url}`
+      ].join('\n'),
 
-    return [
-      draft.suggestedOpening,
-      '',
-      draft.angle,
-      '',
-      `源头:${draft.sourceUrl}`
-    ].join('\n');
+      agent: [
+        `判断一个 agent 产品好不好，我现在用的标准变了。`,
+        ``,
+        `以前看功能列表：能不能做 A、B、C。`,
+        `现在看一件事：它有没有做过连我自己都没预料到的结果。`,
+        ``,
+        `这是 ${author || '有人'} 最近说的一句话，但我觉得它不只是观点——`,
+        `它在说 agent 产品的评价框架正在从"功能完整性"转向"意外惊喜密度"。`,
+        ``,
+        `对做内容的人来说也一样：读者会记住那些超出预期的判断，不是信息搬运。`,
+        ``,
+        `来源：${url}`
+      ].join('\n'),
+
+      enterprise_workflow: [
+        `Claude Code 支持了 GitHub Enterprise Server。`,
+        ``,
+        `这件事本身不大，但方向值得注意：`,
+        `AI 编码工具开始认真进企业了——不是 API 接入，是深入到内部代码仓库。`,
+        ``,
+        `下一步会发生什么大概是：`,
+        `企业 IT 采购的逻辑开始从"够不够安全"转向"能不能替换现有工具链"`,
+        ``,
+        `这个市场比 to-C 慢，但一旦打开，切换成本极高。`,
+        ``,
+        `来源：${url}`
+      ].join('\n'),
+
+      coding_agent: [
+        `Opus 4.5 之后，agent 做了我们大部分的编码工作。`,
+        ``,
+        `这句话不是在说 AI 有多强，是在说工程师的工作边界已经移动了。`,
+        ``,
+        `以前：写代码 → 测试 → 修 bug`,
+        `现在：定义问题 → 审查 agent 输出 → 决策要不要用`,
+        ``,
+        `工程师还在，但核心稀缺能力从"写"变成了"判断"。`,
+        `这个变化比大多数人意识到的来得要快。`,
+        ``,
+        `来源：${url}`
+      ].join('\n'),
+
+      general: [
+        `${draft.suggestedOpening || '今天看到一条值得深想的信号。'}`,
+        ``,
+        `${draft.angle || '它不是新闻，而是在说底层的判断框架在移动。'}`,
+        ``,
+        `来源：${url}`
+      ].join('\n')
+    };
+
+    return templates[topic] || templates.general;
   };
 
   const lines = [];
