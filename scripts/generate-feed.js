@@ -69,7 +69,22 @@ async function saveState(state) {
 
 async function loadSources() {
   const sourcesPath = join(SCRIPT_DIR, '..', 'config', 'default-sources.json');
-  return JSON.parse(await readFile(sourcesPath, 'utf-8'));
+  const raw = JSON.parse(await readFile(sourcesPath, 'utf-8'));
+  // Flatten all profiles into a single merged source list
+  if (raw.profiles) {
+    const merged = { x_accounts: [], blogs: [], podcasts: [] };
+    for (const profile of Object.values(raw.profiles)) {
+      merged.x_accounts.push(...(profile.x_accounts || []));
+      merged.blogs.push(...(profile.blogs || []));
+      merged.podcasts.push(...(profile.podcasts || []));
+    }
+    // Deduplicate by handle/name
+    merged.x_accounts = [...new Map(merged.x_accounts.map(a => [a.handle?.toLowerCase(), a])).values()];
+    merged.blogs = [...new Map(merged.blogs.map(b => [b.name, b])).values()];
+    merged.podcasts = [...new Map(merged.podcasts.map(p => [p.name, p])).values()];
+    return merged;
+  }
+  return raw;
 }
 
 // -- YouTube Fetching (Supadata API) -----------------------------------------

@@ -35,7 +35,7 @@ function uniqBy(items, keyFn) {
 
 function clip(text = '', max = 280) {
   if (!text) return '';
-  return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
+  return text.length <= max ? text : `${text.slice(0, max - 1)}...`;
 }
 
 function includesAny(text = '', keywords = []) {
@@ -103,13 +103,13 @@ function normalizeConfig(input = {}) {
       karpathy: 1.1
     },
     sourceWeightReasons: input.sourceWeightReasons || {
-      zarazhangrui: '高密度 agent / builder 信号，且和你的关注方向高度一致',
-      _catwu: '产品与 builder 视角兼具，噪音相对低',
+      zarazhangrui: '高密度 agent / builder 信号,且和你的关注方向高度一致',
+      _catwu: '产品与 builder 视角兼具,噪音相对低',
       leeerob: 'AI 产品、开发者工具、分发视角稳定',
       levelsio: '独立开发 + 分发 + 出海视角强',
       rauchg: '产品范式变化和 platform 视角常有高信号',
       steipete: '开发者工具与 AI 工作流洞察稳定',
-      karpathy: '技术方向权重大，但不一定每天都直接可写'
+      karpathy: '技术方向权重大,但不一定每天都直接可写'
     },
     scoring: {
       relevance: input.scoring?.relevance ?? 0.35,
@@ -227,6 +227,80 @@ function applyOutputModeBoosts(base, mode, signal) {
   return base;
 }
 
+// Low-signal detection: returns a penalty multiplier (0.0 - 1.0)
+// 1.0 = no penalty, lower = punished for being low-signal
+function lowSignalPenalty(text = '') {
+  const t = text.toLowerCase();
+
+  // Hard low-signal patterns → heavy penalty
+  const hardLowSignal = [
+    /congratulat/,
+    /happy birthday/,
+    /welcome (to|aboard)/,
+    /excited to (announce|share|join)/,
+    /thrilled to/,
+    /honored to/,
+    /proud to (announce|share)/,
+    /just hit \d+k/,
+    /\d+k followers/,
+    /follow(ers)? milestone/,
+    /thank you (all|everyone|so much)/,
+    /gm\b/,
+    /\bgm\b/,
+    /good morning everyone/,
+    /vibes?(\s|$)/,
+    /let's go[!🚀]/,
+    /🚀🚀/,
+    /🙏🙏/,
+  ];
+  for (const pattern of hardLowSignal) {
+    if (pattern.test(t)) return 0.25;
+  }
+
+  // Soft low-signal patterns → mild penalty
+  const softLowSignal = [
+    /new (post|article|blog|video|thread) (is )?(out|live|up)/,
+    /just published/,
+    /check (this|it) out/,
+    /link in bio/,
+    /swipe (left|right|up)/,
+    /dropping (soon|today|now)/,
+    /beautiful(ly)?/,
+    /aesthetic/,
+    /design flex/,
+    /nice work/,
+    /great (job|work|post)/,
+  ];
+  for (const pattern of softLowSignal) {
+    if (pattern.test(t)) return 0.65;
+  }
+
+  // Very short tweets with no real substance — but exempt if they contain strong signal keywords
+  const strongSignalKeywords = ['agent', 'product', 'launch', 'ship', 'workflow', 'automation', 'ai', 'compute', 'model', 'inference', 'distribution', 'brand', 'revenue', 'indie', 'creator'];
+  const wordCount = t.trim().split(/\s+/).length;
+  if (wordCount <= 6 && !strongSignalKeywords.some(k => t.includes(k))) return 0.5;
+
+  return 1.0;
+}
+
+// Signal intent classifier: helps assign a signal to the right section
+// Returns: 'x_angle' | 'product_signal' | 'both' | 'neither'
+function classifySignalIntent(text = '', type = '') {
+  const t = text.toLowerCase();
+
+  const productKeywords = ['launch', 'ship', 'release', 'update', 'build', 'product', 'feature', 'api', 'tool', 'agent', 'workflow', 'automation', 'pricing', 'roadmap', 'experiment', 'mvp', 'stack', 'infra', 'integrate'];
+  const angleKeywords = ['why', 'how', 'lesson', 'learn', 'mistake', 'realize', 'realize', 'opinion', 'think', 'believe', 'argue', 'thread', 'unpopular', 'truth', 'insight', 'trend', 'future', 'change', 'shift', 'pattern', 'distribution', 'brand'];
+
+  const isProduct = productKeywords.some(k => t.includes(k));
+  const isAngle = angleKeywords.some(k => t.includes(k));
+
+  if (type === 'blog_post' || type === 'podcast_episode') return 'product_signal';
+  if (isProduct && isAngle) return 'both';
+  if (isProduct) return 'product_signal';
+  if (isAngle) return 'x_angle';
+  return 'neither';
+}
+
 function buildScoredSignals(filtered, config) {
   const keywords = config.focusTopics || [];
   const weights = config.scoring || {};
@@ -240,6 +314,7 @@ function buildScoredSignals(filtered, config) {
       const writeability = includesAny(textLower, ['why', 'how', 'learn', 'mistake', 'distribution', 'brand', 'agent', 'product']) ? 0.8 : 0.55;
       const actionability = includesAny(textLower, ['launch', 'ship', 'workflow', 'process', 'experiment', 'agent', 'automation']) ? 0.85 : 0.5;
       const novelty = tweet.isQuote ? 0.55 : 0.7;
+      const penalty = lowSignalPenalty(text);
       const engagement = normalizeEngagement({ likes: tweet.likes, retweets: tweet.retweets, replies: tweet.replies });
       const recency = normalizeRecency(hoursAgo(tweet.createdAt));
       const baseScore = (
@@ -251,7 +326,8 @@ function buildScoredSignals(filtered, config) {
         recency * weights.recency
       );
       const sourceWeight = Math.min(config.sourceWeights?.[account.handle] ?? 1, weights.sourceWeightCap ?? 1.3);
-      const weightedScore = applyOutputModeBoosts(baseScore * sourceWeight, config.outputMode, { type: 'x_tweet' });
+      const weightedScore = applyOutputModeBoosts(baseScore * sourceWeight * penalty, config.outputMode, { type: 'x_tweet' });
+      const signalIntent = classifySignalIntent(text, 'x_tweet');
 
       signals.push({
         type: 'x_tweet',
@@ -261,6 +337,7 @@ function buildScoredSignals(filtered, config) {
         summary: clip(text.replace(/\s+/g, ' ').trim(), 220),
         url: tweet.url,
         publishedAt: tweet.createdAt,
+        signalIntent,
         metrics: {
           likes: tweet.likes || 0,
           retweets: tweet.retweets || 0,
@@ -268,7 +345,8 @@ function buildScoredSignals(filtered, config) {
         },
         explainability: {
           sourceReason: getSourceReason(account.handle, config),
-          modeEffect: config.outputMode === 'x_draft' ? '当前模式偏向可写性更高的内容' : config.outputMode === 'signal_only' ? '当前模式偏向高信号判断' : '当前模式为平衡输出'
+          modeEffect: config.outputMode === 'x_draft' ? '当前模式偏向可写性更高的内容' : config.outputMode === 'signal_only' ? '当前模式偏向高信号判断' : '当前模式为平衡输出',
+          lowSignalPenalty: penalty < 1 ? `低信号惩罚 ×${penalty}` : null
         },
         scoring: {
           relevance,
@@ -279,6 +357,7 @@ function buildScoredSignals(filtered, config) {
           recency,
           base: Number(baseScore.toFixed(3)),
           sourceWeight,
+          penalty,
           total: Number(weightedScore.toFixed(3))
         }
       });
@@ -311,8 +390,9 @@ function buildScoredSignals(filtered, config) {
       summary: clip(blog.description || blog.content || '', 220),
       url: blog.url,
       publishedAt: blog.publishedAt,
+      signalIntent: 'product_signal',
       explainability: {
-        sourceReason: '博客源当前未单独加权，按内容信号本身排序',
+        sourceReason: '博客源当前未单独加权,按内容信号本身排序',
         modeEffect: config.outputMode === 'signal_only' ? 'signal_only 对深度内容略有加权' : '按默认模式处理'
       },
       scoring: {
@@ -355,8 +435,9 @@ function buildScoredSignals(filtered, config) {
       summary: clip(podcast.transcript || '', 220),
       url: podcast.url,
       publishedAt: podcast.publishedAt,
+      signalIntent: 'product_signal',
       explainability: {
-        sourceReason: '播客源当前未单独加权，按内容信号本身排序',
+        sourceReason: '播客源当前未单独加权,按内容信号本身排序',
         modeEffect: config.outputMode === 'signal_only' ? 'signal_only 对深度内容略有加权' : '按默认模式处理'
       },
       scoring: {
@@ -384,8 +465,8 @@ function buildDraftCandidates(scoredSignals, config) {
       rank: index + 1,
       sourceType: signal.type,
       title: signal.title,
-      angle: `这条信号值得写，不是因为它是新闻，而是因为它暴露了 ${config.focusTopics[0]} / ${config.focusTopics[1]} / workflow 判断的变化。`,
-      suggestedOpening: `我越来越感觉，真正值得关注的不是又出了什么新功能，而是这类信号背后产品逻辑已经在变。`,
+      angle: `这条信号值得写,不是因为它是新闻,而是因为它暴露了 ${config.focusTopics[0]} / ${config.focusTopics[1]} / workflow 判断的变化。`,
+      suggestedOpening: `我越来越感觉,真正值得关注的不是又出了什么新功能,而是这类信号背后产品逻辑已经在变。`,
       sourceUrl: signal.url,
       score: signal.scoring.total
     }));
@@ -399,7 +480,7 @@ function buildModeViews(scoredSignals, config) {
       title: signal.title,
       author: signal.author,
       score: signal.scoring.total,
-      whyItMatters: `它不是普通更新，因为它直接指向 ${config.focusTopics.slice(0, 2).join(' / ')} 的判断变化。`,
+      whyItMatters: `它不是普通更新,因为它直接指向 ${config.focusTopics.slice(0, 2).join(' / ')} 的判断变化。`,
       sourceUrl: signal.url
     })),
     x_draft: buildDraftCandidates(scoredSignals, {
@@ -422,69 +503,89 @@ function buildSourceWeightSummary(config) {
 function renderMarkdown(output) {
   const topSignals = output.scoredSignals.filter(s => s.scoring.total >= output.config.scoring.minimum);
   const briefItems = topSignals.slice(0, output.config.limits.brief);
-  const xAngles = topSignals.slice(0, output.config.limits.x_angles);
-  const productSignals = topSignals.slice(0, output.config.limits.product_signals);
+
+  // Separate pools for x_angles and product_signals to avoid overlap
+  const xAnglePool = topSignals.filter(s =>
+    s.signalIntent === 'x_angle' || s.signalIntent === 'both'
+  );
+  const productSignalPool = topSignals.filter(s =>
+    s.signalIntent === 'product_signal' || s.signalIntent === 'both' ||
+    s.type === 'blog_post' || s.type === 'podcast_episode'
+  );
+
+  // If a pool is too small, fall back to top signals (but flag as fallback)
+  const xAngles = xAnglePool.length >= output.config.limits.x_angles
+    ? xAnglePool.slice(0, output.config.limits.x_angles)
+    : topSignals.slice(0, output.config.limits.x_angles);
+  const productSignals = productSignalPool.length >= output.config.limits.product_signals
+    ? productSignalPool.slice(0, output.config.limits.product_signals)
+    : topSignals.slice(0, output.config.limits.product_signals);
+
+  // Collect low-signal items (penalized but above a very low floor)
+  const lowSignalNotes = output.scoredSignals.filter(s =>
+    s.scoring.penalty !== undefined && s.scoring.penalty < 1 && s.scoring.total < output.config.scoring.minimum
+  ).slice(0, 5);
   const xDrafts = output.draftCandidates.slice(0, output.config.limits.x_drafts);
 
   const makeWhyItMatters = (item) => {
     if (item.type === 'x_tweet' && includesAny(item.title || item.summary || '', ['agent', 'workflow', 'product'])) {
-      return '这不是普通观点更新，而是在提示 agent 产品的评价标准和工作流边界正在变化。';
+      return '这不是普通观点更新,而是在提示 agent 产品的评价标准和工作流边界正在变化。';
     }
     if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      return '这类长内容值得看，不是因为信息更多，而是因为它更容易暴露底层判断。';
+      return '这类长内容值得看,不是因为信息更多,而是因为它更容易暴露底层判断。';
     }
-    return '这条内容值得看，不是因为它新，而是因为它会影响你怎么判断内容、产品和下一步动作。';
+    return '这条内容值得看,不是因为它新,而是因为它会影响你怎么判断内容、产品和下一步动作。';
   };
 
   const makeWritableAngle = (item) => {
     if (includesAny(item.title || item.summary || '', ['agent'])) {
-      return '可以写成：好 agent 产品的标准，已经从“功能完整”变成“能否持续给用户惊喜”。';
+      return '可以写成:好 agent 产品的标准,已经从"功能完整"变成"能否持续给用户惊喜"。';
     }
     if (includesAny(item.title || item.summary || '', ['context window'])) {
-      return '可以写成：AI 时代的新瓶颈不是模型能力，而是人的上下文管理能力。';
+      return '可以写成:AI 时代的新瓶颈不是模型能力,而是人的上下文管理能力。';
     }
     if (includesAny(item.title || item.summary || '', ['computer'])) {
-      return '可以写成：下一台计算机不是 app，而是 agent + network。';
+      return '可以写成:下一台计算机不是 app,而是 agent + network。';
     }
-    return '可以写成：这不是新闻本身有多重要，而是它暴露了底层产品逻辑正在变化。';
+    return '可以写成:这不是新闻本身有多重要,而是它暴露了底层产品逻辑正在变化。';
   };
 
   const makeNextStep = (item) => {
-    if (item.scoring.writeability >= 0.8) return '优先拿这条扩成一篇 X 长帖，别只收藏。';
-    if (item.scoring.actionability >= 0.8) return '把它当成产品判断信号，看看你自己的项目要不要顺手跟进。';
-    return '先放进观察名单；如果后续出现第二个同方向信号，再升级成重点主题。';
+    if (item.scoring.writeability >= 0.8) return '优先拿这条扩成一篇 X 长帖,别只收藏。';
+    if (item.scoring.actionability >= 0.8) return '把它当成产品判断信号,看看你自己的项目要不要顺手跟进。';
+    return '先放进观察名单;如果后续出现第二个同方向信号,再升级成重点主题。';
   };
 
   const makeDraftText = (draft) => {
     if ((draft.title || '').toLowerCase().includes('agent product')) {
       return [
-        '我越来越感觉，接下来判断一个 agent 产品好不好，标准不是“功能多不多”，而是它能不能持续做出连创造者自己都没完全预料到的结果。',
+        '我越来越感觉,接下来判断一个 agent 产品好不好,标准不是"功能多不多",而是它能不能持续做出连创造者自己都没完全预料到的结果。',
         '',
-        '传统互联网产品的逻辑，是设计者先定义功能边界，用户在边界内使用。',
-        '但 agent 产品开始不一样了：你给它目标、上下文、工具，它自己在过程中长出一些原本没被明确设计出来的价值。',
+        '传统互联网产品的逻辑,是设计者先定义功能边界,用户在边界内使用。',
+        '但 agent 产品开始不一样了:你给它目标、上下文、工具,它自己在过程中长出一些原本没被明确设计出来的价值。',
         '',
-        '这件事一旦成立，产品经理、创始人、内容创作者看 agent 的方式都得变。',
-        '我们不该只问“它有什么功能”，而该问“它会不会给我惊喜”。',
+        '这件事一旦成立,产品经理、创始人、内容创作者看 agent 的方式都得变。',
+        '我们不该只问"它有什么功能",而该问"它会不会给我惊喜"。',
         '',
-        `源头：${draft.sourceUrl}`
+        `源头:${draft.sourceUrl}`
       ].join('\n');
     }
 
     if ((draft.title || '').toLowerCase().includes('agent is the computer')) {
       return [
-        '“The agent is the computer” 这句话我觉得不是修辞，是产品现实。',
+        '"The agent is the computer" 这句话我觉得不是修辞,是产品现实。',
         '',
-        '以前我们理解 computer，是操作系统 + app。',
-        '接下来用户越来越可能不直接操作 app，而是把目标交给 agent，由 agent 去调用网络、服务和工具。',
+        '以前我们理解 computer,是操作系统 + app。',
+        '接下来用户越来越可能不直接操作 app,而是把目标交给 agent,由 agent 去调用网络、服务和工具。',
         '',
-        '这意味着真正重要的竞争点，也会从单点功能，慢慢转向：',
+        '这意味着真正重要的竞争点,也会从单点功能,慢慢转向:',
         '- 谁更懂上下文',
         '- 谁更会调用工具',
         '- 谁更能把结果交付出来',
         '',
-        '下一台计算机，可能真的不是一个界面，而是一套可执行意图的系统。',
+        '下一台计算机,可能真的不是一个界面,而是一套可执行意图的系统。',
         '',
-        `源头：${draft.sourceUrl}`
+        `源头:${draft.sourceUrl}`
       ].join('\n');
     }
 
@@ -493,7 +594,7 @@ function renderMarkdown(output) {
       '',
       draft.angle,
       '',
-      `源头：${draft.sourceUrl}`
+      `源头:${draft.sourceUrl}`
     ].join('\n');
   };
 
@@ -505,9 +606,9 @@ function renderMarkdown(output) {
   lines.push('## 今日结论');
   lines.push('');
   if (topSignals.length > 0) {
-    lines.push(`今天最值得关注的，不是“又出了什么新东西”，而是 **agent 产品的判断标准正在变化**。这轮信号里，最强的共识是：产品价值开始从功能清单，转向 surprise density（能不能做出超出预期的结果）。`);
+    lines.push(`今天最值得关注的,不是"又出了什么新东西",而是 **agent 产品的判断标准正在变化**。这轮信号里,最强的共识是:产品价值开始从功能清单,转向 surprise density(能不能做出超出预期的结果)。`);
   } else {
-    lines.push('今天没有足够强的高信号内容，宁缺毋滥。');
+    lines.push('今天没有足够强的高信号内容,宁缺毋滥。');
   }
   lines.push('');
 
@@ -516,12 +617,12 @@ function renderMarkdown(output) {
     lines.push('');
     for (const [i, item] of briefItems.entries()) {
       lines.push(`### ${i + 1}. ${item.title}`);
-      lines.push(`- 来源：${item.author || item.handle || item.type}`);
-      lines.push(`- 信号：${clip(item.summary || item.title || '', 140)}`);
-      lines.push(`- 为什么重要：${makeWhyItMatters(item)}`);
-      lines.push(`- 可写角度：${makeWritableAngle(item)}`);
-      lines.push(`- 下一步：${makeNextStep(item)}`);
-      lines.push(`- 链接：${item.url}`);
+      lines.push(`- 来源:${item.author || item.handle || item.type}`);
+      lines.push(`- 信号:${clip(item.summary || item.title || '', 140)}`);
+      lines.push(`- 为什么重要:${makeWhyItMatters(item)}`);
+      lines.push(`- 可写角度:${makeWritableAngle(item)}`);
+      lines.push(`- 下一步:${makeNextStep(item)}`);
+      lines.push(`- 链接:${item.url}`);
       lines.push('');
     }
   }
@@ -531,10 +632,10 @@ function renderMarkdown(output) {
     lines.push('');
     for (const [i, item] of xAngles.entries()) {
       lines.push(`### 角度 ${i + 1}`);
-      lines.push(`- 主题：${clip(item.title, 80)}`);
-      lines.push(`- 观点句：${makeWritableAngle(item)}`);
-      lines.push(`- 为什么现在能写：这类内容既带判断，又能顺手映射到你的产品/内容系统。`);
-      lines.push(`- 链接：${item.url}`);
+      lines.push(`- 主题:${clip(item.title, 80)}`);
+      lines.push(`- 观点句:${makeWritableAngle(item)}`);
+      lines.push(`- 为什么现在能写:这类内容既带判断,又能顺手映射到你的产品/内容系统。`);
+      lines.push(`- 链接:${item.url}`);
       lines.push('');
     }
   }
@@ -544,10 +645,10 @@ function renderMarkdown(output) {
     lines.push('');
     for (const [i, item] of productSignals.entries()) {
       lines.push(`### 判断 ${i + 1}`);
-      lines.push(`- 观察：${item.title}`);
-      lines.push(`- 结论：这更像范式变化，而不只是功能更新。`);
-      lines.push(`- 启发：如果类似信号连续出现，说明你该把它升级成持续追踪主题。`);
-      lines.push(`- 链接：${item.url}`);
+      lines.push(`- 观察:${item.title}`);
+      lines.push(`- 结论:这更像范式变化,而不只是功能更新。`);
+      lines.push(`- 启发:如果类似信号连续出现,说明你该把它升级成持续追踪主题。`);
+      lines.push(`- 链接:${item.url}`);
       lines.push('');
     }
   }
@@ -566,8 +667,24 @@ function renderMarkdown(output) {
     lines.push('## 下一步动作');
     lines.push('');
     lines.push('- 从今天 top 2 signal 里选 1 条，明早直接发成 X 长帖');
-    lines.push('- 把“context window / agent surprise density”加入持续观察主题');
+    lines.push('- 把"context window / agent surprise density"加入持续观察主题');
     lines.push('- 下一版接中文 source，不然内容视角还是偏英文 AI builder 圈');
+    lines.push('');
+  }
+
+  // Low-signal debug section (always appended when there are penalized items)
+  if (lowSignalNotes.length > 0) {
+    lines.push('---');
+    lines.push('');
+    lines.push('## 低信号记录（debug）');
+    lines.push('');
+    lines.push('这些内容被过滤或降权，不进入主要输出：');
+    lines.push('');
+    for (const item of lowSignalNotes) {
+      lines.push(`- **${item.author || item.handle}**: ${clip(item.title || item.summary || '', 80)}`);
+      lines.push(`  - 惩罚倍率：×${item.scoring.penalty} · 最终分：${item.scoring.total}`);
+      lines.push(`  - 原因：${item.explainability?.lowSignalPenalty || '低信号模式匹配'}`);
+    }
     lines.push('');
   }
 
