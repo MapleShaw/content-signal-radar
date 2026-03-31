@@ -500,6 +500,8 @@ function buildDraftCandidates(scoredSignals, config) {
       rank: index + 1,
       sourceType: signal.type,
       title: signal.title,
+      summary: signal.summary,
+      author: signal.handle || signal.author || '',
       angle: `这条信号值得写,不是因为它是新闻,而是因为它暴露了 ${config.focusTopics[0]} / ${config.focusTopics[1]} / workflow 判断的变化。`,
       suggestedOpening: `我越来越感觉,真正值得关注的不是又出了什么新功能,而是这类信号背后产品逻辑已经在变。`,
       sourceUrl: signal.url,
