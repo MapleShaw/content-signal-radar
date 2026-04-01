@@ -1,8 +1,13 @@
 {
-  "generatedAt": "2026-03-29T07:01:55.415Z",
+  "generatedAt": "2026-04-01T07:19:09.882Z",
   "lookbackHours": 72,
   "podcasts": [],
   "stats": {
     "podcastEpisodes": 0
-  }
+  },
+  "errors": [
+    "YouTube: Failed to fetch videos for No Priors: HTTP 429",
+    "YouTube: Failed to fetch videos for Unsupervised Learning: HTTP 429",
+    "YouTube: Failed to get transcript for SUjA25ijcNs: HTTP 429"
+  ]
 }
