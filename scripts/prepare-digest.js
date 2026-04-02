@@ -232,7 +232,42 @@ function applyOutputModeBoosts(base, mode, signal) {
 function lowSignalPenalty(text = '') {
   const t = text.toLowerCase();
 
-  // Hard low-signal patterns → heavy penalty
+  // === Hard low-signal patterns → heavy penalty (0.2) ===
+
+  // Pure RT / retweet with no added commentary
+  if (/^rt\s+@/.test(t) || /^rt\s*:/.test(t)) return 0.2;
+
+  // Pure emoji replies (3+ emoji, total word count < 10)
+  const emojiMatches = t.match(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu) || [];
+  const wordCount = t.trim().split(/\s+/).length;
+  if (emojiMatches.length >= 3 && wordCount < 10) return 0.2;
+
+  // Hollow agreement / empty affirmation
+  const hollowAgreement = [
+    /^(agree|agreed|agreeing)[\s!.]*$/,
+    /^\+1[\s!.]*$/,
+    /^this[\s!.]*$/,
+    /^facts?[\s!.]*$/,
+    /^(real|true|truth)[\s!.]*$/,
+    /^(so true|exactly|100%|💯)[\s!.]*$/,
+    /^(yep|yup|yes|yessir)[\s!.]*$/,
+  ];
+  for (const pattern of hollowAgreement) {
+    if (pattern.test(t.trim())) return 0.2;
+  }
+
+  // "just joined" / "just started" type
+  const justJoinedPatterns = [
+    /just (joined|started|signed up|created)/,
+    /new here/,
+    /day\s*1\b/,
+    /first (day|week) (at|on|with)/,
+  ];
+  for (const pattern of justJoinedPatterns) {
+    if (pattern.test(t)) return 0.2;
+  }
+
+  // Original hard low-signal patterns (0.25)
   const hardLowSignal = [
     /congratulat/,
     /happy birthday/,
@@ -257,7 +292,32 @@ function lowSignalPenalty(text = '') {
     if (pattern.test(t)) return 0.25;
   }
 
-  // Soft low-signal patterns → mild penalty
+  // === Soft low-signal patterns → mild penalty (0.55) ===
+
+  // "thread 👇" / "a thread" but only a title, no substance (short)
+  const threadTeaserPatterns = [
+    /thread\s*👇/,
+    /a thread\s*[👇⬇️↓:]/,
+    /\bthread\b.*\b(on|about)\b/,
+  ];
+  for (const pattern of threadTeaserPatterns) {
+    if (pattern.test(t) && wordCount <= 20) return 0.55;
+  }
+
+  // Self-promotion without technical detail
+  const selfPromoPatterns = [
+    /\bmy new\b/,
+    /\bi just (launched|shipped|released|published|dropped)\b/,
+    /\bwe just (launched|shipped|released|published|dropped)\b/,
+    /\bjust (launched|shipped|released) my\b/,
+    /\bcheck out (my|our)\b/,
+  ];
+  const hasTechDetail = /\b(api|sdk|cli|stack|architecture|benchmark|performance|latency|throughput|token|model|inference|fine.?tun|integration|pipeline|agent|workflow|automation)\b/.test(t);
+  for (const pattern of selfPromoPatterns) {
+    if (pattern.test(t) && !hasTechDetail) return 0.55;
+  }
+
+  // Original soft low-signal patterns (0.65)
   const softLowSignal = [
     /new (post|article|blog|video|thread) (is )?(out|live|up)/,
     /just published/,
@@ -277,7 +337,6 @@ function lowSignalPenalty(text = '') {
 
   // Very short tweets with no real substance — but exempt if they contain strong signal keywords
   const strongSignalKeywords = ['agent', 'product', 'launch', 'ship', 'workflow', 'automation', 'ai', 'compute', 'model', 'inference', 'distribution', 'brand', 'revenue', 'indie', 'creator'];
-  const wordCount = t.trim().split(/\s+/).length;
   if (wordCount <= 6 && !strongSignalKeywords.some(k => t.includes(k))) return 0.5;
 
   return 1.0;
@@ -336,6 +395,92 @@ function classifySignalIntent(text = '', type = '') {
   return 'neither';
 }
 
+// Compute section-specific score based on signalIntent
+// x_angle: boost writeability ×1.3, novelty ×1.2
+// product_signal: boost actionability ×1.3, relevance ×1.15
+// 'both' gets the higher of the two; 'neither' gets base score
+function computeSectionScore(scoring, signalIntent) {
+  const { relevance, writeability, actionability, novelty, engagement, recency } = scoring;
+  if (signalIntent === 'x_angle') {
+    return relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.07 + recency * 0.08;
+  }
+  if (signalIntent === 'product_signal') {
+    return relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.07 + recency * 0.08;
+  }
+  if (signalIntent === 'both') {
+    const xScore = relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.07 + recency * 0.08;
+    const pScore = relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.07 + recency * 0.08;
+    return Math.max(xScore, pScore);
+  }
+  // 'neither' — no section boost
+  return relevance * 0.35 + writeability * 0.18 + actionability * 0.2 + novelty * 0.12 + engagement * 0.07 + recency * 0.08;
+}
+
+// Per-handle deduplication: if a handle has 3+ signals, keep only the top 2 by total score
+function deduplicateByHandle(signals) {
+  const handleMap = new Map();
+  for (const signal of signals) {
+    const key = (signal.handle || signal.author || '').toLowerCase();
+    if (!key) continue;
+    if (!handleMap.has(key)) handleMap.set(key, []);
+    handleMap.get(key).push(signal);
+  }
+
+  const toRemove = new Set();
+  for (const [, group] of handleMap) {
+    if (group.length < 3) continue;
+    // Sort descending by total score, mark all beyond top 2 for removal
+    group.sort((a, b) => b.scoring.total - a.scoring.total);
+    for (let i = 2; i < group.length; i++) {
+      toRemove.add(group[i]);
+    }
+  }
+
+  return signals.filter(s => !toRemove.has(s));
+}
+
+// ============================================================================
+// Review-need detection — flag anomalies for secondary LLM analysis
+// ============================================================================
+// This does NOT call any LLM. It marks signals with needsReview: true
+// so downstream consumers (e.g. OpenClaw agent) can do targeted analysis.
+//
+// Triggers:
+//   HIGH_ENG_LOW_MATCH  — high engagement but keywords didn't match (could be great or garbage)
+//   HIGH_SOURCE_LOW_ENG  — authoritative source, low engagement (could be early alpha signal)
+//   SHORT_TEXT           — too short for keyword scoring to work (<15 words)
+//   SCORE_ENGAGEMENT_GAP — large gap between engagement rank and content score rank
+// ============================================================================
+
+function detectReviewNeed({ engagement, relevance, sourceWeight, wordCount, signalIntent, penalty }) {
+  const reasons = [];
+
+  // High engagement but low topic match — might be emotional/viral OR genuinely important
+  if (engagement >= 0.65 && relevance <= 0.45) {
+    reasons.push('HIGH_ENG_LOW_MATCH');
+  }
+
+  // Strong source but low engagement — could be early/alpha signal worth catching
+  if (sourceWeight >= 1.1 && engagement <= 0.35) {
+    reasons.push('HIGH_SOURCE_LOW_ENG');
+  }
+
+  // Very short text — keyword matching is unreliable
+  if (wordCount < 15) {
+    reasons.push('SHORT_TEXT');
+  }
+
+  // Already penalized but engagement is decent — might be a false negative
+  if (penalty < 0.8 && engagement >= 0.5) {
+    reasons.push('PENALIZED_BUT_ENGAGED');
+  }
+
+  return {
+    needed: reasons.length > 0,
+    reason: reasons.length > 0 ? reasons.join(',') : null
+  };
+}
+
 function buildScoredSignals(filtered, config) {
   const keywords = config.focusTopics || [];
   const weights = config.scoring || {};
@@ -364,6 +509,22 @@ function buildScoredSignals(filtered, config) {
       const weightedScore = applyOutputModeBoosts(baseScore * sourceWeight * penalty, config.outputMode, { type: 'x_tweet' });
       const signalIntent = classifySignalIntent(text, 'x_tweet');
 
+      const scoringObj = {
+        relevance,
+        writeability,
+        actionability,
+        novelty,
+        engagement,
+        recency,
+      };
+      const sectionScore = computeSectionScore(scoringObj, signalIntent) * sourceWeight * penalty;
+
+      // ── needsReview: flag anomalies for secondary analysis ──
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      const review = detectReviewNeed({
+        engagement, relevance, sourceWeight, wordCount, signalIntent, penalty
+      });
+
       signals.push({
         type: 'x_tweet',
         author: account.name,
@@ -383,6 +544,8 @@ function buildScoredSignals(filtered, config) {
           modeEffect: config.outputMode === 'x_draft' ? '当前模式偏向可写性更高的内容' : config.outputMode === 'signal_only' ? '当前模式偏向高信号判断' : '当前模式为平衡输出',
           lowSignalPenalty: penalty < 1 ? `低信号惩罚 ×${penalty}` : null
         },
+        needsReview: review.needed,
+        reviewReason: review.reason,
         scoring: {
           relevance,
           writeability,
@@ -393,7 +556,8 @@ function buildScoredSignals(filtered, config) {
           base: Number(baseScore.toFixed(3)),
           sourceWeight,
           penalty,
-          total: Number(weightedScore.toFixed(3))
+          total: Number(weightedScore.toFixed(3)),
+          sectionScore: Number(sectionScore.toFixed(3))
         }
       });
     }
@@ -418,6 +582,9 @@ function buildScoredSignals(filtered, config) {
     const sourceWeight = getSourceWeight({ type: 'blog_post' }, config);
     const weightedScore = applyOutputModeBoosts(baseScore * sourceWeight, config.outputMode, { type: 'blog_post' });
 
+    const blogScoringObj = { relevance, writeability, actionability, novelty, engagement, recency };
+    const blogSectionScore = computeSectionScore(blogScoringObj, 'product_signal') * sourceWeight;
+
     signals.push({
       type: 'blog_post',
       author: blog.name,
@@ -439,7 +606,8 @@ function buildScoredSignals(filtered, config) {
         recency,
         base: Number(baseScore.toFixed(3)),
         sourceWeight,
-        total: Number(weightedScore.toFixed(3))
+        total: Number(weightedScore.toFixed(3)),
+        sectionScore: Number(blogSectionScore.toFixed(3))
       }
     });
   }
@@ -463,6 +631,9 @@ function buildScoredSignals(filtered, config) {
     const sourceWeight = getSourceWeight({ type: 'podcast_episode' }, config);
     const weightedScore = applyOutputModeBoosts(baseScore * sourceWeight, config.outputMode, { type: 'podcast_episode' });
 
+    const podScoringObj = { relevance, writeability, actionability, novelty, engagement, recency };
+    const podSectionScore = computeSectionScore(podScoringObj, 'product_signal') * sourceWeight;
+
     signals.push({
       type: 'podcast_episode',
       author: podcast.name,
@@ -484,12 +655,16 @@ function buildScoredSignals(filtered, config) {
         recency,
         base: Number(baseScore.toFixed(3)),
         sourceWeight,
-        total: Number(weightedScore.toFixed(3))
+        total: Number(weightedScore.toFixed(3)),
+        sectionScore: Number(podSectionScore.toFixed(3))
       }
     });
   }
 
-  return signals.sort((a, b) => b.scoring.total - a.scoring.total);
+  // Per-handle dedup: if 3+ signals from same handle, keep only top 2
+  const deduped = deduplicateByHandle(signals);
+
+  return deduped.sort((a, b) => b.scoring.total - a.scoring.total);
 }
 
 function buildDraftCandidates(scoredSignals, config) {
@@ -538,33 +713,24 @@ function buildSourceWeightSummary(config) {
 }
 
 function renderMarkdown(output) {
-  const topSignals = output.scoredSignals.filter(s => s.scoring.total >= output.config.scoring.minimum);
-  const briefItems = topSignals.slice(0, output.config.limits.brief);
+  return renderRadar(output);
+}
 
-  // Separate pools for x_angles and product_signals to avoid overlap
-  const xAnglePool = topSignals.filter(s =>
-    s.signalIntent === 'x_angle' || s.signalIntent === 'both'
-  );
-  const productSignalPool = topSignals.filter(s =>
-    s.signalIntent === 'product_signal' || s.signalIntent === 'both' ||
-    s.type === 'blog_post' || s.type === 'podcast_episode'
-  );
+// ============================================================================
+// Radar Renderer v2 — editorial daily radar, not debug panel
+// ============================================================================
 
-  // If a pool is too small, fall back to top signals (but flag as fallback)
-  const xAngles = xAnglePool.length >= output.config.limits.x_angles
-    ? xAnglePool.slice(0, output.config.limits.x_angles)
-    : topSignals.slice(0, output.config.limits.x_angles);
-  const productSignals = productSignalPool.length >= output.config.limits.product_signals
-    ? productSignalPool.slice(0, output.config.limits.product_signals)
-    : topSignals.slice(0, output.config.limits.product_signals);
-
-  // Collect low-signal items (penalized but above a very low floor)
-  const lowSignalNotes = output.scoredSignals.filter(s =>
+function renderRadar(output) {
+  // ── Data ──
+  const allSignals = output.scoredSignals || [];
+  const topSignals = allSignals.filter(s => s.scoring.total >= output.config.scoring.minimum);
+  const totalTweets = output.stats?.totalTweets || 0;
+  const xDrafts = (output.draftCandidates || []).slice(0, output.config.limits.x_drafts);
+  const lowSignalCount = allSignals.filter(s =>
     s.scoring.penalty !== undefined && s.scoring.penalty < 1 && s.scoring.total < output.config.scoring.minimum
-  ).slice(0, 5);
-  const xDrafts = output.draftCandidates.slice(0, output.config.limits.x_drafts);
+  ).length;
 
-  // Signal topic extraction: returns a short topic label from text
+  // ── Topic helpers ──
   const extractTopic = (text = '') => {
     const t = text.toLowerCase();
     if (/supply.chain|npm|axios|malware|attack|security|vulnerab/.test(t)) return 'security';
@@ -582,58 +748,118 @@ function renderMarkdown(output) {
     return 'general';
   };
 
-  const makeWhyItMatters = (item) => {
-    const text = item.title || item.summary || '';
-    const topic = extractTopic(text);
-    const map = {
-      security: '供应链攻击的信号值得立刻检查自己的依赖;这类事件往往波及面比报道的更广。',
-      context: 'AI 时代的新瓶颈正在从模型能力转向上下文管理,这会直接影响产品和工作流的设计。',
-      agent: '这不是功能更新,而是 agent 的评价框架在变——从"能不能做"变成"能不能超出预期"。',
-      enterprise_workflow: 'AI 开始接管企业日常工具链,这个方向的产品机会比 to-C 更可预期。',
-      coding_agent: '编码 agent 覆盖范围每扩大一步,工程师的工作边界就在重新定义。',
-      creator: '个人创作者的竞争优势正在从内容量转向信号密度和观点深度。',
-      revenue: '从 0 到 MRR 的路径在变——分发和定价比功能复杂度更关键。',
-      indie: '独立开发者的最大优势是速度和决策链条短;这类信号能直接映射到自己项目。',
-      distribution: '触达本身正在成为稀缺资源;这条信号值得拆解背后的分发逻辑。',
-      model: '模型能力的跳跃窗口正在压缩,留给产品层差异化的时间也在变少。',
-      product: '这条内容暴露了一个产品判断的转折点,值得对照自己的项目想一遍。',
-      workflow: '工作流的自动化边界每扩张一轮,就会改变谁在做什么、谁的时间更值钱。',
-      general: '这条内容值得看,不是因为它新,而是因为它能帮你校准方向判断。'
-    };
-    if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      return `长内容往往比推文更能暴露底层逻辑。${map[topic] || map.general}`;
+  const topicLabel = {
+    security: '🔒 安全',
+    context: '🧠 上下文',
+    agent: '🤖 Agent',
+    enterprise_workflow: '🏢 企业工作流',
+    coding_agent: '💻 编码 Agent',
+    creator: '✍️ 创作者',
+    revenue: '💰 营收',
+    indie: '🧑‍💻 独立开发',
+    distribution: '📣 分发',
+    model: '🧬 模型',
+    product: '📦 产品',
+    workflow: '⚙️ 工作流',
+    general: '📌 综合',
+  };
+
+  // ── Unified signal list ──
+  // Merge all top signals into one list (brief + x_angles + product_signals are now one)
+  const signalItems = topSignals.slice(0, Math.max(output.config.limits.brief + 3, 8));
+
+  // ── buildLead(): dynamic editorial judgment ──
+  const buildLead = () => {
+    if (signalItems.length === 0) return '今天没有足够强的高信号内容，宁缺毋滥。';
+
+    // Count topic distribution
+    const topicCounts = {};
+    for (const item of signalItems) {
+      const topic = extractTopic((item.title || '') + ' ' + (item.summary || ''));
+      topicCounts[topic] = (topicCounts[topic] || 0) + 1;
     }
-    return map[topic] || map.general;
-  };
+    const sorted = Object.entries(topicCounts).sort((a, b) => b[1] - a[1]);
+    const dominant = sorted[0];
+    const secondary = sorted[1];
+    const topItem = signalItems[0];
+    const topAuthor = topItem.handle ? `@${topItem.handle}` : topItem.author || '头部信号源';
 
-  const makeWritableAngle = (item) => {
-    const text = item.title || item.summary || '';
-    const topic = extractTopic(text);
-    const map = {
-      security: `可以写成:下次你用 npm install 的时候,你信任的不是代码,是整条供应链。`,
-      context: `可以写成:模型够用了,但人的上下文管理能力成了新瓶颈。`,
-      agent: `可以写成:好 agent 不是功能更多,而是能持续给你惊喜——这个标准正在改变产品评价方式。`,
-      enterprise_workflow: `可以写成:AI 真正开始改变企业效率的标志,不是新工具上线,而是旧工具开始被替换。`,
-      coding_agent: `可以写成:当 agent 能写大部分代码,工程师真正在做的事情正在变成别的什么。`,
-      creator: `可以写成:发布量不再是护城河,能持续输出高密度观点才是。`,
-      revenue: `可以写成:独立产品的定价时刻比想象中来得早,也比想象中更容易搞错。`,
-      indie: `可以写成:小团队的最大优势是不需要开会就能改方向。`,
-      distribution: `可以写成:分发能力比产品能力更难复制,这才是真正的护城河。`,
-      model: `可以写成:模型能力快速拉平意味着产品差异化的窗口正在变窄。`,
-      product: `可以写成:产品的好坏越来越不取决于功能多少,而是判断正不正确。`,
-      workflow: `可以写成:workflow 自动化每推进一步,就意味着有一类人的工作方式要被重新定义。`,
-      general: `可以写成:把这条信号延伸一步——你的产品/内容里有没有同样的逻辑在悄悄生效？`
+    const leadTemplates = {
+      security: `今天的信号集中在**安全**方向——${topAuthor} 的内容引出了供应链信任这个绕不开的话题。${secondary ? `同时 ${topicLabel[secondary[0]] || secondary[0]} 方向也有 ${secondary[1]} 条值得留意。` : ''}安全信号的特点是：一旦出现，不是"可以关注"，是"必须检查"。`,
+      context: `上下文管理成了今天的主旋律。${topAuthor} 指出的问题本质上不是模型不够强，而是人和工具之间的信息带宽还没跟上。${secondary ? `另外 ${topicLabel[secondary[0]] || secondary[0]} 也冒出了 ${secondary[1]} 条信号。` : ''}`,
+      agent: `Agent 话题今天密度最高，${topAuthor} 的观点值得展开——评价 agent 的框架正在从"能做什么"转向"能不能持续超出预期"。${secondary ? `${topicLabel[secondary[0]] || secondary[0]} 方向也有 ${secondary[1]} 条相关信号。` : ''}这个方向还在加速，连续两天出现同类信号就值得写成帖子。`,
+      enterprise_workflow: `企业工作流方向今天有明确信号。${topAuthor} 的动态说明 AI 工具正在从"可选增强"变成"默认基础设施"。${secondary ? `同时 ${topicLabel[secondary[0]] || secondary[0]} 也值得留意。` : ''}这个市场慢但粘性高。`,
+      coding_agent: `编码 agent 今天是主角。${topAuthor} 的内容指向一个正在发生的事实：工程师的核心技能正在从"写代码"转向"审查和决策"。${secondary ? `此外 ${topicLabel[secondary[0]] || secondary[0]} 也有 ${secondary[1]} 条信号。` : ''}`,
+      creator: `创作者经济的信号今天最密。${topAuthor} 说的本质上是：发布频率不再是护城河，判断密度才是。${secondary ? `${topicLabel[secondary[0]] || secondary[0]} 同样有 ${secondary[1]} 条信号值得看。` : ''}`,
+      distribution: `分发逻辑的信号今天冒出来了。${topAuthor} 的内容暗示触达本身正在成为稀缺资源——比产品能力更难复制。${secondary ? `${topicLabel[secondary[0]] || secondary[0]} 也有 ${secondary[1]} 条。` : ''}`,
+      model: `模型层面今天有新动向。${topAuthor} 的信号指向能力拉平的窗口在压缩，留给产品差异化的时间正在变少。${secondary ? `另外 ${topicLabel[secondary[0]] || secondary[0]} 方向也有信号值得注意。` : ''}`,
     };
-    return map[topic] || map.general;
+
+    const dominantTopic = dominant[0];
+    if (leadTemplates[dominantTopic]) return leadTemplates[dominantTopic];
+
+    // Fallback: generic but still data-driven
+    const topTopics = sorted.slice(0, 3).map(([t, c]) => `${topicLabel[t] || t}(${c}条)`).join('、');
+    return `今天的信号分布在 ${topTopics}。${topAuthor} 贡献了最强的一条——不是新闻价值高，而是它暴露了判断框架的变化。${signalItems.length >= 5 ? '信号密度不错，值得花时间过一遍。' : '信号不多但质量可以。'}`;
   };
 
-  const makeNextStep = (item) => {
-    if (item.scoring.writeability >= 0.8) return '这条可写性高,优先拿来扩成 X 长帖。';
-    if (item.scoring.actionability >= 0.8) return '直接对照自己的项目检查一遍,别只是收藏。';
-    if (item.scoring.relevance >= 0.9) return '高相关性信号,加入持续观察列表。';
-    return '先放进观察名单;如果下周出现第二个同方向信号,升级成重点主题。';
+  // ── signalNote(item): 1-2 sentence editorial comment ──
+  const signalNote = (item) => {
+    const text = (item.title || '') + ' ' + (item.summary || '');
+    const topic = extractTopic(text);
+    const writeHigh = item.scoring.writeability >= 0.8;
+
+    const notes = {
+      security: '供应链信任比代码质量更脆弱——这类信号出现时，先查自己的依赖再说别的。',
+      context: '瓶颈正在从"模型能不能做"转向"人能不能给够上下文"，产品设计的重心在移动。',
+      agent: '不再是"能做什么"的问题，而是"能不能持续超出预期"——评价框架在变。',
+      enterprise_workflow: 'AI 工具从可选变成默认，企业采购逻辑正在翻转。',
+      coding_agent: '工程师的稀缺能力从写代码变成审查判断，边界已经在移动了。',
+      creator: '发布量不是护城河，信号密度和观点锐度才是——创作者竞争维度在变。',
+      revenue: '定价和分发比功能复杂度更关键，从 0 到 MRR 的路径正在重塑。',
+      indie: '独立开发者的核心优势是决策链条短，这类信号可以直接映射到自己的项目。',
+      distribution: '触达正在成为稀缺资源，比产品本身更难复制。',
+      model: '能力拉平的窗口在压缩，产品层差异化的时间窗口也跟着缩。',
+      product: '这条暴露了一个产品判断的转折点，值得对照自己的项目想一遍。',
+      workflow: '自动化边界每扩张一轮，就在重新定义谁的时间更值钱。',
+      general: '值得看——不因为新，而因为它能帮你校准方向判断。',
+    };
+
+    let note = notes[topic] || notes.general;
+    if (item.type === 'blog_post' || item.type === 'podcast_episode') {
+      note = '长内容比推文更容易暴露底层逻辑。' + note;
+    }
+    if (writeHigh) note += ' → 可写性高，优先扩成帖子';
+    return note;
   };
 
+  // ── engagementBadge(item) ──
+  const fmtK = (n) => {
+    if (!n || n <= 0) return '';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return String(n);
+  };
+  const engagementBadge = (item) => {
+    const m = item.metrics || {};
+    const parts = [];
+    if (m.likes > 0) parts.push(`♥ ${fmtK(m.likes)}`);
+    if (m.retweets > 0) parts.push(`🔁 ${fmtK(m.retweets)}`);
+    if (m.replies > 0) parts.push(`💬 ${fmtK(m.replies)}`);
+    return parts.length > 0 ? parts.join(' · ') : '';
+  };
+
+  // ── sourceTag(item) ──
+  const sourceTag = (item) => {
+    if (item.handle) {
+      const url = item.url || `https://x.com/${item.handle}`;
+      return `[@${item.handle}](${url})`;
+    }
+    if (item.author) return item.author;
+    const typeEmoji = { x_tweet: '🐦', blog_post: '📝', podcast_episode: '🎙️' };
+    return typeEmoji[item.type] || '📌';
+  };
+
+  // ── makeDraftText(draft): concise, varied templates ──
   const makeDraftText = (draft) => {
     const text = (draft.title || '') + ' ' + (draft.summary || '');
     const topic = extractTopic(text);
@@ -641,163 +867,174 @@ function renderMarkdown(output) {
     const author = draft.author ? `@${draft.author}` : '';
 
     const templates = {
-      security: [
-        `npm axios 供应链攻击——300M 周下载量，你的项目大概率受影响。`,
-        ``,
-        `这类攻击的逻辑很简单：不攻击你写的代码，攻击你信任的代码。`,
-        `你用 npm install 的那一刻，你信任的是整条依赖链，不只是你自己。`,
-        ``,
-        `现在建议做的事：`,
-        `1. 检查 package-lock.json 里的 axios 版本`,
-        `2. 扫描依赖有没有来路不明的 postinstall 脚本`,
-        `3. 对高频更新的依赖建立版本锁定习惯`,
-        ``,
-        `来源：${url}`
-      ].join('\n'),
+      security: `你用 npm install 那一刻，信任的不是自己的代码，是整条供应链。\n\n${author ? author + ' 暴露的问题' : '最近的案例'}说明：攻击者不需要攻破你，只需要攻破你信任的依赖。\n\n三件事现在就值得做：锁版本、审 postinstall、定期扫依赖来源。\n\n${url}`,
 
-      agent: [
-        `判断一个 agent 产品好不好，我现在用的标准变了。`,
-        ``,
-        `以前看功能列表：能不能做 A、B、C。`,
-        `现在看一件事：它有没有做过连我自己都没预料到的结果。`,
-        ``,
-        `这是 ${author || '有人'} 最近说的一句话，但我觉得它不只是观点——`,
-        `它在说 agent 产品的评价框架正在从"功能完整性"转向"意外惊喜密度"。`,
-        ``,
-        `对做内容的人来说也一样：读者会记住那些超出预期的判断，不是信息搬运。`,
-        ``,
-        `来源：${url}`
-      ].join('\n'),
+      agent: `评价 agent 产品的标准变了。\n\n不看功能清单了——看一件事：它有没有做出过你没预料到的结果。\n\n${author ? author + ' 的判断' : '这个观点'}指向一个更大的变化：产品评价从"完整性"转向"惊喜密度"。做内容也一样——读者记住的是超出预期的判断，不是信息搬运。\n\n${url}`,
 
-      enterprise_workflow: [
-        `Claude Code 支持了 GitHub Enterprise Server。`,
-        ``,
-        `这件事本身不大，但方向值得注意：`,
-        `AI 编码工具开始认真进企业了——不是 API 接入，是深入到内部代码仓库。`,
-        ``,
-        `下一步会发生什么大概是：`,
-        `企业 IT 采购的逻辑开始从"够不够安全"转向"能不能替换现有工具链"`,
-        ``,
-        `这个市场比 to-C 慢，但一旦打开，切换成本极高。`,
-        ``,
-        `来源：${url}`
-      ].join('\n'),
+      enterprise_workflow: `AI 工具进企业的信号越来越明确了。\n\n不是 API 层面的接入，是直接替换内部工具链。采购逻辑从"安不安全"转向"能不能替代现有方案"。\n\n这个市场比 to-C 慢，但一旦卡位，切换成本极高。${author ? ` ${author} 的动态值得持续追。` : ''}\n\n${url}`,
 
-      coding_agent: [
-        `Opus 4.5 之后，agent 做了我们大部分的编码工作。`,
-        ``,
-        `这句话不是在说 AI 有多强，是在说工程师的工作边界已经移动了。`,
-        ``,
-        `以前：写代码 → 测试 → 修 bug`,
-        `现在：定义问题 → 审查 agent 输出 → 决策要不要用`,
-        ``,
-        `工程师还在，但核心稀缺能力从"写"变成了"判断"。`,
-        `这个变化比大多数人意识到的来得要快。`,
-        ``,
-        `来源：${url}`
-      ].join('\n'),
+      coding_agent: `工程师的工作边界已经移动了。\n\n核心稀缺能力从"写"变成"判断"——定义问题、审查输出、决策采纳。${author ? ` ${author} 说得直接` : '信号很明确'}，这个变化比大多数人意识到的快。\n\n${url}`,
 
-      general: [
-        `${draft.suggestedOpening || '今天看到一条值得深想的信号。'}`,
-        ``,
-        `${draft.angle || '它不是新闻，而是在说底层的判断框架在移动。'}`,
-        ``,
-        `来源：${url}`
-      ].join('\n')
+      context: `模型够用了，瓶颈转到了上下文管理。\n\n不是 AI 能力不够，是人给的上下文质量跟不上。这会直接改变产品设计的优先级——谁能帮用户更好地组织输入，谁就有产品优势。\n\n${url}`,
+
+      creator: `创作者的护城河正在迁移。\n\n从发布频率到判断密度，从覆盖面到观点锐度。${author ? `${author} 的实践` : '这个方向'}值得深挖——内容竞争的维度在变。\n\n${url}`,
+
+      distribution: `分发能力比产品能力更难复制。\n\n${author ? `${author} 的观点` : '这条信号'}戳到了一个被低估的事实：触达本身正在成为最稀缺的资源。\n\n${url}`,
+
+      revenue: `定价比功能复杂度更关键——这是独立产品从 0 到 MRR 路上最容易搞错的环节。\n\n${author ? `${author} 的经验` : '这条信号'}值得对照自己的项目想一遍。\n\n${url}`,
+
+      indie: `小团队的最大优势：不需要开会就能改方向。\n\n${author ? `${author} 的做法` : '这条信号'}可以直接映射到自己的项目决策。\n\n${url}`,
+
+      model: `模型能力拉平的速度在加快，留给产品差异化的窗口正在变窄。\n\n这不是"关注一下"的事——是"现在就得想清楚自己的差异化到底靠什么"。\n\n${url}`,
+
+      product: `产品好坏越来越不取决于功能多少，而取决于判断对不对。\n\n${author ? `${author} 的信号` : '这条内容'}暴露了一个转折点——值得停下来想一遍。\n\n${url}`,
+
+      workflow: `Workflow 自动化每推进一步，就有一类人的工作方式要被重新定义。\n\n${author ? `${author} 的分享` : '这条信号'}指向一个正在发生的边界移动。\n\n${url}`,
     };
 
-    return templates[topic] || templates.general;
+    return templates[topic] || `${draft.suggestedOpening || '今天有一条值得深想的信号。'}\n\n${draft.angle || '它不是新闻，而是底层判断框架在移动。'}\n\n${url}`;
   };
 
+  // ── buildActions(): dynamic next steps ──
+  const buildActions = () => {
+    const actions = [];
+
+    // 1. Most writable signal → recommend writing a post
+    const mostWritable = signalItems.find(s => s.scoring.writeability >= 0.8);
+    if (mostWritable) {
+      const author = mostWritable.handle ? `@${mostWritable.handle}` : mostWritable.author || '';
+      actions.push(`**写帖优先**：${author ? author + ' 的' : ''}「${clip(mostWritable.title, 40)}」可写性最高，建议明早扩成 X 长帖`);
+    } else if (signalItems.length > 0) {
+      actions.push(`**写帖建议**：今天 top signal「${clip(signalItems[0].title, 40)}」虽然可写性一般，但话题热度够，可以试试短评式发布`);
+    }
+
+    // 2. Emerging topics: topics that appeared 2+ times
+    const topicCounts = {};
+    for (const item of signalItems) {
+      const topic = extractTopic((item.title || '') + ' ' + (item.summary || ''));
+      topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+    }
+    const emerging = Object.entries(topicCounts)
+      .filter(([t, c]) => c >= 2 && t !== 'general')
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2);
+    if (emerging.length > 0) {
+      const tags = emerging.map(([t, c]) => `${topicLabel[t] || t}(${c}条)`).join('、');
+      actions.push(`**追踪主题**：${tags} 今天重复出现，加入持续观察列表`);
+    }
+
+    // 3. Source coverage check
+    const sourceTypes = new Set(signalItems.map(s => s.type));
+    const missing = [];
+    if (!sourceTypes.has('blog_post')) missing.push('博客');
+    if (!sourceTypes.has('podcast_episode')) missing.push('播客');
+    if (!sourceTypes.has('x_tweet')) missing.push('推文');
+    if (missing.length > 0) {
+      actions.push(`**源覆盖**：今天缺少 ${missing.join('、')} 来源的高信号，考虑扩充对应信号源`);
+    }
+
+    // 4. Fallback if nothing specific
+    if (actions.length === 0) {
+      actions.push('今天信号较少，建议回顾本周积累的信号，看看有没有跨天重复出现的主题');
+    }
+
+    return actions;
+  };
+
+  // ════════════════════════════
+  //  Render
+  // ════════════════════════════
   const lines = [];
-  lines.push(`# ${output.config.name}`);
+
+  // Header
+  lines.push(`# 📡 ${output.config.name}`);
   lines.push('');
-  lines.push(`> ${new Date(output.generatedAt).toLocaleString('zh-CN', { timeZone: output.config.timezone, hour12: false })} · ${output.config.outputMode} mode`);
-  lines.push('');
-  lines.push('## 今日结论');
-  lines.push('');
-  if (topSignals.length > 0) {
-    lines.push(`今天最值得关注的,不是"又出了什么新东西",而是 **agent 产品的判断标准正在变化**。这轮信号里,最强的共识是:产品价值开始从功能清单,转向 surprise density(能不能做出超出预期的结果)。`);
-  } else {
-    lines.push('今天没有足够强的高信号内容,宁缺毋滥。');
-  }
+  const dateStr = new Date(output.generatedAt).toLocaleString('zh-CN', { timeZone: output.config.timezone, hour12: false });
+  const reviewCount = signalItems.filter(s => s.needsReview).length;
+  const reviewNote = reviewCount > 0 ? ` · ${reviewCount} 条待确认` : '';
+  lines.push(`> ${dateStr} · ${topSignals.length} 条高信号${reviewNote} · ${totalTweets} 条原始推文`);
   lines.push('');
 
-  if (output.config.outputSections.includes('brief')) {
-    lines.push('## 今日信号');
+  // 今日判断
+  lines.push('## 今日判断');
+  lines.push('');
+  lines.push(buildLead());
+  lines.push('');
+
+  // 信号（unified list）
+  lines.push('---');
+  lines.push('');
+  lines.push('## 信号');
+  lines.push('');
+  for (const [i, item] of signalItems.entries()) {
+    const text = (item.title || '') + ' ' + (item.summary || '');
+    const topic = extractTopic(text);
+    const badge = engagementBadge(item);
+    const source = sourceTag(item);
+    const label = topicLabel[topic] || '📌 综合';
+
+    const reviewTag = item.needsReview ? ' ⚠️' : '';
+    lines.push(`### ${i + 1}. ${item.title}${reviewTag}`);
+    lines.push(`${source} · \`${label}\`${badge ? ' · ' + badge : ''}`);
     lines.push('');
-    for (const [i, item] of briefItems.entries()) {
-      lines.push(`### ${i + 1}. ${item.title}`);
-      lines.push(`- 来源:${item.author || item.handle || item.type}`);
-      lines.push(`- 信号:${clip(item.summary || item.title || '', 140)}`);
-      lines.push(`- 为什么重要:${makeWhyItMatters(item)}`);
-      lines.push(`- 可写角度:${makeWritableAngle(item)}`);
-      lines.push(`- 下一步:${makeNextStep(item)}`);
-      lines.push(`- 链接:${item.url}`);
-      lines.push('');
+    if (item.needsReview) {
+      const reasonLabels = {
+        'HIGH_ENG_LOW_MATCH': '高互动但未命中关键词',
+        'HIGH_SOURCE_LOW_ENG': '高权重源低互动',
+        'SHORT_TEXT': '文本过短难以判断',
+        'PENALIZED_BUT_ENGAGED': '被过滤但互动不低',
+      };
+      const reviewHints = (item.reviewReason || '').split(',')
+        .map(r => reasonLabels[r] || r).filter(Boolean).join('；');
+      lines.push(`⚠️ 待确认 — ${reviewHints}。建议二次分析后再判断。`);
+    } else {
+      lines.push(signalNote(item));
     }
+    lines.push('');
+    if (item.url) lines.push(`[→ 原文](${item.url})`);
+    lines.push('');
   }
 
-  if (output.config.outputSections.includes('x_angles')) {
-    lines.push('## X 可写角度');
+  // X 草稿
+  if (xDrafts.length > 0) {
+    lines.push('---');
     lines.push('');
-    for (const [i, item] of xAngles.entries()) {
-      lines.push(`### 角度 ${i + 1}`);
-      lines.push(`- 主题:${clip(item.title, 80)}`);
-      lines.push(`- 观点句:${makeWritableAngle(item)}`);
-      lines.push(`- 为什么现在能写:这类内容既带判断,又能顺手映射到你的产品/内容系统。`);
-      lines.push(`- 链接:${item.url}`);
+    lines.push('## ✏️ X 草稿');
+    lines.push('');
+    for (const [i, draft] of xDrafts.entries()) {
+      lines.push(`### 草稿 ${i + 1}`);
       lines.push('');
-    }
-  }
-
-  if (output.config.outputSections.includes('product_signals')) {
-    lines.push('## 产品 / 项目判断');
-    lines.push('');
-    for (const [i, item] of productSignals.entries()) {
-      lines.push(`### 判断 ${i + 1}`);
-      lines.push(`- 观察:${item.title}`);
-      lines.push(`- 结论:这更像范式变化,而不只是功能更新。`);
-      lines.push(`- 启发:如果类似信号连续出现,说明你该把它升级成持续追踪主题。`);
-      lines.push(`- 链接:${item.url}`);
-      lines.push('');
-    }
-  }
-
-  if (output.config.outputSections.includes('x_drafts')) {
-    lines.push('## X 草稿');
-    lines.push('');
-    for (const draft of xDrafts) {
-      lines.push(`### 草稿 ${draft.rank}`);
       lines.push(makeDraftText(draft));
       lines.push('');
     }
   }
 
-  if (output.config.outputSections.includes('action_items')) {
-    lines.push('## 下一步动作');
-    lines.push('');
-    lines.push('- 从今天 top 2 signal 里选 1 条，明早直接发成 X 长帖');
-    lines.push('- 把"context window / agent surprise density"加入持续观察主题');
-    lines.push('- 下一版接中文 source，不然内容视角还是偏英文 AI builder 圈');
-    lines.push('');
+  // 下一步
+  lines.push('---');
+  lines.push('');
+  lines.push('## 下一步');
+  lines.push('');
+  for (const action of buildActions()) {
+    lines.push(`- ${action}`);
   }
+  lines.push('');
 
-  // Low-signal debug section (always appended when there are penalized items)
-  if (lowSignalNotes.length > 0) {
-    lines.push('---');
-    lines.push('');
-    lines.push('## 低信号记录（debug）');
-    lines.push('');
-    lines.push('这些内容被过滤或降权，不进入主要输出：');
-    lines.push('');
-    for (const item of lowSignalNotes) {
-      lines.push(`- **${item.author || item.handle}**: ${clip(item.title || item.summary || '', 80)}`);
-      lines.push(`  - 惩罚倍率：×${item.scoring.penalty} · 最终分：${item.scoring.total}`);
-      lines.push(`  - 原因：${item.explainability?.lowSignalPenalty || '低信号模式匹配'}`);
-    }
-    lines.push('');
-  }
+  // Stats footer
+  lines.push('---');
+  lines.push('');
+  const stats = output.stats || {};
+  const totalReviewCount = allSignals.filter(s => s.needsReview).length;
+  const footerParts = [
+    `${stats.xBuilders || 0} builders`,
+    `${totalTweets} tweets`,
+    `${stats.blogPosts || 0} blogs`,
+    `${stats.podcastEpisodes || 0} podcasts`,
+    `${topSignals.length} high-signal`,
+    totalReviewCount > 0 ? `${totalReviewCount} needs-review` : null,
+    lowSignalCount > 0 ? `${lowSignalCount} filtered` : null,
+  ].filter(Boolean).join(' · ');
+  lines.push(`<sub>${footerParts} · ${output.config.outputMode} mode</sub>`);
+  lines.push('');
 
   return lines.join('\n');
 }
@@ -878,6 +1115,7 @@ async function main() {
       totalTweets: (filtered.x || []).reduce((sum, a) => sum + (a.tweets?.length || 0), 0),
       blogPosts: filtered.blogs.length || 0,
       highSignalCount: scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum).length,
+      needsReviewCount: scoredSignals.filter(s => s.needsReview).length,
       feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || null
     },
     prompts,
