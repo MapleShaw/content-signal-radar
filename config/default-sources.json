@@ -96,10 +96,55 @@
         { "name": "Lee Robinson", "handle": "leeerob" },
         { "name": "Peter Steinberger", "handle": "steipete" },
         { "name": "Naval", "handle": "naval" },
-        { "name": "Greg Isenberg", "handle": "gregisenberg" }
+        { "name": "Greg Isenberg", "handle": "gregisenberg" },
+        { "name": "xiaohu", "handle": "xiaohu" },
+        { "name": "ZHO_ZHO_ZHO", "handle": "ZHO_ZHO_ZHO" },
+        { "name": "yihui indie", "handle": "yihui_indie" },
+        { "name": "aiwarts", "handle": "aiwarts" },
+        { "name": "XianyuLi", "handle": "XianyuLi" },
+        { "name": "CuiMao", "handle": "CuiMao" },
+        { "name": "indiehackercase", "handle": "indiehackercase" },
+        { "name": "Khazix0918", "handle": "Khazix0918" },
+        { "name": "Jackywine", "handle": "Jackywine" },
+        { "name": "cellinlab", "handle": "cellinlab" },
+        { "name": "idoubicc", "handle": "idoubicc" },
+        { "name": "PandaTalk8", "handle": "PandaTalk8" },
+        { "name": "AI Jasonyu", "handle": "AI_Jasonyu" },
+        { "name": "app_sail", "handle": "app_sail" },
+        { "name": "yangyi", "handle": "yangyi" },
+        { "name": "op7418", "handle": "op7418" },
+        { "name": "lxfater", "handle": "lxfater" },
+        { "name": "bearliu", "handle": "bearliu" },
+        { "name": "geekbb", "handle": "geekbb" },
+        { "name": "hzlzh", "handle": "hzlzh" },
+        { "name": "foxshuo", "handle": "foxshuo" },
+        { "name": "luoleiorg", "handle": "luoleiorg" },
+        { "name": "turingou", "handle": "turingou" },
+        { "name": "waylybaye", "handle": "waylybaye" },
+        { "name": "lifesinger", "handle": "lifesinger" },
+        { "name": "sagacity", "handle": "sagacity" },
+        { "name": "interjc", "handle": "interjc" },
+        { "name": "oran_ge", "handle": "oran_ge" },
+        { "name": "vista8", "handle": "vista8" },
+        { "name": "dotey", "handle": "dotey" },
+        { "name": "ruanyf", "handle": "ruanyf" }
       ],
-      "blogs": [],
-      "podcasts": []
+      "blogs": [
+        {
+          "name": "产品沉思录",
+          "type": "rss",
+          "indexUrl": "https://pmthinking.substack.com/feed",
+          "fetchMethod": "http"
+        }
+      ],
+      "podcasts": [],
+      "jike_accounts": [
+        { "name": "歸藏", "uuid": "0ae2afa7-9b10-4b3a-ab7e-15fbf847038d", "rsshub": "https://rsshub.ktachibana.party/jike/user/0ae2afa7-9b10-4b3a-ab7e-15fbf847038d" },
+        { "name": "孟岩", "uuid": "c28c4303-ea82-4043-9938-cc6ed14f83d0", "rsshub": "https://rsshub.ktachibana.party/jike/user/c28c4303-ea82-4043-9938-cc6ed14f83d0" },
+        { "name": "李继刚", "uuid": "752D3103-1107-43A0-BA49-20EC29D09E36", "rsshub": "https://rsshub.ktachibana.party/jike/user/752D3103-1107-43A0-BA49-20EC29D09E36" },
+        { "name": "阑夕", "uuid": "FBAA4408-2343-45AD-9B4F-4ABD52FB84CA", "rsshub": "https://rsshub.ktachibana.party/jike/user/FBAA4408-2343-45AD-9B4F-4ABD52FB84CA" },
+        { "name": "汗青HQ", "uuid": "E76DDB17-C788-4A7B-A4F7-4206F60F2B4A", "rsshub": "https://rsshub.ktachibana.party/jike/user/E76DDB17-C788-4A7B-A4F7-4206F60F2B4A" }
+      ]
     }
   }
 }

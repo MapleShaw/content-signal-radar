@@ -138,6 +138,43 @@ async function fetchJSON(url) {
   return res.json();
 }
 
+async function fetchRSSFeed(url) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) {
+      console.error(`[fetchRSSFeed] HTTP ${res.status} for ${url}`);
+      return [];
+    }
+    const text = await res.text();
+    const items = [];
+    const itemPattern = /<(?:item|entry)[\s>]([\s\S]*?)<\/(?:item|entry)>/gi;
+    let match;
+    while ((match = itemPattern.exec(text)) !== null) {
+      const block = match[1];
+      const getTag = (tag) => {
+        const m = block.match(new RegExp(`<${tag}(?:[^>]*)><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`, 'i'))
+                || block.match(new RegExp(`<${tag}(?:[^>]*)>([^<]*)<\\/${tag}>`, 'i'));
+        return m ? m[1].trim() : '';
+      };
+      const getLinkAttr = () => {
+        const m = block.match(/<link[^>]+href=["']([^"']+)["']/i);
+        return m ? m[1] : getTag('link');
+      };
+      const title = getTag('title');
+      const link = getLinkAttr() || getTag('link');
+      const summary = getTag('summary') || getTag('description') || getTag('content');
+      const pubDate = getTag('published') || getTag('updated') || getTag('pubDate');
+      if (title || summary) {
+        items.push({ title, link, summary, pubDate });
+      }
+    }
+    return items;
+  } catch (err) {
+    console.error(`[fetchRSSFeed] Error fetching ${url}: ${err.message}`);
+    return [];
+  }
+}
+
 async function loadTextPrompt(filename, localPromptsDir, userPromptsDir) {
   const userPath = join(userPromptsDir, filename);
   const localPath = join(localPromptsDir, filename);
@@ -155,7 +192,7 @@ async function loadLocalSourceProfiles(configDir) {
 
 async function loadCustomSources() {
   if (!existsSync(CUSTOM_SOURCES_PATH)) {
-    return { x_accounts: [], blogs: [], podcasts: [], zh_creators: { enabled: false, sources: [] } };
+    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], zh_creators: { enabled: false, sources: [] } };
   }
   try {
     const parsed = JSON.parse(await readFile(CUSTOM_SOURCES_PATH, 'utf-8'));
@@ -163,30 +200,34 @@ async function loadCustomSources() {
       x_accounts: parsed.x_accounts || [],
       blogs: parsed.blogs || [],
       podcasts: parsed.podcasts || [],
+      jike_accounts: parsed.jike_accounts || [],
       zh_creators: parsed.zh_creators || { enabled: false, sources: [] }
     };
   } catch {
-    return { x_accounts: [], blogs: [], podcasts: [], zh_creators: { enabled: false, sources: [] } };
+    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], zh_creators: { enabled: false, sources: [] } };
   }
 }
 
 function mergeSources(profiles, enabledProfiles, customSources) {
-  const merged = { x_accounts: [], blogs: [], podcasts: [] };
+  const merged = { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [] };
   for (const profileName of enabledProfiles) {
     const profile = profiles[profileName];
     if (!profile) continue;
     merged.x_accounts.push(...(profile.x_accounts || []));
     merged.blogs.push(...(profile.blogs || []));
     merged.podcasts.push(...(profile.podcasts || []));
+    merged.jike_accounts.push(...(profile.jike_accounts || []));
   }
   merged.x_accounts.push(...(customSources.x_accounts || []));
   merged.blogs.push(...(customSources.blogs || []));
   merged.podcasts.push(...(customSources.podcasts || []));
+  merged.jike_accounts.push(...(customSources.jike_accounts || []));
 
   return {
     x_accounts: uniqBy(merged.x_accounts, item => (item.handle || '').toLowerCase()),
     blogs: uniqBy(merged.blogs, item => item.indexUrl || item.name),
-    podcasts: uniqBy(merged.podcasts, item => item.playlistId || item.channelHandle || item.url || item.name)
+    podcasts: uniqBy(merged.podcasts, item => item.playlistId || item.channelHandle || item.url || item.name),
+    jike_accounts: uniqBy(merged.jike_accounts, item => item.uuid || item.rsshub)
   };
 }
 
@@ -200,6 +241,60 @@ function filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources) {
     podcasts: (feedPodcasts?.podcasts || []).filter(item => allowedPodcastKeys.has(item.name)),
     blogs: (feedBlogs?.blogs || []).filter(item => allowedBlogKeys.has(item.name))
   };
+}
+
+async function fetchDirectRSSSources(mergedSources) {
+  const results = { jike: [], rss_blogs: [] };
+
+  // 抓即刻账号
+  const jikeAccounts = mergedSources.jike_accounts || [];
+  if (jikeAccounts.length > 0) {
+    console.error(`[fetchDirectRSS] Fetching ${jikeAccounts.length} jike accounts...`);
+  }
+  const jikeResults = await Promise.all(
+    jikeAccounts.map(async (account) => {
+      if (!account.rsshub) return [];
+      const items = await fetchRSSFeed(account.rsshub);
+      console.error(`[fetchDirectRSS] jike ${account.name}: ${items.length} items`);
+      return items.slice(0, 5).map(item => ({
+        type: 'jike_post',
+        handle: account.uuid,
+        name: account.name,
+        title: item.title || clip(item.summary, 60),
+        summary: clip(item.summary, 280),
+        url: item.link || '',
+        publishedAt: item.pubDate || null,
+        metrics: { likes: 0, retweets: 0, replies: 0 },
+        source: 'jike'
+      }));
+    })
+  );
+  results.jike = jikeResults.flat();
+
+  // 抓 type: 'rss' 的 blogs
+  const rssBlogs = (mergedSources.blogs || []).filter(b => b.type === 'rss' && b.indexUrl);
+  if (rssBlogs.length > 0) {
+    console.error(`[fetchDirectRSS] Fetching ${rssBlogs.length} RSS blogs...`);
+  }
+  const rssResults = await Promise.all(
+    rssBlogs.map(async (blog) => {
+      const items = await fetchRSSFeed(blog.indexUrl);
+      console.error(`[fetchDirectRSS] rss blog ${blog.name}: ${items.length} items`);
+      return items.slice(0, 3).map(item => ({
+        type: 'blog_post',
+        name: blog.name,
+        title: item.title || '',
+        summary: clip(item.summary, 280),
+        url: item.link || '',
+        publishedAt: item.pubDate || null,
+        metrics: { likes: 0, retweets: 0, replies: 0 },
+        source: 'rss_blog'
+      }));
+    })
+  );
+  results.rss_blogs = rssResults.flat();
+
+  return results;
 }
 
 function getSourceWeight(signal, config) {
@@ -563,6 +658,70 @@ function buildScoredSignals(filtered, config) {
     }
   }
 
+  // 即刻动态
+  for (const signal of filtered.x || []) {
+    if (signal.type !== 'jike_post') continue;
+    const text = `${signal.title} ${signal.summary}`;
+    const relevance = includesAny(text, keywords) ? 1 : 0.45;
+    const writeability = includesAny(text.toLowerCase(), ['why', 'how', 'learn', 'mistake', 'distribution', 'brand', 'agent', 'product']) ? 0.8 : 0.55;
+    const actionability = includesAny(text.toLowerCase(), ['launch', 'ship', 'workflow', 'process', 'experiment', 'agent', 'automation']) ? 0.85 : 0.5;
+    const novelty = 0.7;
+    const engagement = 0.3;
+    const recency = normalizeRecency(hoursAgo(signal.publishedAt));
+    const penalty = lowSignalPenalty(text);
+    const baseScore = (
+      relevance * weights.relevance +
+      writeability * weights.writeability +
+      actionability * weights.actionability +
+      novelty * weights.novelty +
+      engagement * weights.engagement +
+      recency * weights.recency
+    );
+    const sourceWeight = 1.05;
+    const weightedScore = applyOutputModeBoosts(baseScore * sourceWeight * penalty, config.outputMode, { type: 'jike_post' });
+    const signalIntent = classifySignalIntent(text, 'jike_post');
+
+    const scoringObj = { relevance, writeability, actionability, novelty, engagement, recency };
+    const sectionScore = computeSectionScore(scoringObj, signalIntent) * sourceWeight * penalty;
+
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const review = detectReviewNeed({
+      engagement, relevance, sourceWeight, wordCount, signalIntent, penalty
+    });
+
+    signals.push({
+      type: 'jike_post',
+      author: signal.name,
+      handle: signal.handle,
+      title: signal.title,
+      summary: signal.summary,
+      url: signal.url,
+      publishedAt: signal.publishedAt,
+      signalIntent,
+      metrics: signal.metrics || { likes: 0, retweets: 0, replies: 0 },
+      explainability: {
+        sourceReason: `即刻账号 ${signal.name}`,
+        modeEffect: config.outputMode === 'x_draft' ? '当前模式偏向可写性更高的内容' : '按默认模式处理',
+        lowSignalPenalty: penalty < 1 ? `低信号惩罚 ×${penalty}` : null
+      },
+      needsReview: review.needed,
+      reviewReason: review.reason,
+      scoring: {
+        relevance,
+        writeability,
+        actionability,
+        novelty,
+        engagement,
+        recency,
+        base: Number(baseScore.toFixed(3)),
+        sourceWeight,
+        penalty,
+        total: Number(weightedScore.toFixed(3)),
+        sectionScore: Number(sectionScore.toFixed(3))
+      }
+    });
+  }
+
   for (const blog of filtered.blogs || []) {
     const text = `${blog.title || ''} ${blog.description || ''} ${clip(blog.content || '', 500)}`;
     const relevance = includesAny(text, keywords) ? 1 : 0.55;
@@ -855,7 +1014,7 @@ function renderRadar(output) {
       return `[@${item.handle}](${url})`;
     }
     if (item.author) return item.author;
-    const typeEmoji = { x_tweet: '🐦', blog_post: '📝', podcast_episode: '🎙️' };
+    const typeEmoji = { x_tweet: '🐦', blog_post: '📝', podcast_episode: '🎙️', jike_post: '🟡' };
     return typeEmoji[item.type] || '📌';
   };
 
@@ -950,9 +1109,7 @@ function renderRadar(output) {
   lines.push(`# 📡 ${output.config.name}`);
   lines.push('');
   const dateStr = new Date(output.generatedAt).toLocaleString('zh-CN', { timeZone: output.config.timezone, hour12: false });
-  const reviewCount = signalItems.filter(s => s.needsReview).length;
-  const reviewNote = reviewCount > 0 ? ` · ${reviewCount} 条待确认` : '';
-  lines.push(`> ${dateStr} · ${topSignals.length} 条高信号${reviewNote} · ${totalTweets} 条原始推文`);
+  lines.push(`> ${dateStr} · ${topSignals.length} 条高信号 · ${totalTweets} 条原始推文`);
   lines.push('');
 
   // 今日判断
@@ -973,23 +1130,10 @@ function renderRadar(output) {
     const source = sourceTag(item);
     const label = topicLabel[topic] || '📌 综合';
 
-    const reviewTag = item.needsReview ? ' ⚠️' : '';
-    lines.push(`### ${i + 1}. ${item.title}${reviewTag}`);
+    lines.push(`### ${i + 1}. ${item.title}`);
     lines.push(`${source} · \`${label}\`${badge ? ' · ' + badge : ''}`);
     lines.push('');
-    if (item.needsReview) {
-      const reasonLabels = {
-        'HIGH_ENG_LOW_MATCH': '高互动但未命中关键词',
-        'HIGH_SOURCE_LOW_ENG': '高权重源低互动',
-        'SHORT_TEXT': '文本过短难以判断',
-        'PENALIZED_BUT_ENGAGED': '被过滤但互动不低',
-      };
-      const reviewHints = (item.reviewReason || '').split(',')
-        .map(r => reasonLabels[r] || r).filter(Boolean).join('；');
-      lines.push(`⚠️ 待确认 — ${reviewHints}。建议二次分析后再判断。`);
-    } else {
-      lines.push(signalNote(item));
-    }
+    lines.push(signalNote(item));
     lines.push('');
     if (item.url) lines.push(`[→ 原文](${item.url})`);
     lines.push('');
@@ -1023,14 +1167,12 @@ function renderRadar(output) {
   lines.push('---');
   lines.push('');
   const stats = output.stats || {};
-  const totalReviewCount = allSignals.filter(s => s.needsReview).length;
   const footerParts = [
     `${stats.xBuilders || 0} builders`,
     `${totalTweets} tweets`,
     `${stats.blogPosts || 0} blogs`,
     `${stats.podcastEpisodes || 0} podcasts`,
     `${topSignals.length} high-signal`,
-    totalReviewCount > 0 ? `${totalReviewCount} needs-review` : null,
     lowSignalCount > 0 ? `${lowSignalCount} filtered` : null,
   ].filter(Boolean).join(' · ');
   lines.push(`<sub>${footerParts} · ${output.config.outputMode} mode</sub>`);
@@ -1079,6 +1221,12 @@ async function main() {
 
   const mergedSources = mergeSources(profiles, config.sourceProfiles, customSources);
   const filtered = filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources);
+
+  // 抓取即刻 RSS 和自定义 RSS 博客
+  const directRSS = await fetchDirectRSSSources(mergedSources);
+  filtered.x.push(...directRSS.jike);
+  filtered.blogs.push(...directRSS.rss_blogs);
+
   const scoredSignals = buildScoredSignals(filtered, config);
   const draftCandidates = buildDraftCandidates(scoredSignals, config);
   const modeViews = buildModeViews(scoredSignals, config);
@@ -1096,6 +1244,7 @@ async function main() {
         x_accounts: mergedSources.x_accounts.length,
         blogs: mergedSources.blogs.length,
         podcasts: mergedSources.podcasts.length,
+        jike_accounts: mergedSources.jike_accounts?.length || 0,
         zh_creators: customSources.zh_creators?.sources?.length || 0
       },
       custom: {
