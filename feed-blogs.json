@@ -1,8 +1,11 @@
 {
-  "generatedAt": "2026-04-04T06:59:22.191Z",
+  "generatedAt": "2026-04-05T07:04:36.114Z",
   "lookbackHours": 72,
   "blogs": [],
   "stats": {
     "blogPosts": 0
-  }
+  },
+  "errors": [
+    "Blog: Failed to fetch index for 产品沉思录: HTTP 403"
+  ]
 }
