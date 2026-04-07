@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -8,6 +8,8 @@ import { homedir } from 'os';
 const USER_DIR = join(homedir(), '.content-signal-radar');
 const CONFIG_PATH = join(USER_DIR, 'config.json');
 const CUSTOM_SOURCES_PATH = join(USER_DIR, 'custom-sources.json');
+const SEEN_SIGNALS_PATH = join(USER_DIR, 'seen-signals.json');
+const SEEN_SIGNALS_TTL_DAYS = 7;
 
 const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
@@ -826,6 +828,40 @@ function buildScoredSignals(filtered, config) {
   return deduped.sort((a, b) => b.scoring.total - a.scoring.total);
 }
 
+// -- Seen-signals deduplication (cross-day) ----------------------------------
+async function loadSeenSignals() {
+  if (!existsSync(SEEN_SIGNALS_PATH)) return {};
+  try {
+    const raw = await readFile(SEEN_SIGNALS_PATH, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+async function saveSeenSignals(seenMap, newUrls) {
+  const cutoff = Date.now() - SEEN_SIGNALS_TTL_DAYS * 24 * 3600 * 1000;
+  // Prune old entries
+  const pruned = Object.fromEntries(
+    Object.entries(seenMap).filter(([, ts]) => ts > cutoff)
+  );
+  // Add new
+  const now = Date.now();
+  for (const url of newUrls) {
+    if (url) pruned[url] = now;
+  }
+  await writeFile(SEEN_SIGNALS_PATH, JSON.stringify(pruned, null, 2), 'utf8');
+}
+
+function filterSeenSignals(scoredSignals, seenMap) {
+  const unseen = scoredSignals.filter(s => !s.url || !seenMap[s.url]);
+  const skipped = scoredSignals.length - unseen.length;
+  if (skipped > 0) {
+    process.stderr.write(`[seen-signals] Filtered ${skipped} already-seen signal(s)\n`);
+  }
+  return unseen;
+}
+
 function buildDraftCandidates(scoredSignals, config) {
   return scoredSignals
     .filter(signal => signal.scoring.total >= config.scoring.minimum)
@@ -1109,7 +1145,9 @@ function renderRadar(output) {
   lines.push(`# 📡 ${output.config.name}`);
   lines.push('');
   const dateStr = new Date(output.generatedAt).toLocaleString('zh-CN', { timeZone: output.config.timezone, hour12: false });
-  lines.push(`> ${dateStr} · ${topSignals.length} 条高信号 · ${totalTweets} 条原始推文`);
+  const reviewCount = signalItems.filter(s => s.needsReview === true).length;
+  const reviewSuffix = reviewCount > 0 ? ` · ${reviewCount} 条待二次确认` : '';
+  lines.push(`> ${dateStr} · ${topSignals.length} 条高信号 · ${totalTweets} 条原始推文${reviewSuffix}`);
   lines.push('');
 
   // 今日判断
@@ -1133,7 +1171,11 @@ function renderRadar(output) {
     lines.push(`### ${i + 1}. ${item.title}`);
     lines.push(`${source} · \`${label}\`${badge ? ' · ' + badge : ''}`);
     lines.push('');
-    lines.push(signalNote(item));
+    if (item.needsReview === true) {
+      lines.push(`⚠️ REVIEW_PLACEHOLDER_${i}: ${item.reviewReason}`);
+    } else {
+      lines.push(signalNote(item));
+    }
     lines.push('');
     if (item.url) lines.push(`[→ 原文](${item.url})`);
     lines.push('');
@@ -1227,7 +1269,9 @@ async function main() {
   filtered.x.push(...directRSS.jike);
   filtered.blogs.push(...directRSS.rss_blogs);
 
-  const scoredSignals = buildScoredSignals(filtered, config);
+  const rawScoredSignals = buildScoredSignals(filtered, config);
+  const seenMap = await loadSeenSignals();
+  const scoredSignals = filterSeenSignals(rawScoredSignals, seenMap);
   const draftCandidates = buildDraftCandidates(scoredSignals, config);
   const modeViews = buildModeViews(scoredSignals, config);
 
@@ -1268,10 +1312,30 @@ async function main() {
       feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || null
     },
     prompts,
+    needsReviewItems: scoredSignals
+      .filter(s => s.needsReview)
+      .map(s => ({
+        title: s.title,
+        summary: s.summary,
+        handle: s.handle,
+        url: s.url,
+        type: s.type,
+        reviewReason: s.reviewReason,
+        scoring: { total: s.scoring.total, engagement: s.scoring.engagement, relevance: s.scoring.relevance, penalty: s.scoring.penalty },
+        metrics: s.metrics
+      })),
     errors: errors.length > 0 ? errors : undefined
   };
 
   output.renderedMarkdown = renderMarkdown(output);
+
+  // Persist seen signals (only high-signal ones that were actually surfaced)
+  const surfacedUrls = scoredSignals
+    .filter(s => s.scoring.total >= config.scoring.minimum)
+    .map(s => s.url)
+    .filter(Boolean);
+  await saveSeenSignals(seenMap, surfacedUrls);
+
   console.log(JSON.stringify(output, null, 2));
 }
 
