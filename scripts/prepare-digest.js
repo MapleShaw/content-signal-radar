@@ -537,16 +537,11 @@ function deduplicateByHandle(signals) {
 }
 
 // ============================================================================
-// Review-need detection — flag anomalies for secondary LLM analysis
+// Review-need detection — flag anomalies, then auto-resolve
 // ============================================================================
-// This does NOT call any LLM. It marks signals with needsReview: true
-// so downstream consumers (e.g. OpenClaw agent) can do targeted analysis.
-//
-// Triggers:
-//   HIGH_ENG_LOW_MATCH  — high engagement but keywords didn't match (could be great or garbage)
-//   HIGH_SOURCE_LOW_ENG  — authoritative source, low engagement (could be early alpha signal)
-//   SHORT_TEXT           — too short for keyword scoring to work (<15 words)
-//   SCORE_ENGAGEMENT_GAP — large gap between engagement rank and content score rank
+// detectReviewNeed(): marks which signals have anomalies worth checking
+// autoResolveReview(): deterministically decides keep/demote for each anomaly
+//   — NO LLM involved, fully deterministic rules
 // ============================================================================
 
 function detectReviewNeed({ engagement, relevance, sourceWeight, wordCount, signalIntent, penalty }) {
@@ -576,6 +571,73 @@ function detectReviewNeed({ engagement, relevance, sourceWeight, wordCount, sign
     needed: reasons.length > 0,
     reason: reasons.length > 0 ? reasons.join(',') : null
   };
+}
+
+// Auto-resolve needsReview signals without LLM.
+// Returns: { keep: Signal[], demote: Signal[] }
+// Signals in `keep` get a standardized reviewNote replacing the REVIEW_PLACEHOLDER.
+// Signals in `demote` are excluded from the final report entirely.
+function autoResolveReview(scoredSignals) {
+  const keep = [];
+  const demote = [];
+
+  for (const signal of scoredSignals) {
+    if (!signal.needsReview) {
+      keep.push(signal);
+      continue;
+    }
+
+    const reasons = (signal.reviewReason || '').split(',');
+    const { engagement, penalty, relevance } = signal.scoring;
+
+    // Rule 1: SHORT_TEXT only, AND low engagement → not worth keeping
+    if (reasons.length === 1 && reasons[0] === 'SHORT_TEXT' && engagement < 0.35) {
+      demote.push(signal);
+      continue;
+    }
+
+    // Rule 2: SHORT_TEXT only, AND hard-penalized (penalty <= 0.25) → demote
+    if (reasons.every(r => r === 'SHORT_TEXT' || r === 'PENALIZED_BUT_ENGAGED')
+        && penalty <= 0.25) {
+      demote.push(signal);
+      continue;
+    }
+
+    // Rule 3: HIGH_ENG_LOW_MATCH — high engagement overrides low keyword match → keep
+    if (reasons.includes('HIGH_ENG_LOW_MATCH')) {
+      signal.reviewNote = '高互动信号，关键词未命中但互动强 — 按互动判断保留';
+      signal.needsReview = false;
+      keep.push(signal);
+      continue;
+    }
+
+    // Rule 4: HIGH_SOURCE_LOW_ENG — authoritative source, keep as potential early signal
+    if (reasons.includes('HIGH_SOURCE_LOW_ENG')) {
+      signal.reviewNote = '权重源新帖，互动偏低但值得关注';
+      signal.needsReview = false;
+      keep.push(signal);
+      continue;
+    }
+
+    // Rule 5: PENALIZED_BUT_ENGAGED — engagement redeems it
+    if (reasons.includes('PENALIZED_BUT_ENGAGED') && engagement >= 0.5) {
+      signal.reviewNote = '内容形式偏低信号，但互动可以 — 保留';
+      signal.needsReview = false;
+      keep.push(signal);
+      continue;
+    }
+
+    // Default: keep if total score is above a relaxed threshold (0.52)
+    if (signal.scoring.total >= 0.52) {
+      signal.reviewNote = '边界信号，分数尚可 — 保留';
+      signal.needsReview = false;
+      keep.push(signal);
+    } else {
+      demote.push(signal);
+    }
+  }
+
+  return { keep, demote };
 }
 
 function buildScoredSignals(filtered, config) {
@@ -1171,11 +1233,7 @@ function renderRadar(output) {
     lines.push(`### ${i + 1}. ${item.title}`);
     lines.push(`${source} · \`${label}\`${badge ? ' · ' + badge : ''}`);
     lines.push('');
-    if (item.needsReview === true) {
-      lines.push(`⚠️ REVIEW_PLACEHOLDER_${i}: ${item.reviewReason}`);
-    } else {
-      lines.push(signalNote(item));
-    }
+    lines.push(item.reviewNote || signalNote(item));
     lines.push('');
     if (item.url) lines.push(`[→ 原文](${item.url})`);
     lines.push('');
@@ -1271,7 +1329,14 @@ async function main() {
 
   const rawScoredSignals = buildScoredSignals(filtered, config);
   const seenMap = await loadSeenSignals();
-  const scoredSignals = filterSeenSignals(rawScoredSignals, seenMap);
+  const unseenSignals = filterSeenSignals(rawScoredSignals, seenMap);
+
+  // Auto-resolve all needsReview flags — no LLM needed
+  const { keep: scoredSignals, demote: demotedSignals } = autoResolveReview(unseenSignals);
+  if (demotedSignals.length > 0) {
+    process.stderr.write(`[auto-review] Demoted ${demotedSignals.length} low-signal flagged item(s)\n`);
+  }
+
   const draftCandidates = buildDraftCandidates(scoredSignals, config);
   const modeViews = buildModeViews(scoredSignals, config);
 
@@ -1308,22 +1373,18 @@ async function main() {
       totalTweets: (filtered.x || []).reduce((sum, a) => sum + (a.tweets?.length || 0), 0),
       blogPosts: filtered.blogs.length || 0,
       highSignalCount: scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum).length,
-      needsReviewCount: scoredSignals.filter(s => s.needsReview).length,
+      autoResolvedCount: demotedSignals.length,
       feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || null
     },
     prompts,
-    needsReviewItems: scoredSignals
-      .filter(s => s.needsReview)
-      .map(s => ({
-        title: s.title,
-        summary: s.summary,
-        handle: s.handle,
-        url: s.url,
-        type: s.type,
-        reviewReason: s.reviewReason,
-        scoring: { total: s.scoring.total, engagement: s.scoring.engagement, relevance: s.scoring.relevance, penalty: s.scoring.penalty },
-        metrics: s.metrics
-      })),
+    demotedSignals: demotedSignals.map(s => ({
+      title: s.title,
+      handle: s.handle,
+      url: s.url,
+      type: s.type,
+      reviewReason: s.reviewReason,
+      scoring: { total: s.scoring.total, engagement: s.scoring.engagement, relevance: s.scoring.relevance, penalty: s.scoring.penalty }
+    })),
     errors: errors.length > 0 ? errors : undefined
   };
 
