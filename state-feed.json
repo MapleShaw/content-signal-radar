@@ -1,13 +1,12 @@
 {
   "seenTweets": {},
   "seenVideos": {
-    "oBWRHnggscM": 1775200026416,
     "CeOXx-XTYek": 1775632647339
   },
   "seenArticles": {
-    "https://www.anthropic.com/engineering/claude-code-auto-mode": 1775200028355,
-    "https://claude.com/blog/harnessing-claudes-intelligence": 1775200029251,
     "https://www.anthropic.com/engineering/managed-agents": 1775719263027,
-    "https://claude.com/blog/claude-managed-agents": 1775719263750
+    "https://claude.com/blog/claude-managed-agents": 1775719263750,
+    "https://www.anthropic.com/engineering/infrastructure-noise": 1775805940619,
+    "https://claude.com/blog/claude-builds-visuals": 1775805941296
   }
 }
