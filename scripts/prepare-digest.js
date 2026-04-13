@@ -83,7 +83,22 @@ function normalizeConfig(input = {}) {
     deliveryTime: input.deliveryTime || '09:00',
     weeklyDay: input.weeklyDay || 'monday',
     delivery: input.delivery || { method: 'stdout' },
-    focusTopics: input.focusTopics || ['agent', 'AI 产品', 'personal brand', 'creator tools', 'AI 出海'],
+    focusTopics: input.focusTopics || [
+      // AI / 技术方向
+      'agent', 'llm', 'gpt', 'claude', 'model', 'inference', 'fine-tun',
+      'ai tool', 'ai product', 'ai workflow',
+      // 独立开发 / 出海
+      'indie', 'solopreneur', 'build in public', 'ship', 'launch', 'saas',
+      'mrr', 'arr', 'revenue', 'monetiz',
+      // 内容 / 品牌
+      'personal brand', 'creator', 'audience', 'distribution', 'growth',
+      'newsletter', 'x thread', 'viral',
+      // 产品 / 工具
+      'product', 'workflow', 'automation', 'integration', 'api',
+      'builder', 'maker', 'founder',
+      // 中文关键词
+      'AI 产品', 'AI 出海', '出海', '独立开发'
+    ],
     contentGoals: input.contentGoals || ['product_insights', 'x_posts', 'learning'],
     outputSections: input.outputSections || ['brief', 'x_angles', 'product_signals', 'x_drafts', 'action_items'],
     outputMode: input.outputMode || 'balanced',
