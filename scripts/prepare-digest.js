@@ -135,7 +135,7 @@ function normalizeConfig(input = {}) {
       novelty: input.scoring?.novelty ?? 0.12,
       engagement: input.scoring?.engagement ?? 0.07,
       recency: input.scoring?.recency ?? 0.08,
-      minimum: input.scoring?.minimum ?? 0.62,
+      minimum: input.scoring?.minimum ?? 0.58,
       sourceWeightCap: input.scoring?.sourceWeightCap ?? 1.3
     },
     limits: {
@@ -559,7 +559,7 @@ function deduplicateByHandle(signals) {
 //   — NO LLM involved, fully deterministic rules
 // ============================================================================
 
-function detectReviewNeed({ engagement, relevance, sourceWeight, wordCount, signalIntent, penalty }) {
+function detectReviewNeed({ engagement, relevance, sourceWeight, wordCount, signalIntent, penalty, type }) {
   const reasons = [];
 
   // High engagement but low topic match — might be emotional/viral OR genuinely important
@@ -573,7 +573,8 @@ function detectReviewNeed({ engagement, relevance, sourceWeight, wordCount, sign
   }
 
   // Very short text — keyword matching is unreliable
-  if (wordCount < 15) {
+  // jike_post: title is always truncated preview; skip SHORT_TEXT check
+  if (wordCount < 15 && type !== 'jike_post') {
     reasons.push('SHORT_TEXT');
   }
 
@@ -740,7 +741,9 @@ function buildScoredSignals(filtered, config) {
   // 即刻动态
   for (const signal of filtered.x || []) {
     if (signal.type !== 'jike_post') continue;
-    const text = `${signal.title} ${signal.summary}`;
+    // jike title is a truncated preview (e.g. "发布了: ..."); strip prefix and fall back to title when summary is empty
+    const jikeContent = signal.summary || signal.title.replace(/^(发布了|转发了):\s*/, '');
+    const text = `${signal.title} ${jikeContent}`.trim();
     const relevance = includesAny(text, keywords) ? 1 : 0.45;
     const writeability = includesAny(text.toLowerCase(), ['why', 'how', 'learn', 'mistake', 'distribution', 'brand', 'agent', 'product']) ? 0.8 : 0.55;
     const actionability = includesAny(text.toLowerCase(), ['launch', 'ship', 'workflow', 'process', 'experiment', 'agent', 'automation']) ? 0.85 : 0.5;
@@ -765,7 +768,7 @@ function buildScoredSignals(filtered, config) {
 
     const wordCount = text.split(/\s+/).filter(Boolean).length;
     const review = detectReviewNeed({
-      engagement, relevance, sourceWeight, wordCount, signalIntent, penalty
+      engagement, relevance, sourceWeight, wordCount, signalIntent, penalty, type: 'jike_post'
     });
 
     signals.push({
