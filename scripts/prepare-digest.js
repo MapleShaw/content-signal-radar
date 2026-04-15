@@ -1311,7 +1311,7 @@ async function main() {
     }
   }
 
-  const scriptDir = decodeURIComponent(new URL('.', import.meta.url).pathname);
+  const scriptDir = decodeURIComponent(new URL(import.meta.url).pathname).replace(/\/[^\/]+$/, '');
   const rootDir = join(scriptDir, '..');
   const localPromptsDir = join(rootDir, 'prompts');
   const userPromptsDir = join(USER_DIR, 'prompts');
