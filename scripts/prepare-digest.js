@@ -9,7 +9,7 @@ const USER_DIR = join(homedir(), '.content-signal-radar');
 const CONFIG_PATH = join(USER_DIR, 'config.json');
 const CUSTOM_SOURCES_PATH = join(USER_DIR, 'custom-sources.json');
 const SEEN_SIGNALS_PATH = join(USER_DIR, 'seen-signals.json');
-const SEEN_SIGNALS_TTL_DAYS = 7;
+const SEEN_SIGNALS_TTL_DAYS = 3;
 
 const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
