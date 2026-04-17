@@ -10,6 +10,7 @@ const CONFIG_PATH = join(USER_DIR, 'config.json');
 const CUSTOM_SOURCES_PATH = join(USER_DIR, 'custom-sources.json');
 const SEEN_SIGNALS_PATH = join(USER_DIR, 'seen-signals.json');
 const SEEN_SIGNALS_TTL_DAYS = 3;
+const NO_SEEN = process.argv.includes('--no-seen');
 
 const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
@@ -275,7 +276,7 @@ async function fetchDirectRSSSources(mergedSources) {
       console.error(`[fetchDirectRSS] jike ${account.name}: ${items.length} items`);
       return items.slice(0, 5).map(item => ({
         type: 'jike_post',
-        handle: account.uuid,
+        handle: account.name,
         name: account.name,
         title: item.title || clip(item.summary, 60),
         summary: clip(item.summary, 280),
@@ -1346,8 +1347,9 @@ async function main() {
   filtered.blogs.push(...directRSS.rss_blogs);
 
   const rawScoredSignals = buildScoredSignals(filtered, config);
-  const seenMap = await loadSeenSignals();
-  const unseenSignals = filterSeenSignals(rawScoredSignals, seenMap);
+  const seenMap = NO_SEEN ? {} : await loadSeenSignals();
+  const unseenSignals = NO_SEEN ? rawScoredSignals : filterSeenSignals(rawScoredSignals, seenMap);
+  if (NO_SEEN) process.stderr.write('[seen-signals] Bypassed (--no-seen)\n');
 
   // Auto-resolve all needsReview flags — no LLM needed
   const { keep: scoredSignals, demote: demotedSignals } = autoResolveReview(unseenSignals);
@@ -1409,11 +1411,13 @@ async function main() {
   output.renderedMarkdown = renderMarkdown(output);
 
   // Persist seen signals (only high-signal ones that were actually surfaced)
-  const surfacedUrls = scoredSignals
-    .filter(s => s.scoring.total >= config.scoring.minimum)
-    .map(s => s.url)
-    .filter(Boolean);
-  await saveSeenSignals(seenMap, surfacedUrls);
+  if (!NO_SEEN) {
+    const surfacedUrls = scoredSignals
+      .filter(s => s.scoring.total >= config.scoring.minimum)
+      .map(s => s.url)
+      .filter(Boolean);
+    await saveSeenSignals(seenMap, surfacedUrls);
+  }
 
   console.log(JSON.stringify(output, null, 2));
 }
