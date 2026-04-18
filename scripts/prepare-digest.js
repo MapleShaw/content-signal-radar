@@ -9,7 +9,7 @@ const USER_DIR = join(homedir(), '.content-signal-radar');
 const CONFIG_PATH = join(USER_DIR, 'config.json');
 const CUSTOM_SOURCES_PATH = join(USER_DIR, 'custom-sources.json');
 const SEEN_SIGNALS_PATH = join(USER_DIR, 'seen-signals.json');
-const SEEN_SIGNALS_TTL_DAYS = 3;
+const SEEN_SIGNALS_TTL_DAYS = 1;
 const NO_SEEN = process.argv.includes('--no-seen');
 
 const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
@@ -921,10 +921,12 @@ async function loadSeenSignals() {
 }
 
 async function saveSeenSignals(seenMap, newUrls) {
-  const cutoff = Date.now() - SEEN_SIGNALS_TTL_DAYS * 24 * 3600 * 1000;
-  // Prune old entries
+  // Only keep entries from today (Asia/Shanghai) — feed has 24h rolling window,
+  // so cross-day dedup causes false negatives every morning.
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }); // YYYY-MM-DD
+  const todayStart = new Date(todayStr + 'T00:00:00+08:00').getTime();
   const pruned = Object.fromEntries(
-    Object.entries(seenMap).filter(([, ts]) => ts > cutoff)
+    Object.entries(seenMap).filter(([, ts]) => ts >= todayStart)
   );
   // Add new
   const now = Date.now();
