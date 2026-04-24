@@ -990,6 +990,42 @@ function buildSourceWeightSummary(config) {
     }));
 }
 
+function countSignalsByType(signals = []) {
+  return signals.reduce((acc, signal) => {
+    const key = signal.type || 'unknown';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+function buildHealthSummary(output) {
+  const rawCounts = output.stats?.rawCounts || {};
+  const postSeenCounts = output.stats?.postSeenCounts || {};
+  const highSignalCounts = output.stats?.highSignalCounts || {};
+  const demotedCounts = output.stats?.demotedCounts || {};
+  const seenFilteredCounts = output.stats?.seenFilteredCounts || {};
+
+  const rows = [
+    { label: 'X', type: 'x_tweet' },
+    { label: '即刻', type: 'jike_post' },
+    { label: 'Blogs', type: 'blog_post' },
+    { label: 'Podcasts', type: 'podcast_episode' }
+  ];
+
+  return rows.map(({ label, type }) => {
+    const raw = rawCounts[type] || 0;
+    const postSeen = postSeenCounts[type] || 0;
+    const high = highSignalCounts[type] || 0;
+    const seenFiltered = seenFilteredCounts[type] || 0;
+    const demoted = demotedCounts[type] || 0;
+    const meta = [];
+    if (seenFiltered > 0) meta.push(`seen -${seenFiltered}`);
+    if (demoted > 0) meta.push(`demoted -${demoted}`);
+    const suffix = meta.length > 0 ? ` (${meta.join(', ')})` : '';
+    return `- ${label}: ${raw} raw / ${postSeen} post-seen / ${high} high-signal${suffix}`;
+  });
+}
+
 function renderMarkdown(output) {
   return renderRadar(output);
 }
@@ -1284,6 +1320,16 @@ function renderRadar(output) {
   }
   lines.push('');
 
+  // Platform health summary
+  lines.push('---');
+  lines.push('');
+  lines.push('## 平台健康摘要');
+  lines.push('');
+  for (const row of buildHealthSummary(output)) {
+    lines.push(row);
+  }
+  lines.push('');
+
   // Stats footer
   lines.push('---');
   lines.push('');
@@ -1349,12 +1395,24 @@ async function main() {
   filtered.blogs.push(...directRSS.rss_blogs);
 
   const rawScoredSignals = buildScoredSignals(filtered, config);
+  const rawCounts = countSignalsByType(rawScoredSignals);
   const seenMap = NO_SEEN ? {} : await loadSeenSignals();
   const unseenSignals = NO_SEEN ? rawScoredSignals : filterSeenSignals(rawScoredSignals, seenMap);
+  const postSeenCounts = countSignalsByType(unseenSignals);
+  const seenFilteredCounts = Object.fromEntries(
+    Array.from(new Set([...Object.keys(rawCounts), ...Object.keys(postSeenCounts)])).map(type => [
+      type,
+      Math.max((rawCounts[type] || 0) - (postSeenCounts[type] || 0), 0)
+    ])
+  );
   if (NO_SEEN) process.stderr.write('[seen-signals] Bypassed (--no-seen)\n');
 
   // Auto-resolve all needsReview flags — no LLM needed
   const { keep: scoredSignals, demote: demotedSignals } = autoResolveReview(unseenSignals);
+  const demotedCounts = countSignalsByType(demotedSignals);
+  const highSignalCounts = countSignalsByType(
+    scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum)
+  );
   if (demotedSignals.length > 0) {
     process.stderr.write(`[auto-review] Demoted ${demotedSignals.length} low-signal flagged item(s)\n`);
   }
@@ -1396,7 +1454,12 @@ async function main() {
       blogPosts: filtered.blogs.length || 0,
       highSignalCount: scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum).length,
       autoResolvedCount: demotedSignals.length,
-      feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || null
+      feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || null,
+      rawCounts,
+      postSeenCounts,
+      seenFilteredCounts,
+      demotedCounts,
+      highSignalCounts
     },
     prompts,
     demotedSignals: demotedSignals.map(s => ({
