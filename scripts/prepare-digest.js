@@ -5,6 +5,15 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
+function isPainLanguage(text) {
+  if (!text) return false;
+  return PAIN_PATTERNS.some(p => p.test(text));
+}
+function painBoost(text) {
+  if (!text) return 0;
+  return PAIN_PATTERNS.filter(p => p.test(text)).length * 0.06;
+}
+
 const USER_DIR = join(homedir(), '.content-signal-radar');
 const CONFIG_PATH = join(USER_DIR, 'config.json');
 const CUSTOM_SOURCES_PATH = join(USER_DIR, 'custom-sources.json');
@@ -15,6 +24,7 @@ const NO_SEEN = process.argv.includes('--no-seen');
 const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
 const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json';
+const FEED_REDDIT_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-reddit.json';
 
 const PROMPT_FILES = [
   'summarize-podcast.md',
@@ -210,7 +220,7 @@ async function loadLocalSourceProfiles(configDir) {
 
 async function loadCustomSources() {
   if (!existsSync(CUSTOM_SOURCES_PATH)) {
-    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], zh_creators: { enabled: false, sources: [] } };
+    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], reddit_subreddits: [], zh_creators: { enabled: false, sources: [] } };
   }
   try {
     const parsed = JSON.parse(await readFile(CUSTOM_SOURCES_PATH, 'utf-8'));
@@ -219,15 +229,16 @@ async function loadCustomSources() {
       blogs: parsed.blogs || [],
       podcasts: parsed.podcasts || [],
       jike_accounts: parsed.jike_accounts || [],
+      reddit_subreddits: parsed.reddit_subreddits || [],
       zh_creators: parsed.zh_creators || { enabled: false, sources: [] }
     };
   } catch {
-    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], zh_creators: { enabled: false, sources: [] } };
+    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], reddit_subreddits: [], zh_creators: { enabled: false, sources: [] } };
   }
 }
 
 function mergeSources(profiles, enabledProfiles, customSources) {
-  const merged = { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [] };
+  const merged = { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], reddit_subreddits: [] };
   for (const profileName of enabledProfiles) {
     const profile = profiles[profileName];
     if (!profile) continue;
@@ -235,34 +246,39 @@ function mergeSources(profiles, enabledProfiles, customSources) {
     merged.blogs.push(...(profile.blogs || []));
     merged.podcasts.push(...(profile.podcasts || []));
     merged.jike_accounts.push(...(profile.jike_accounts || []));
+    merged.reddit_subreddits.push(...(profile.reddit_subreddits || []));
   }
   merged.x_accounts.push(...(customSources.x_accounts || []));
   merged.blogs.push(...(customSources.blogs || []));
   merged.podcasts.push(...(customSources.podcasts || []));
   merged.jike_accounts.push(...(customSources.jike_accounts || []));
+  merged.reddit_subreddits.push(...(customSources.reddit_subreddits || []));
 
   return {
     x_accounts: uniqBy(merged.x_accounts, item => (item.handle || '').toLowerCase()),
     blogs: uniqBy(merged.blogs, item => item.indexUrl || item.name),
     podcasts: uniqBy(merged.podcasts, item => item.playlistId || item.channelHandle || item.url || item.name),
-    jike_accounts: uniqBy(merged.jike_accounts, item => item.uuid || item.rsshub)
+    jike_accounts: uniqBy(merged.jike_accounts, item => item.uuid || item.rsshub),
+    reddit_subreddits: merged.reddit_subreddits
   };
 }
 
-function filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources) {
+function filterFeedBySources(feedX, feedPodcasts, feedBlogs, feedReddit, mergedSources) {
   const allowedHandles = new Set((mergedSources.x_accounts || []).map(a => (a.handle || '').toLowerCase()));
   const allowedPodcastKeys = new Set((mergedSources.podcasts || []).map(p => p.name));
   const allowedBlogKeys = new Set((mergedSources.blogs || []).map(b => b.name));
+  const allowedRedditKeys = new Set((mergedSources.reddit_subreddits || []).map(r => (r.name || '').toLowerCase()));
 
   return {
     x: (feedX?.x || []).filter(item => allowedHandles.has((item.handle || '').toLowerCase())),
     podcasts: (feedPodcasts?.podcasts || []).filter(item => allowedPodcastKeys.has(item.name)),
-    blogs: (feedBlogs?.blogs || []).filter(item => allowedBlogKeys.has(item.name))
+    blogs: (feedBlogs?.blogs || []).filter(item => allowedBlogKeys.has(item.name)),
+    reddit: (feedReddit?.reddit || []).filter(item => allowedRedditKeys.has((item.subreddit || '').toLowerCase()))
   };
 }
 
 async function fetchDirectRSSSources(mergedSources) {
-  const results = { jike: [], rss_blogs: [] };
+  const results = { jike: [], rss_blogs: [], x_rss: [], x_rss_handles: new Set() };
 
   // 抓即刻账号
   const jikeAccounts = mergedSources.jike_accounts || [];
@@ -312,7 +328,11 @@ async function fetchDirectRSSSources(mergedSources) {
   );
   results.rss_blogs = rssResults.flat();
 
-  return results;
+  // Pain-language: see global isPainLanguage() / painBoost()
+  // 从 GitHub 拉取的 Reddit feed 已经通过 filterFeedBySources 进入 filtered.reddit
+  // 本地 RSSHub 抓取 Reddit 已弃用（服务器在中国访问不了 Reddit）
+  // Pain-language 检测函数保留给 buildScoredSignals 使用
+
 }
 
 function getSourceWeight(signal, config) {
@@ -904,6 +924,63 @@ function buildScoredSignals(filtered, config) {
   }
 
   // Per-handle dedup: if 3+ signals from same handle, keep only top 2
+
+
+  // ── Reddit posts (pain-language boosted) ──────────────────
+  for (const post of filtered.reddit || []) {
+    const text = normalizeTextForScoring(`${post.title || ''} ${post.summary || ''}`);
+    const dims = scoreTextDimensions(text, 'reddit_post');
+    const relevance = includesAny(text, keywords) ? Math.max(dims.relevance, 0.82) : Math.max(dims.relevance, 0.55);
+    const writeability = Math.max(dims.writeability, 0.5);
+    const actionability = Math.max(dims.actionability, 0.65);
+    const novelty = Math.max(dims.novelty, 0.5);
+    const engagement = 0.15;
+    const recency = normalizeRecency(hoursAgo(post.publishedAt));
+    const baseScore = (
+      relevance * weights.relevance +
+      writeability * weights.writeability +
+      actionability * weights.actionability +
+      novelty * weights.novelty +
+      engagement * weights.engagement +
+      recency * weights.recency
+    );
+    const painBoost = post._painBoost || 0;
+    const sourceWeight = 1.0;
+    const weightedScore = Math.min(1.0, baseScore * sourceWeight + painBoost);
+    const boostNote = post._isPain ? `痛点语言加成 +${(painBoost).toFixed(2)}` : null;
+
+    const redditScoringObj = { relevance, writeability, actionability, novelty, engagement, recency };
+    const redditSectionScore = computeSectionScore(redditScoringObj, 'product_signal') * sourceWeight;
+
+    signals.push({
+      type: 'reddit_post',
+      _source: 'reddit',
+      author: post.subreddit,
+      subreddit: post.subreddit,
+      title: post.title,
+      summary: post.summary,
+      url: post.url,
+      publishedAt: post.publishedAt,
+      signalIntent: 'product_signal',
+      explainability: {
+        sourceReason: `Reddit r/${post.subreddit}: 用户真实抱怨/痛点讨论`,
+        modeEffect: boostNote || '按默认模式处理'
+      },
+      scoring: {
+        relevance,
+        writeability,
+        actionability,
+        novelty,
+        engagement,
+        recency,
+        base: Number(baseScore.toFixed(3)),
+        sourceWeight,
+        total: Number(weightedScore.toFixed(3)),
+        sectionScore: Number(redditSectionScore.toFixed(3))
+      }
+    });
+  }
+
   const deduped = deduplicateByHandle(signals);
 
   return deduped.sort((a, b) => b.scoring.total - a.scoring.total);
@@ -1366,10 +1443,11 @@ async function main() {
   const userPromptsDir = join(USER_DIR, 'prompts');
   const configDir = join(rootDir, 'config');
 
-  const [feedX, feedPodcasts, feedBlogs, profiles, customSources] = await Promise.all([
+  const [feedX, feedPodcasts, feedBlogs, feedReddit, profiles, customSources] = await Promise.all([
     fetchJSON(FEED_X_URL),
     fetchJSON(FEED_PODCASTS_URL),
     fetchJSON(FEED_BLOGS_URL),
+    fetchJSON(FEED_REDDIT_URL),
     loadLocalSourceProfiles(configDir),
     loadCustomSources()
   ]);
@@ -1377,6 +1455,7 @@ async function main() {
   if (!feedX) errors.push('Could not fetch tweet feed');
   if (!feedPodcasts) errors.push('Could not fetch podcast feed');
   if (!feedBlogs) errors.push('Could not fetch blog feed');
+  if (!feedReddit) errors.push('Could not fetch reddit feed');
 
   const prompts = {};
   for (const filename of PROMPT_FILES) {
@@ -1387,12 +1466,28 @@ async function main() {
   }
 
   const mergedSources = mergeSources(profiles, config.sourceProfiles, customSources);
-  const filtered = filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources);
+  const filtered = filterFeedBySources(feedX, feedPodcasts, feedBlogs, feedReddit, mergedSources);
 
   // 抓取即刻 RSS 和自定义 RSS 博客
   const directRSS = await fetchDirectRSSSources(mergedSources);
   filtered.x.push(...directRSS.jike);
   filtered.blogs.push(...directRSS.rss_blogs);
+  // Reddit 数据已由 filterFeedBySources 从 GitHub Actions feed-reddit.json 填入
+  // 转换原生格式 → buildScoredSignals 期望的格式（加 pain-language 标记）
+  filtered.reddit = (filtered.reddit || []).map(post => ({
+    type: 'reddit_post',
+    _source: 'reddit',
+    subreddit: post.subreddit || '',
+    title: post.title || '',
+    summary: clip(post.text || '', 400),
+    url: post.url,
+    publishedAt: post.createdAt,
+    author: post.author,
+    score: post.score || 0,
+    numComments: post.numComments || 0,
+    _painBoost: painBoost(`${post.title || ''} ${post.text || ''}`),
+    _isPain: isPainLanguage(`${post.title || ''} ${post.text || ''}`),
+  }));
 
   const rawScoredSignals = buildScoredSignals(filtered, config);
   const rawCounts = countSignalsByType(rawScoredSignals);
@@ -1454,7 +1549,7 @@ async function main() {
       blogPosts: filtered.blogs.length || 0,
       highSignalCount: scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum).length,
       autoResolvedCount: demotedSignals.length,
-      feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || null,
+      feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || feedReddit?.generatedAt || null,
       rawCounts,
       postSeenCounts,
       seenFilteredCounts,
@@ -1493,10 +1588,10 @@ async function main() {
       generatedAt: output.generatedAt,
       stats: output.stats,
       signals: (output.scoredSignals || [])
-        .filter(s => s.scoring && s.scoring.total >= 0.62)
+        .filter(s => s.scoring && s.scoring.total >= (config.scoring?.minimum ?? 0.62))
         .map(s => ({
           id: s.url,
-          source: s.type === 'x_tweet' ? 'x' : s.type === 'blog_post' ? 'blog' : 'podcast',
+          source: s.type === 'x_tweet' ? 'x' : s.type === 'blog_post' ? 'blog' : s.type === 'reddit_post' ? 'reddit' : 'podcast',
           sourceName: s.author || s.handle || s.name || '',
           handle: s.handle || null,
           title: s.title || '',

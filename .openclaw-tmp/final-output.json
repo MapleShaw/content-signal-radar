@@ -1,0 +1,3688 @@
+{
+  "status": "ok",
+  "generatedAt": "2026-06-11T12:57:34.486Z",
+  "config": {
+    "name": "Content Signal Radar",
+    "platform": "openclaw",
+    "language": "zh",
+    "timezone": "Asia/Shanghai",
+    "frequency": "daily",
+    "deliveryTime": "09:00",
+    "weeklyDay": "monday",
+    "delivery": {
+      "method": "stdout"
+    },
+    "focusTopics": [
+      "AI",
+      "agent",
+      "LLM",
+      "Claude",
+      "GPT",
+      "Gemini",
+      "vibe coding",
+      "vibe code",
+      "personal brand",
+      "distribution",
+      "content",
+      "creator",
+      "product",
+      "launch",
+      "ship",
+      "workflow",
+      "automation",
+      "builder",
+      "indie",
+      "side project",
+      "open source",
+      "X",
+      "Twitter",
+      "growth",
+      "audience",
+      "writing",
+      "prompt",
+      "context",
+      "coding",
+      "developer",
+      "tool",
+      "大模型",
+      "智能体",
+      "模型",
+      "创作者",
+      "个人品牌",
+      "内容",
+      "产品",
+      "自动化",
+      "工具",
+      "增长",
+      "变现",
+      "效率",
+      "独立",
+      "出海",
+      "公众号",
+      "AI写作"
+    ],
+    "contentGoals": [
+      "product_insights",
+      "x_posts",
+      "learning"
+    ],
+    "outputSections": [
+      "brief",
+      "x_angles",
+      "product_signals",
+      "x_drafts",
+      "action_items"
+    ],
+    "outputMode": "balanced",
+    "sourceProfiles": [
+      "default"
+    ],
+    "disabledSections": [
+      "xiaohongshu_topics"
+    ],
+    "reservedSourceProfiles": [
+      "zh_creators"
+    ],
+    "sourceWeights": {
+      "_catwu": 1.2,
+      "zarazhangrui": 1.25,
+      "levelsio": 1.15,
+      "thedankoe": 1,
+      "tdinh_me": 1,
+      "lexfridman": 0.95,
+      "leeerob": 1.2,
+      "steipete": 1.1,
+      "naval": 1,
+      "gregisenberg": 1,
+      "rauchg": 1.15,
+      "karpathy": 1.1
+    },
+    "sourceWeightReasons": {
+      "zarazhangrui": "高密度 agent / builder 信号,且和你的关注方向高度一致",
+      "_catwu": "产品与 builder 视角兼具,噪音相对低",
+      "leeerob": "AI 产品、开发者工具、分发视角稳定",
+      "levelsio": "独立开发 + 分发 + 出海视角强",
+      "rauchg": "产品范式变化和 platform 视角常有高信号",
+      "steipete": "开发者工具与 AI 工作流洞察稳定",
+      "karpathy": "技术方向权重大,但不一定每天都直接可写"
+    },
+    "scoring": {
+      "relevance": 0.35,
+      "writeability": 0.13,
+      "actionability": 0.2,
+      "novelty": 0.17,
+      "engagement": 0.07,
+      "recency": 0.08,
+      "minimum": 0.52,
+      "sourceWeightCap": 1.3
+    },
+    "limits": {
+      "brief": 5,
+      "x_angles": 3,
+      "product_signals": 3,
+      "x_drafts": 2,
+      "action_items": 3
+    },
+    "onboardingComplete": false
+  },
+  "sources": {
+    "profiles": [
+      "default"
+    ],
+    "reservedProfiles": [
+      "zh_creators"
+    ],
+    "weights": [
+      {
+        "handle": "zarazhangrui",
+        "weight": 1.25,
+        "reason": "高密度 agent / builder 信号,且和你的关注方向高度一致"
+      },
+      {
+        "handle": "_catwu",
+        "weight": 1.2,
+        "reason": "产品与 builder 视角兼具,噪音相对低"
+      },
+      {
+        "handle": "leeerob",
+        "weight": 1.2,
+        "reason": "AI 产品、开发者工具、分发视角稳定"
+      },
+      {
+        "handle": "levelsio",
+        "weight": 1.15,
+        "reason": "独立开发 + 分发 + 出海视角强"
+      },
+      {
+        "handle": "rauchg",
+        "weight": 1.15,
+        "reason": "产品范式变化和 platform 视角常有高信号"
+      },
+      {
+        "handle": "steipete",
+        "weight": 1.1,
+        "reason": "开发者工具与 AI 工作流洞察稳定"
+      },
+      {
+        "handle": "karpathy",
+        "weight": 1.1,
+        "reason": "技术方向权重大,但不一定每天都直接可写"
+      },
+      {
+        "handle": "thedankoe",
+        "weight": 1,
+        "reason": null
+      },
+      {
+        "handle": "tdinh_me",
+        "weight": 1,
+        "reason": null
+      },
+      {
+        "handle": "naval",
+        "weight": 1,
+        "reason": null
+      },
+      {
+        "handle": "gregisenberg",
+        "weight": 1,
+        "reason": null
+      },
+      {
+        "handle": "lexfridman",
+        "weight": 0.95,
+        "reason": null
+      }
+    ],
+    "merged": {
+      "x_accounts": [
+        {
+          "name": "Andrej Karpathy",
+          "handle": "karpathy"
+        },
+        {
+          "name": "Swyx",
+          "handle": "swyx"
+        },
+        {
+          "name": "Josh Woodward",
+          "handle": "joshwoodward"
+        },
+        {
+          "name": "Kevin Weil",
+          "handle": "kevinweil"
+        },
+        {
+          "name": "Peter Yang",
+          "handle": "petergyang"
+        },
+        {
+          "name": "Nan Yu",
+          "handle": "thenanyu"
+        },
+        {
+          "name": "Madhu Guru",
+          "handle": "realmadhuguru"
+        },
+        {
+          "name": "Amanda Askell",
+          "handle": "amandaaskell"
+        },
+        {
+          "name": "Cat Wu",
+          "handle": "_catwu",
+          "rsshub": "http://localhost:1200/twitter/user/_catwu"
+        },
+        {
+          "name": "Thariq",
+          "handle": "trq212"
+        },
+        {
+          "name": "Google Labs",
+          "handle": "googlelabs"
+        },
+        {
+          "name": "Amjad Masad",
+          "handle": "amasad"
+        },
+        {
+          "name": "Guillermo Rauch",
+          "handle": "rauchg"
+        },
+        {
+          "name": "Alex Albert",
+          "handle": "alexalbert__"
+        },
+        {
+          "name": "Aaron Levie",
+          "handle": "levie"
+        },
+        {
+          "name": "Ryo Lu",
+          "handle": "ryolu_"
+        },
+        {
+          "name": "Garry Tan",
+          "handle": "garrytan"
+        },
+        {
+          "name": "Matt Turck",
+          "handle": "mattturck"
+        },
+        {
+          "name": "Zara Zhang",
+          "handle": "zarazhangrui",
+          "rsshub": "http://localhost:1200/twitter/user/zarazhangrui"
+        },
+        {
+          "name": "Nikunj Kothari",
+          "handle": "nikunj"
+        },
+        {
+          "name": "Peter Steinberger",
+          "handle": "steipete",
+          "rsshub": "http://localhost:1200/twitter/user/steipete"
+        },
+        {
+          "name": "Dan Shipper",
+          "handle": "danshipper"
+        },
+        {
+          "name": "Aditya Agarwal",
+          "handle": "adityaag"
+        },
+        {
+          "name": "Sam Altman",
+          "handle": "sama"
+        },
+        {
+          "name": "Claude",
+          "handle": "claudeai"
+        },
+        {
+          "name": "Pieter Levels",
+          "handle": "levelsio",
+          "rsshub": "http://localhost:1200/twitter/user/levelsio"
+        },
+        {
+          "name": "Dan Koe",
+          "handle": "thedankoe",
+          "rsshub": "http://localhost:1200/twitter/user/thedankoe",
+          "_quality": "watch",
+          "_note": "avg 68, 偏通用个人成长, 和 AI/indie 方向弱"
+        },
+        {
+          "name": "Tuan Dinh",
+          "handle": "tdinh_me",
+          "rsshub": "http://localhost:1200/twitter/user/tdinh_me"
+        },
+        {
+          "name": "Lex Fridman",
+          "handle": "lexfridman",
+          "rsshub": "http://localhost:1200/twitter/user/lexfridman",
+          "_quality": "watch",
+          "_note": "avg 73, 主要是访谈链接, 可写性低"
+        },
+        {
+          "name": "Lee Robinson",
+          "handle": "leeerob",
+          "rsshub": "http://localhost:1200/twitter/user/leeerob",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "Naval",
+          "handle": "naval",
+          "rsshub": "http://localhost:1200/twitter/user/naval",
+          "_quality": "watch",
+          "_note": "avg 68, 极少发帖, 偏哲学/鸡汤"
+        },
+        {
+          "name": "Greg Isenberg",
+          "handle": "gregisenberg",
+          "rsshub": "http://localhost:1200/twitter/user/gregisenberg"
+        },
+        {
+          "name": "xiaohu",
+          "handle": "xiaohu",
+          "rsshub": "http://localhost:1200/twitter/user/xiaohu"
+        },
+        {
+          "name": "ZHO_ZHO_ZHO",
+          "handle": "zho_zho_zho",
+          "rsshub": "http://localhost:1200/twitter/user/ZHO_ZHO_ZHO"
+        },
+        {
+          "name": "yihui indie",
+          "handle": "yihui_indie",
+          "rsshub": "http://localhost:1200/twitter/user/yihui_indie"
+        },
+        {
+          "name": "aiwarts",
+          "handle": "aiwarts",
+          "rsshub": "http://localhost:1200/twitter/user/aiwarts",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "XianyuLi",
+          "handle": "xianyuli",
+          "rsshub": "http://localhost:1200/twitter/user/XianyuLi",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "CuiMao",
+          "handle": "cuimao",
+          "rsshub": "http://localhost:1200/twitter/user/CuiMao"
+        },
+        {
+          "name": "indiehackercase",
+          "handle": "indiehackercase",
+          "rsshub": "http://localhost:1200/twitter/user/indiehackercase",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "Khazix0918",
+          "handle": "khazix0918",
+          "rsshub": "http://localhost:1200/twitter/user/Khazix0918",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "Jackywine",
+          "handle": "jackywine",
+          "rsshub": "http://localhost:1200/twitter/user/Jackywine",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "cellinlab",
+          "handle": "cellinlab",
+          "rsshub": "http://localhost:1200/twitter/user/cellinlab",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "idoubicc",
+          "handle": "idoubicc",
+          "rsshub": "http://localhost:1200/twitter/user/idoubicc"
+        },
+        {
+          "name": "PandaTalk8",
+          "handle": "pandatalk8",
+          "rsshub": "http://localhost:1200/twitter/user/PandaTalk8",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "AI Jasonyu",
+          "handle": "ai_jasonyu",
+          "rsshub": "http://localhost:1200/twitter/user/AI_Jasonyu"
+        },
+        {
+          "name": "app_sail",
+          "handle": "app_sail",
+          "rsshub": "http://localhost:1200/twitter/user/app_sail"
+        },
+        {
+          "name": "yangyi",
+          "handle": "yangyi",
+          "rsshub": "http://localhost:1200/twitter/user/yangyi"
+        },
+        {
+          "name": "op7418",
+          "handle": "op7418",
+          "rsshub": "http://localhost:1200/twitter/user/op7418"
+        },
+        {
+          "name": "lxfater",
+          "handle": "lxfater",
+          "rsshub": "http://localhost:1200/twitter/user/lxfater"
+        },
+        {
+          "name": "bearliu",
+          "handle": "bearliu",
+          "rsshub": "http://localhost:1200/twitter/user/bearliu"
+        },
+        {
+          "name": "geekbb",
+          "handle": "geekbb",
+          "rsshub": "http://localhost:1200/twitter/user/geekbb"
+        },
+        {
+          "name": "hzlzh",
+          "handle": "hzlzh",
+          "rsshub": "http://localhost:1200/twitter/user/hzlzh"
+        },
+        {
+          "name": "foxshuo",
+          "handle": "foxshuo",
+          "rsshub": "http://localhost:1200/twitter/user/foxshuo",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "luoleiorg",
+          "handle": "luoleiorg",
+          "rsshub": "http://localhost:1200/twitter/user/luoleiorg"
+        },
+        {
+          "name": "turingou",
+          "handle": "turingou",
+          "rsshub": "http://localhost:1200/twitter/user/turingou",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "waylybaye",
+          "handle": "waylybaye",
+          "rsshub": "http://localhost:1200/twitter/user/waylybaye"
+        },
+        {
+          "name": "lifesinger",
+          "handle": "lifesinger",
+          "rsshub": "http://localhost:1200/twitter/user/lifesinger"
+        },
+        {
+          "name": "sagacity",
+          "handle": "sagacity",
+          "rsshub": "http://localhost:1200/twitter/user/sagacity"
+        },
+        {
+          "name": "interjc",
+          "handle": "interjc",
+          "rsshub": "http://localhost:1200/twitter/user/interjc",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "oran_ge",
+          "handle": "oran_ge",
+          "rsshub": "http://localhost:1200/twitter/user/oran_ge"
+        },
+        {
+          "name": "vista8",
+          "handle": "vista8",
+          "rsshub": "http://localhost:1200/twitter/user/vista8",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        },
+        {
+          "name": "dotey",
+          "handle": "dotey",
+          "rsshub": "http://localhost:1200/twitter/user/dotey"
+        },
+        {
+          "name": "ruanyf",
+          "handle": "ruanyf",
+          "rsshub": "http://localhost:1200/twitter/user/ruanyf",
+          "_quality": "unverified",
+          "_note": "本次 RSSHub 返回 0 条, 待观察是否为临时问题"
+        }
+      ],
+      "blogs": [
+        {
+          "name": "Anthropic Engineering",
+          "type": "scrape",
+          "indexUrl": "https://www.anthropic.com/engineering",
+          "articleBaseUrl": "https://www.anthropic.com/engineering/",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Claude Blog",
+          "type": "scrape",
+          "indexUrl": "https://claude.com/blog",
+          "articleBaseUrl": "https://claude.com/blog/",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Product Hunt",
+          "rsshub": "https://www.producthunt.com/feed",
+          "type": "rss"
+        },
+        {
+          "name": "V2EX Hot",
+          "rsshub": "http://localhost:1200/v2ex/topics/hot",
+          "type": "rss"
+        },
+        {
+          "name": "产品沉思录",
+          "type": "rss",
+          "indexUrl": "https://pmthinking.substack.com/feed",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Hacker News (Front Page)",
+          "type": "rss",
+          "indexUrl": "https://hnrss.org/frontpage?count=30",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "GitHub Trending (Daily)",
+          "type": "rss",
+          "indexUrl": "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Google AI Blog",
+          "type": "rss",
+          "indexUrl": "https://blog.google/technology/ai/rss/",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "少数派",
+          "type": "rss",
+          "indexUrl": "https://sspai.com/feed",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "OpenAI Blog",
+          "type": "scrape",
+          "indexUrl": "https://openai.com/blog",
+          "articleBaseUrl": "https://openai.com/blog/",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "也谈钱",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_3536177477.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        },
+        {
+          "name": "越女事务所",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_3938617593.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        },
+        {
+          "name": "老钱日日谈",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_3860762374.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        },
+        {
+          "name": "人神共奋",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_3894320969.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        },
+        {
+          "name": "阑夕",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_2397669161.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        },
+        {
+          "name": "甲子光年",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_3599245772.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        },
+        {
+          "name": "硅星人Pro",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_3926568365.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        },
+        {
+          "name": "智能涌现",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_3900464567.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        },
+        {
+          "name": "脑极体",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_3515522183.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        },
+        {
+          "name": "赛博禅心",
+          "type": "rss",
+          "indexUrl": "http://localhost:4000/feeds/MP_WXS_3934419561.atom?mode=list&limit=20",
+          "fetchMethod": "http",
+          "_source": "wewe-rss",
+          "_note": "微信公众号，via wewe-rss"
+        }
+      ],
+      "podcasts": [
+        {
+          "name": "Latent Space",
+          "type": "youtube_channel",
+          "url": "https://www.youtube.com/@LatentSpacePod",
+          "channelHandle": "LatentSpacePod"
+        },
+        {
+          "name": "Training Data",
+          "type": "youtube_playlist",
+          "url": "https://www.youtube.com/playlist?list=PLOhHNjZItNnMm5tdW61JpnyxeYH5NDDx8",
+          "playlistId": "PLOhHNjZItNnMm5tdW61JpnyxeYH5NDDx8"
+        },
+        {
+          "name": "No Priors",
+          "type": "youtube_channel",
+          "url": "https://www.youtube.com/@NoPriorsPodcast",
+          "channelHandle": "NoPriorsPodcast"
+        },
+        {
+          "name": "Unsupervised Learning",
+          "type": "youtube_channel",
+          "url": "https://www.youtube.com/@RedpointAI",
+          "channelHandle": "RedpointAI"
+        },
+        {
+          "name": "Data Driven NYC",
+          "type": "youtube_channel",
+          "url": "https://www.youtube.com/@DataDrivenNYC/videos",
+          "channelHandle": "DataDrivenNYC"
+        },
+        {
+          "name": "AI & I by Every",
+          "type": "youtube_playlist",
+          "url": "https://www.youtube.com/playlist?list=PLuMcoKK9mKgHtW_o9h5sGO2vXrffKHwJL",
+          "playlistId": "PLuMcoKK9mKgHtW_o9h5sGO2vXrffKHwJL"
+        }
+      ],
+      "jike_accounts": [
+        {
+          "name": "歸藏",
+          "uuid": "0ae2afa7-9b10-4b3a-ab7e-15fbf847038d",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/0ae2afa7-9b10-4b3a-ab7e-15fbf847038d"
+        },
+        {
+          "name": "孟岩",
+          "uuid": "c28c4303-ea82-4043-9938-cc6ed14f83d0",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/c28c4303-ea82-4043-9938-cc6ed14f83d0"
+        },
+        {
+          "name": "李继刚",
+          "uuid": "752D3103-1107-43A0-BA49-20EC29D09E36",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/752D3103-1107-43A0-BA49-20EC29D09E36"
+        },
+        {
+          "name": "阑夕",
+          "uuid": "FBAA4408-2343-45AD-9B4F-4ABD52FB84CA",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/FBAA4408-2343-45AD-9B4F-4ABD52FB84CA"
+        },
+        {
+          "name": "汗青HQ",
+          "uuid": "E76DDB17-C788-4A7B-A4F7-4206F60F2B4A",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/E76DDB17-C788-4A7B-A4F7-4206F60F2B4A"
+        }
+      ]
+    },
+    "counts": {
+      "x_accounts": 63,
+      "blogs": 20,
+      "podcasts": 6,
+      "jike_accounts": 5,
+      "zh_creators": 0
+    },
+    "custom": {
+      "zh_creators": {
+        "enabled": false,
+        "sources": []
+      }
+    },
+    "audit": [
+      {
+        "key": "x:zarazhangrui",
+        "name": "Zara Zhang",
+        "type": "x",
+        "raw": 2,
+        "high": 2,
+        "demoted": 0,
+        "totalScore": 1.776,
+        "maxScore": 0.894,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.888
+      },
+      {
+        "key": "x:claudeai",
+        "name": "Claude",
+        "type": "x",
+        "raw": 2,
+        "high": 2,
+        "demoted": 0,
+        "totalScore": 1.409,
+        "maxScore": 0.729,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.705
+      },
+      {
+        "key": "x:petergyang",
+        "name": "Peter Yang",
+        "type": "x",
+        "raw": 2,
+        "high": 2,
+        "demoted": 0,
+        "totalScore": 1.392,
+        "maxScore": 0.721,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.696
+      },
+      {
+        "key": "x:rauchg",
+        "name": "Guillermo Rauch",
+        "type": "x",
+        "raw": 2,
+        "high": 2,
+        "demoted": 0,
+        "totalScore": 1.367,
+        "maxScore": 0.752,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.683
+      },
+      {
+        "key": "x:garrytan",
+        "name": "Garry Tan",
+        "type": "x",
+        "raw": 2,
+        "high": 2,
+        "demoted": 0,
+        "totalScore": 1.316,
+        "maxScore": 0.678,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.658
+      },
+      {
+        "key": "x:joshwoodward",
+        "name": "Josh Woodward",
+        "type": "x",
+        "raw": 2,
+        "high": 2,
+        "demoted": 0,
+        "totalScore": 1.2930000000000001,
+        "maxScore": 0.663,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.647
+      },
+      {
+        "key": "x:danshipper",
+        "name": "Dan Shipper",
+        "type": "x",
+        "raw": 2,
+        "high": 2,
+        "demoted": 0,
+        "totalScore": 1.251,
+        "maxScore": 0.642,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.625
+      },
+      {
+        "key": "x:levie",
+        "name": "Aaron Levie",
+        "type": "x",
+        "raw": 1,
+        "high": 1,
+        "demoted": 0,
+        "totalScore": 0.812,
+        "maxScore": 0.812,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.812
+      },
+      {
+        "key": "podcast:AI & I by Every",
+        "name": "AI & I by Every",
+        "type": "podcast",
+        "raw": 1,
+        "high": 1,
+        "demoted": 0,
+        "totalScore": 0.727,
+        "maxScore": 0.727,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.727
+      },
+      {
+        "key": "x:googlelabs",
+        "name": "Google Labs",
+        "type": "x",
+        "raw": 1,
+        "high": 1,
+        "demoted": 0,
+        "totalScore": 0.694,
+        "maxScore": 0.694,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.694
+      },
+      {
+        "key": "x:mattturck",
+        "name": "Matt Turck",
+        "type": "x",
+        "raw": 1,
+        "high": 1,
+        "demoted": 0,
+        "totalScore": 0.689,
+        "maxScore": 0.689,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.689
+      },
+      {
+        "key": "x:realmadhuguru",
+        "name": "Madhu Guru",
+        "type": "x",
+        "raw": 1,
+        "high": 1,
+        "demoted": 0,
+        "totalScore": 0.658,
+        "maxScore": 0.658,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.658
+      },
+      {
+        "key": "x:trq212",
+        "name": "Thariq",
+        "type": "x",
+        "raw": 2,
+        "high": 1,
+        "demoted": 0,
+        "totalScore": 1.244,
+        "maxScore": 0.762,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.622
+      },
+      {
+        "key": "x:amasad",
+        "name": "Amjad Masad",
+        "type": "x",
+        "raw": 2,
+        "high": 1,
+        "demoted": 0,
+        "totalScore": 0.895,
+        "maxScore": 0.654,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.448
+      },
+      {
+        "key": "x:thenanyu",
+        "name": "Nan Yu",
+        "type": "x",
+        "raw": 1,
+        "high": 0,
+        "demoted": 1,
+        "totalScore": 0.462,
+        "maxScore": 0.462,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0.462
+      },
+      {
+        "key": "x:karpathy",
+        "name": "Andrej Karpathy",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:swyx",
+        "name": "Swyx",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 1,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:kevinweil",
+        "name": "Kevin Weil",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:amandaaskell",
+        "name": "Amanda Askell",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:_catwu",
+        "name": "Cat Wu",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:alexalbert__",
+        "name": "Alex Albert",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:ryolu_",
+        "name": "Ryo Lu",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:nikunj",
+        "name": "Nikunj Kothari",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 1,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [
+          {
+            "reason": "personal_life",
+            "count": 1
+          }
+        ],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:steipete",
+        "name": "Peter Steinberger",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:adityaag",
+        "name": "Aditya Agarwal",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:sama",
+        "name": "Sam Altman",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:levelsio",
+        "name": "Pieter Levels",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:thedankoe",
+        "name": "Dan Koe",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:tdinh_me",
+        "name": "Tuan Dinh",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:lexfridman",
+        "name": "Lex Fridman",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:leeerob",
+        "name": "Lee Robinson",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:naval",
+        "name": "Naval",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:gregisenberg",
+        "name": "Greg Isenberg",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:xiaohu",
+        "name": "xiaohu",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:zho_zho_zho",
+        "name": "ZHO_ZHO_ZHO",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:yihui_indie",
+        "name": "yihui indie",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:aiwarts",
+        "name": "aiwarts",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:xianyuli",
+        "name": "XianyuLi",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:cuimao",
+        "name": "CuiMao",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:indiehackercase",
+        "name": "indiehackercase",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:khazix0918",
+        "name": "Khazix0918",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:jackywine",
+        "name": "Jackywine",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:cellinlab",
+        "name": "cellinlab",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:idoubicc",
+        "name": "idoubicc",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:pandatalk8",
+        "name": "PandaTalk8",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:ai_jasonyu",
+        "name": "AI Jasonyu",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:app_sail",
+        "name": "app_sail",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:yangyi",
+        "name": "yangyi",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:op7418",
+        "name": "op7418",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:lxfater",
+        "name": "lxfater",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:bearliu",
+        "name": "bearliu",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:geekbb",
+        "name": "geekbb",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:hzlzh",
+        "name": "hzlzh",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:foxshuo",
+        "name": "foxshuo",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:luoleiorg",
+        "name": "luoleiorg",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:turingou",
+        "name": "turingou",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:waylybaye",
+        "name": "waylybaye",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:lifesinger",
+        "name": "lifesinger",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:sagacity",
+        "name": "sagacity",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:interjc",
+        "name": "interjc",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:oran_ge",
+        "name": "oran_ge",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:vista8",
+        "name": "vista8",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:dotey",
+        "name": "dotey",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "x:ruanyf",
+        "name": "ruanyf",
+        "type": "x",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:Anthropic Engineering",
+        "name": "Anthropic Engineering",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:Claude Blog",
+        "name": "Claude Blog",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:Product Hunt",
+        "name": "Product Hunt",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:V2EX Hot",
+        "name": "V2EX Hot",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:产品沉思录",
+        "name": "产品沉思录",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:Hacker News (Front Page)",
+        "name": "Hacker News (Front Page)",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:GitHub Trending (Daily)",
+        "name": "GitHub Trending (Daily)",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:Google AI Blog",
+        "name": "Google AI Blog",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:少数派",
+        "name": "少数派",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:OpenAI Blog",
+        "name": "OpenAI Blog",
+        "type": "blog",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:也谈钱",
+        "name": "也谈钱",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:越女事务所",
+        "name": "越女事务所",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:老钱日日谈",
+        "name": "老钱日日谈",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:人神共奋",
+        "name": "人神共奋",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:阑夕",
+        "name": "阑夕",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:甲子光年",
+        "name": "甲子光年",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:硅星人Pro",
+        "name": "硅星人Pro",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:智能涌现",
+        "name": "智能涌现",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:脑极体",
+        "name": "脑极体",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "blog:赛博禅心",
+        "name": "赛博禅心",
+        "type": "wechat",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "podcast:Latent Space",
+        "name": "Latent Space",
+        "type": "podcast",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "podcast:Training Data",
+        "name": "Training Data",
+        "type": "podcast",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "podcast:No Priors",
+        "name": "No Priors",
+        "type": "podcast",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "podcast:Unsupervised Learning",
+        "name": "Unsupervised Learning",
+        "type": "podcast",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "podcast:Data Driven NYC",
+        "name": "Data Driven NYC",
+        "type": "podcast",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "jike:歸藏",
+        "name": "歸藏",
+        "type": "jike",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "jike:孟岩",
+        "name": "孟岩",
+        "type": "jike",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "jike:李继刚",
+        "name": "李继刚",
+        "type": "jike",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "jike:阑夕",
+        "name": "阑夕",
+        "type": "jike",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      },
+      {
+        "key": "jike:汗青HQ",
+        "name": "汗青HQ",
+        "type": "jike",
+        "raw": 0,
+        "high": 0,
+        "demoted": 0,
+        "totalScore": 0,
+        "maxScore": 0,
+        "noiseReasons": [],
+        "notes": null,
+        "quality": null,
+        "priority": null,
+        "avgScore": 0
+      }
+    ]
+  },
+  "podcasts": [
+    {
+      "source": "podcast",
+      "name": "AI & I by Every",
+      "title": "How Anthropic Uses Claude Fable 5 With Mike Krieger",
+      "guid": "bb5cd6c0-a739-49e2-96eb-f03d5c26db38",
+      "url": "https://www.youtube.com/watch?v=XWpTgCvgYaE",
+      "publishedAt": "2026-06-10T17:27:38.000Z",
+      "transcript": "Speaker 1 | 00:04 - 00:07\nMike, welcome to the show. Great to be here, Dan. Good to see you.\n\nSpeaker 2 | 00:07 - 00:17\nSo for people who don't know you, you're the head of Anthropic Labs, and you're the cofounder of Instagram. And today, I wanna talk to you about is Fable five. So Fable five is dropping tomorrow. We're recording this the day before. It's gonna come out after it drops.\n\nSpeaker 2 | 00:17 - 00:39\nBut what I really wanted to do is bring you on the show to tell me about what it's like to use this model beyond the first day. I think when a model this powerful drops, it's so useful to have someone who's using it day in and day out to tell you, this is where it's powerful. This is how what it actually changes. This is what it doesn't change. So that you're you kind of like don't you kind of don't get the same AI psychosis type thing.\n\nSpeaker 2 | 00:39 - 00:43\nYou can actually think about, okay, like, this is how it fits into my life.\n\nSpeaker 1 | 00:43 - 00:58\nYeah. Absolutely. And and it's also just been interesting. You know, we've had some, you know, models in this, you know, mythos class leading up to the Fable release, you know, for a couple of months now. And it's I think it's very exciting to see how people will build with this externally.\n\nSpeaker 1 | 00:58 - 01:21\nBut I think you're also right that day one impressions, I think it really comes from getting to use this over a couple of weeks. I think we've seen that even with previous models, like the December into January usage, was an OPUS four five or OPUS four six. So it was really important because people spend extended time on the model and then figure it out, oh, actually, wasn't pushing it hard enough. I gotta go further. I gotta rethink what's even possible with this generation.\n\nSpeaker 2 | 01:21 - 01:43\nTotally. I mean, I don't know. I feel like there are people internally at every who have been using it, who have been like, oh my god, I think I kind of need a new set of skills to use this model. And I think you can especially see this with people who are maybe more nontechnical internally and who are more on the knowledge work side of things where they're like, I don't even know what I would use this for. And the people who are orchestrating agents are like, holy shit, I feel like there's so many new things I need to learn.\n\nSpeaker 2 | 01:43 - 01:47\nSo I'm curious for you, tell us about the difference between your impression when you first tried it and now.\n\nSpeaker 1 | 01:47 - 02:14\nYeah. I think that your point on on adapting workflows is a really good one. Quite literally, workflows, I'll talk about that in a second, but also just in terms of, like, how do I, like, think about usage of the model? Because, you know, at first, the the timing was interesting because it kinda coincided with me transitioning from CPO into labs and going really back into into builder mode. I think it was about a month and a half or two months into that that we first had, you know, one of these models available internally.\n\nSpeaker 1 | 02:14 - 02:41\nAnd I I sat there, and I and I was like, I feel like a total newbie again because I feel like the way that I am prompting or even thinking about decomposing a task is really out of date now with this model. Like, it's no longer and it's even thinking about the time horizon or the sort of, like, interactivity model, I think, has to evolve as well. Like, going from, I think, early on would be like, I have an idea for this feature. Can we start by like, absolutely not. Right?\n\nSpeaker 1 | 02:41 - 02:59\nTo great. Like, let me express more of the intent. And then just being you know, I remember, like, you know, know, March, April be like, wow. On the one shot, it's already incredibly impressive. But then it also understands the intent around how we're gonna evolve this and understands, like, the global context as well.\n\nSpeaker 1 | 02:59 - 03:25\nSo I think that's been a really interesting evolution till now where, you know, I was funny. I was talking to somebody this morning where, you know, I think about doing work. I had a flight, and I was like, okay. I can do most of this work remotely. And I don't even worry that, like, the Wi Fi is gonna drop out because I know that if I set up the right, you know, context instructions, like, flash loop, you know, I'll see it it'll see it through.\n\nSpeaker 1 | 03:25 - 03:56\nAnd and I think my last two months have been full of a lot of times where I will, you know, wish Claude a good night, set it up on, like, a pretty complex task of something of this, like, monoclast, and wake up to you know, actually, it's usually done by, like, two in the morning, and I guess it just totals its thumbs for the next four hours. But, like, really impressive ability to, like, complete the swing, get itself out of the situation where it's like, okay. Alright. Well, Mike asked me to do this complex task overnight. I got stuck because this remote service went down.\n\nSpeaker 1 | 03:56 - 04:09\nI'm gonna write a, like, scaffolded, like, back end for it for now. So I'll, you know, I'll document that. I'll, you know, go all the way through. I have a, like, good mental model of, like, how far that's gonna get me. And then when it comes back online, I'll fix it.\n\nSpeaker 1 | 04:09 - 04:41\nI'll keep track of that fact. It's just, like, it it is I think the most impressive thing for me is, like, you're just being able to, like, delegate that kind of level of task and just trust that the right thing will happen by the end. And, course, like, you'll review the result, there's still, like, a whole verification thing that we should we can and should talk about because I think that's an important part of still completing the the the swing there. But it's really forced me to rethink, like, what is being productive with one of these models look like? And it it is much more like, we've talked for a while about, you know, like, is it like when these models are more of, a companion or a coworker?\n\nSpeaker 1 | 04:41 - 04:46\nAnd it really feels like now it's, like, a teammate that I can delegate, like, a lot of work to.\n\nSpeaker 2 | 04:46 - 05:10\nAnd what is your what is your day to day flow like right now? Because one of the things I noticed is if you if you just give it a big task and you monologue into it and you just like let it go for a few hours or overnight, it's like the most impressive model that I've ever tried. But you know, it's so slow and it's so expensive that you you I I feel like I don't wanna use it for day to day tasks. So what is your actual flow like in terms of how you use it day to day, and where does it slot in versus other models?\n\nSpeaker 1 | 05:10 - 05:49\nYeah. I've ended up having a lot more architectural planning conversations upfront with it as well. So that's been, like, another interesting change where and I think this is an area that I think all models need to continue to improve, and I'm really grateful for the Instagram experience of having to, like, start, you know, from our initial version that was, like, duct taped on a server in LA to, like, being able to scale it and eventually integrate it with, like, all of, like, the Facebook infrastructure. Because you kind of develop a sense of what what infra abstractions and complexity are appropriate for each stage of it. And I I still don't always go back and forth with Fable where it'll be like, oh, this is a good, you know, implementation.\n\nSpeaker 1 | 05:49 - 06:13\nLike, well, I I do plan on shipping this, like, fairly soon. Like, I think we should probably think about more than one server and kind of like that back and forth Mhmm. Is important. But, like, a lot of that sort of planning and I'll often actually ask it. It's kind of a the the thing I've realized is Fable can, like, be so sort of sort of complete in its thinking in terms of how much you are sort of planning with it.\n\nSpeaker 1 | 06:13 - 06:49\nLike, often just saying, can you just, like, make an HTML page, like, that represents what we just talked about so I can share it with the team is actually valuable, or even just a markdown document, but I like having diagrams. So that's been an interesting, like, use of, like, let's plan with it. Let's think it through. And then let's have some sort of document that we can align the team on because and this is a dynamic I've seen in labs and just teams beyond Anthropic, which is you can build a lot very quickly and forcing more of that early alignment, even if you do an initial prototype and then back it out into more of a sort of plan architecture, that works too. I think it's really, really, really key.\n\nSpeaker 1 | 06:49 - 07:29\nAnd it ends up being ends up being the place from, like, the human to human interaction still stays very, you know, very much part of the process. And then from then on, I think, you know, either overnight or during the the the day, like, having it execute on those chunks of tasks is really important. And it just means having a lot more concurrent sessions than I did before because I often will think, alright, there's there's these these two pieces of work. I go back and forth between liking having one, like, very long running Cloud Code session and really asking it to do everything in background sort of forks sub agents so the main thread stays responsive. And then other times, just embracing, like, I'm just gonna it's one of those days where we're gonna have, like, five or six tabs that, like, tackle, like, long comprehensive work.\n\nSpeaker 1 | 07:29 - 07:46\nBut I do think that there's something to this, like, long horizon, like, don't, you know, don't worry. I'm I'm on it. It's gonna take me a while, and, like, more of, this back and forth. And that that modality, I think, is something that we'll have to figure out in our products as well. I think you wanna preserve both, and they they interact with each other in interesting ways.\n\nSpeaker 1 | 07:46 - 08:10\nAnd, like, my preference is usually I always like having at least one clod that is high context, but also very, very fast response. And, like, its instinct is, great. I'm gonna answer you, and I'll kick something off if I need to. And if not, I'm just gonna, you know, hang tight and and and wait for the next kind of loop. I do think you're right that for the I'm just trying to fix this, you know, interaction question or something that's like very fine detailed.\n\nSpeaker 1 | 08:11 - 08:33\nLike, Fable will go off and think very hard about those things. And I think Fable is the first model where I've actually played more with the effort levels for that reason where I've been like, okay, this is I just needed to, like, tweak some UI. I'm gonna actually gonna fall the like, you know, put it to medium or something and see how that plays out. I didn't find myself doing that as much with the Opus maybe because the range felt less, like, wide, where it really can feel quite wide with Fable.\n\nSpeaker 2 | 08:34 - 08:46\nWhat about, like, a quick question? Like, you're you're on the go, like, are you asking Fable, you know, random questions as they as they come to you? Because it feels like you're using a rocket launcher to kill a mosquito or something, or are you flipping back and forth?\n\nSpeaker 1 | 08:47 - 08:58\nIt's so funny you asked that because I hadn't been. And, you know, you're like, it's thinking. It's thinking really hard about it. Then since last week, I was like, no. I was asking it something that, like, true.\n\nSpeaker 1 | 08:58 - 09:09\nI felt embarrassed actually asking Fable about. It was something like, probably something NBA finals related. And I was like, okay. I switched my iOS app to to SADA. I was like, oh, yeah.\n\nSpeaker 1 | 09:09 - 09:51\nI you you use this all the time for fast questions. It's like counter of magnitude, like, and feeling of like and it's actually not even the the sort of, like, tokens per second. It's actually probably more around how much thinking goes into the answer, and sometimes, like, the answer does not need to be fully thought through. So, yeah, I I am I'm thinking myself through it, and I think this is a good product question for us too, which is, you know, in general, you don't want people to have to be thinking so much about these choices. So ideally, what we can sort of coalesce around in the longer run is sort of, you know, maybe like some more bucketable use cases that are really grokable to people, or maybe it varies by surface where it's actually probably unlikely that most of the time with the iOS app, I'm doing Fable type tasks, and, you know, having a sticky model selection per surface might be the way to do that.\n\nSpeaker 1 | 09:51 - 10:01\nAnd we'll have to sort of explore what that means from a product perspective. But I've, for sure, have had the feeling of like, this this is not a stable worthy question. I'm I should ask Sonnet.\n\nSpeaker 2 | 10:01 - 10:04\nCan you show us something that you've built with it?\n\nSpeaker 1 | 10:05 - 10:28\nYep. So one of the things that we were we we did this this go around is we encouraged personal sort of like account usage for us, like, especially on the weekends, which was really fun because, you know, we have, you know, you can imagine, like, lot of Nthropics specific, you know, tooling, etcetera. But it was really good to sort of step back and be like and just like, you know, pure Cloud Code. Let's like work on something over the weekend.\n\nSpeaker 2 | 10:28 - 10:30\nAnd you're in you're in the terminal app or you're in the desktop app?\n\nSpeaker 1 | 10:30 - 10:53\nThat's a great question. I'm mostly still in the terminal app. It's interesting watching my wife who's like not a professional engineer and more of a UX designer PM, like, really fall in love with Cloud Code via the desktop app, and I think it's, like, sort of simplified some of the the sort of abstractions for her in that way. But for this one, I was still is it ghosty or ghost t t y? Ghosty and and and the terminal app.\n\nSpeaker 1 | 10:53 - 11:15\nBut let me show you. I this is one of those, like everybody has some bespoke need around this. Like, I wanted a good sort of media tracker experience, and I was like, you know, I'm playing games. Like, I'm watching TV shows. I get all these recommendations, and I just wanted to build something, like, that was personal to me and, like, sort of fit some of the use cases that I that I had.\n\nSpeaker 1 | 11:15 - 11:36\nAnd, like, I would like the two biggest criteria that I started with was, like, one, like, really easy to add things. And so, like, you could talk to Claude. Claude does the Gentic search over everything, and then puts the right thing to then. And then also proactively, like, you know, there's a new season or a new, like, sequel to a game that it could go off and and and research those things. Most of the UI was like, you know, Fable one shot, which was which was already impressive.\n\nSpeaker 1 | 11:37 - 12:06\nBut then the the the thread I've been pulling out a lot in labs this year is how do you sort of bring the software team, which is cloud these days, closer to the software itself? And so this was like maybe, you know, Saturday morning. I had a full weekend with with kids stuff, so a lot of this was sort of kick off work, go do you know, go for a hike with the kids, come back, you know, continue to do the work. Sometimes check-in on the work on the hike. I probably shouldn't, but, know, it was, like, nice to, like, pop into remote mode and and see what was going on there, you know.\n\nSpeaker 1 | 12:06 - 12:37\nI try not to do that too much. But I had this idea around, hey, like, could you could we like do a spike on I say spike a lot with with these models. I'm like, can we do a spike on, like, what if you could actually modify the software from within itself, which is, you know and it was I built both. It was like a React Native version, and then this version, which is just the web version. So I already had like a chat type thing where you could sort of ask Claude to, you know, add things by URL, which is like, you know, I want every software to have this where I should never have to like navigate a menu to do anything ever again.\n\nSpeaker 1 | 12:37 - 12:44\nAnd this is like, in many ways, Dan, like, the I was trying to distill the, like, agent native architectures to, like, its, like, fullest degree, which is,\n\nSpeaker 2 | 12:44 - 12:44\nlike Yeah.\n\nSpeaker 1 | 12:44 - 13:01\nAlso have the agent be able to modify the app. So, like, maybe, like, phase one of agent native architecture, like, every single thing in in in this product is, you know, accessible from the agent and and and, like, has tool calls, etcetera. That's, like, you know, hopefully becoming cable fix. It was sadly not in a lot of software, and it's great. Because I was like, what's that like?\n\nSpeaker 1 | 13:01 - 13:30\nBecause somebody had recommended there's a in Brazilian, there's, a show about radioactive stuff in Goiania. I did not remember what it was called, and Claude was able to figure it out. It was like so much better than being like trying to figure that intuitively. But then the next step I was interested in is like, what would it mean to actually be able to modify the software from itself on the go? And so if you long press this little chat thing, so what it actually what I built, what Claude built, was a way where it used uses our managed agents to basically take on, like, edit requests, and then you can preview them.\n\nSpeaker 1 | 13:30 - 13:44\nAnd I used, like, the Vercel live preview thing here. This like, this whole, like, feature was also one shot, was really cool. Oh, yeah. And then I just added to it over time. But, know, it's like actually does like a little diff view if you wanted to.\n\nSpeaker 1 | 13:44 - 14:08\nYou can go into the manage agent conversation and see, like, what it did. Although, I almost never do because, again, it's like, especially don't particularly care on like the code quality of like, or the like long term attenability of this software. You can see that it had a session in here too. But it's been really fun. So I'll be using it on the go and say like, you know, I had a feature request the other day, like, oh, like the floating action button was too low on native iOS, but it was okay on on there.\n\nSpeaker 1 | 14:08 - 14:26\nLike, can you go if it do it? It did it. It was really fun with some of the, like, expo tooling now. It actually, like, live reloaded on my phone, which was also, like, a really cool kind of kind of feeling. But it was just like, you know, does this thing need to be like a, you know, production level thing that's gonna go to a million users?\n\nSpeaker 1 | 14:26 - 14:48\nNo. But it felt really good to have something where I felt like it didn't have to stop at just the weekend, and I could keep working on it just by using it and having this, like, kind of end to end close thing. So I felt like this was a good manifestation of both, like, Fable's building ability, but also, like, I think a lot of both of I have been thinking both you and I have been thinking about, like, how does Claude embed itself and, like, into software beyond just even the usage side\n\nSpeaker 2 | 14:48 - 14:49\nof\n\nSpeaker 1 | 14:48 - 14:49\nthings.\n\nSpeaker 2 | 14:49 - 15:12\nThis is really cool. I want people to understand, has been built, you could build something like this. Maybe not the self modifying part, but you could build something like this for ten years or twenty years or something like that. But the cost to build has gotten dramatically lower. So think about how much it would have cost to do this in the Instagram days versus now.\n\nSpeaker 2 | 15:12 - 15:14\nCan you help us understand how that has changed?\n\nSpeaker 1 | 15:16 - 15:48\nYeah. I think and I think about this a lot when I think back to that that time as well because, you know, I I thought of myself as a very productive programmer in the early Instagram days. You know, I was, like, really into mobile development, and and we had, like, a good clarity of of things. And I think the the gap from idea to fully realized version of, like, some complete product, like, you were still looking at, you know, four ish days of kind of my all nighters, which was, like, my natural state is up till four, you know, sleep until noon, which is not conducive to family life, so I've had to shift. But that was, like, my my building thing.\n\nSpeaker 1 | 15:48 - 16:49\nYeah, I call it, you know, Instagram v one, which, you know, probably had more features than than this thing did, but not by an order of magnitude, was, like, five days of all nighters, me working on, like, the sort of front end and and back end, and Kevin working on the initial filters to get that that out. And and this is also, like, you know, like, built on already, you know, many years that I've been working on on on iOS pieces as well. And then the iteration, you know, I think a lot about what we were gated on after that launch when things went well was we had all these ideas for where to take it, but we were just trying to keep the site up or we were just trying to, like, add the one incremental feature and, you know, hashtags take a week to build, but then there's, like, all the things that you wanna continue doing on it as well. And so I think it's both that shortening of time, like, there's still the time required for the idea and the the concept and the iteration. And then the other piece, which is the you can then iterate on what you have, and I think a really I think really fun, but also like very, you know, sort of in the float kind of way.\n\nSpeaker 1 | 16:50 - 17:31\nAnd then, you know, if now this is me as a sort of professional software engineer sort of startup founder. Beyond that, if you had that idea, you know, and I saw multiple people go through this, like, was like, well, I'll try to find maybe consultancy that will take this on, but like now there's like, it's a really lossy process of like, what I want it, you know. Yeah. Is it they're gonna raise money for it. And I think that the thing that I think is, like, the most exciting part about these models getting not just more autonomous, but again, closing that gap between intent and execution is what I've seen it do to people's ability to build who are not, like, builders.\n\nSpeaker 1 | 17:31 - 18:09\nAnd the trajectory of these models has been, you know, if something abled, you know, of this general mythos class is, like, in that class of models, and eventually, you know, models of you know, that are cheaper and more accessible to to other folks become available too. And, like, as that process happens, like, I just think it is just opening up so many like, I got a ping the other day. I get very excited about the stuff, if you can't tell. From somebody internally, and we had built them an internal tool that kinda combined Fable and, like, access to some internal MCPs. And she said, like, it is the first time in my life and she works in recruiting.\n\nSpeaker 1 | 18:09 - 18:41\nShe's like, the first time in life where, like, I feel like the thing that's in my head and the thing that exists in the world is now, like, they're right next to each other. Like, I can just do it. And, it was, like, very like, a meaningful moment to her because prior to that, like I mean, I remember these days these days were five years ago or four years ago where that person, if they wanted a tool, would have to either make do or try to get an internal tools engineer that probably was overloaded with 50 other, you know, requirements. But instead, now they, like, are just having the time of their lives building. And I think that is I think that's cause for a lot of, like, hope.\n\nSpeaker 1 | 18:41 - 18:52\nI don't think that human capacity for creativity and what's possible is enormous. And I think, like, at our best, we are basically expanding the number of people who can then see that through to something that feels real.\n\nSpeaker 2 | 18:52 - 19:04\nI totally agree, but I do think that there's a question in the back of my mind, I think it's probably gonna be in the back of the minds of some of the people listening. So I wanna ask you, given everything you just said, is software engineering over?\n\nSpeaker 1 | 19:04 - 19:16\nYeah. I think software engineering is different. It is like dramatically changed. And as I I as I probably would have defined it if you had asked me around the Instagram time, like, what is software engineering? I'd probably say, alright.\n\nSpeaker 1 | 19:16 - 19:32\nLike, thinking through the hard problems and, like, thinking about an architecture, then, like, spending a lot of time in, you know, like, TextMate. I don't know what that can really be. Like, you know, like, text editor, you're gonna edit those things or Xcode, you know, and Watching Rails casts. You know? Yeah.\n\nSpeaker 1 | 19:32 - 19:47\nExactly. Right. Exactly. And understanding the intricacies of Django's, like, ORM layer, and then, like, 15 bugs after you deploy it. Like, so much of that is radically different and collapsing into other parts of, like, product management.\n\nSpeaker 1 | 19:47 - 20:14\nAnd I think that sort of, like, PM end split, I think you guys see it even on our teams has become much more diffuse. That's radically changed. But I think the overall, like, maybe zoom out from software engineering and think about like software production or, you know, software development, but not in like just the pure developer case. I think that is, like, alive and well and and and essential still. So I think that it that is the moment that I feel like we are in.\n\nSpeaker 1 | 20:14 - 20:38\nI think Fable is another step on the direction of and I'm not gonna call it the fall final step. Of course, a lot will still happen. But, like, I think a pretty significant step in terms of, like, the trust, at least I end up placing in the model in terms of its capacity to see things through and even, you know, architect things reasonably is quite high. So that part feels like it is it is not ever gonna be done, but it is pretty pretty done. Right?\n\nSpeaker 1 | 20:38 - 20:51\nLike, it it's gone really far. But I think that the overall sort of craft of the what needs do you have? Like, what are you putting out? Like, is it actually good? I think still a very human endeavor.\n\nSpeaker 1 | 20:51 - 21:31\nBut I also sort of can see that that is not a transition that is pain free in a way. Like, I think there are plenty of people who love the craft of, like, actually putting I used to love stuff like, I solved that problem so elegantly. You would dream about code, and if you've had that experience of, like, you dream about the thing that you're working on, they, like, wake up in the morning and be like, I figured out how to solve this thing really elegantly. And and that for sure has has has passed, I think that there's, you know, there there's there is a feeling of loss, I think, in some of the, like, better engineers that I talked to, as well as the feeling of, oh my god, but I can do insane amounts of work now at same time. So we're holding both ideas in our heads at once, I guess.\n\nSpeaker 2 | 21:31 - 21:46\nWhich I think is the most important part of this. Like, it's normal to feel sadness for that kind of thing and excitement. But I'm curious, let's just take the thesis of software engineering is alive and well. What does that actually look like inside of Anthropic?\n\nSpeaker 1 | 21:47 - 22:06\nYeah. I think there's there's a few thesis. I think there's still the the crafting of well, I gotta take it off from, the full software development cycle or, like, maybe what I see on a day to day, maybe I'll do a little bit of both. But I think there's still a lot of, you know, we all got together. We we talked about the next way we want to, you know, evolve co work.\n\nSpeaker 1 | 22:07 - 22:19\nAnd now we've kind of broken it down into areas of ownership. I think that ends up still being quite important because there is still context that you hold as a person that is sort of beyond Claude. Right? Like, what is the actual intent of this product? How's it going?\n\nSpeaker 1 | 22:19 - 23:00\nWhat do we need to know about other products that are coming down the pipeline that are going to be integrated in some interesting way? So I think that aspect is really important still. And so, know, though we have many clods to each human, each human, at least the way we've been working on, still kind of has, you know, we call them DRIs, directly responsible individuals, still has like a DRI ship over some part of the product or some area. I think that'll be the case for a while because I think there is value in not just this distributor, like, we should all make better, but instead, like, alright. I'm thinking through how cohort does this particular task, and there's still a lot of, you know, the we try to keep meetings minimal, but they they still emerge and you still have these kind of alignment conversations.\n\nSpeaker 1 | 23:01 - 23:41\nThen, like, a lot of that sort of asynchronous delegation. I think what many engineers here have now found is they've they've all built and I think we solved this at some point at, like, a broader product level. But they've all built some version of, alright. I'm gonna now, like, create a dashboard of where all my clods are doing and what's waiting for me and which pull requests, like, need my attention because, you know, either a human or a clod coder viewer got back to me. So there's a lot of that sort of meta maintenance of the of the work that I think again, I think we'll standardize some, but I think some of it will always be a little bit bespoke to the way each individual likes to work just in the way that people organize their windows, now they organize their work.\n\nSpeaker 1 | 23:42 - 24:08\nAnd then there is, I think, also the understanding how things work in production. And I think that is another, like there's a few, like, next frontiers, I think, for the models. And I think one of them that Fable does, you know, make significant strides in, but I think there's there's more work needed here is understanding what happens to code after it gets deployed, you know. Because there's incidents. There's, you know, this was all working well, but, like, this network link got cut, which is not in your usual failure mode.\n\nSpeaker 1 | 24:08 - 24:44\nAnd, like, it manifested, like, so much of Instagram. Like, 2012 to 2016 was, like, dealing with that and scaling things up. And so that role of the engineer still remains really key, and I think getting the the reps in around incident response and understanding how to stay calm, gather data, like, remediate what's immediate, but then, like, go off and and and work on on on longer term fixes, like, still a necessary part of it. And and I'm trying to think if there's any, like, other pieces that are that are notable as well. I think what's maybe the last the last thing to say is I really like the role that the engineering prototype now plays.\n\nSpeaker 1 | 24:44 - 25:13\nYou have to be clear when it's a prototype versus not. But, you know, the old phrase was like, code wins arguments, and I never, like, loved that because, like, kind sort of the person that could code could go do it, but actually, like, why should they necessarily win an argument by by by default? But actually, it's been really cool now where sometimes we will have some disagreement or some sort of debate about where to take a product. And often, it's the PM that will say, alright. I just tried it and, like, jank in, like, these eight ways.\n\nSpeaker 1 | 25:13 - 25:35\nBut look, it actually shows, like, how this could work, and that that can open up some some interesting pieces of conversation. So almost all of that is quite different than it was six months ago. I think especially at the level of parallelism and the level of need for these kind of higher order abstractions of work. But I think what hasn't changed is that ownership.\n\nSpeaker 2 | 25:35 - 25:58\nLots of us are shipping AI to production, which is great for productivity, but it also comes with anxiety. You tweak a prompt, swap models, adjust parameters, and everything looks fine in testing, so you merge. And then three days later or even sooner, the support tickets start rolling in. The AI is giving your customers unexpected answers, you have no idea when it happened or why. BrainTrust is the AI observability platform that fixes this.\n\nSpeaker 2 | 25:58 - 26:17\nIt connects evals and observability in one workflow. That way, you see what actually happened in production and can measure whether changes made things better or worse. Traces show the full execution path. Evals define what good looks like, and experiments let you compare prompts and models side by side before shipping. Production traces feed directly into your eval datasets.\n\nSpeaker 2 | 26:17 - 26:38\nEvery failure becomes a test case. You catch regressions in CI before they reach users, and teams at Notion, Stripe, Zapier, Vercel, and Ramp use it to ship quality AI at scale. BrainTrust is designed for teams building production AI systems where silent regressions are expensive. It's built for any stack. They have SDKs for Python, TypeScript, Go, Ruby, C Sharp.\n\nSpeaker 2 | 26:38 - 26:51\nThere's no framework lock in or vendor dependencies. It's SOC two, Type two certified, and GDPR and HIPAA compliant. Get started at braintrust.dev. That's braintrust.dev. And now back to the episode.\n\nSpeaker 2 | 26:51 - 27:13\nFable is also very expensive. And because of that, well, like, when I was testing it, I felt kinda like I was a kid in a candy shop, I was just like, I'll do this, and I'll do this, and I'll do that. But now that there's gonna be a bill, I'm gonna be thinking about it. Because I have to pause before I do it to be like, is this gonna cost me a $100 or whatever? And I do think that's gonna limit who gets to use it and for what.\n\nSpeaker 2 | 27:14 - 27:15\nSo how do you think about that?\n\nSpeaker 1 | 27:15 - 27:33\nYeah. I think it's most clear cut on the sort of professional software, you know, sort of classic company doing work. It'll be really interesting. It's like, you know, a lot of process that goes into to pricing as well. There's like it's both more expensive than Opus.\n\nSpeaker 1 | 27:33 - 27:57\nAnd then also, I'm like, in many ways, it's really cheap. If you think about, you know, like, how much incredible work it's doing. But, of course, like, everybody has their own economics around what they're what they're what they're working with. So anyway, most clear cut, I think, from most sort of software teams. And I think as an industry, if, like, phase one was companies even struggling to get some of their employees to adopt AI coding, which models were early, maybe the tooling wasn't there.\n\nSpeaker 1 | 27:57 - 28:35\nAnd then phase two was, great. We'll create leaderboards and see who can use the most, which, you know, as you can imagine, creates, like, some, like, also, like, not ideal incentives to phase three where people were like, okay. Now we're just trying to figure out who's using it effectively and, like, letting them spend as much as possible, having a a a clear process for that, but making sure we're not doing things wastefully, which I think to me, in general, makes sense. Although, I think you could, like, also over rotate that way too. I think something of Fable class should hopefully fit in well into that, if you're demonstrating results and you're getting use out of the model, then that hopefully there's a flywheel even inside companies where that goes and and and and perpetuates that.\n\nSpeaker 1 | 28:35 - 28:47\nI think on the personal use side, it's a really good one. That's a really good question. I think where I've seen it, you know, even in my personal testing, because, you know, our personal accounts. Pay, which is funny. I like paying my own company I work at.\n\nSpeaker 1 | 28:47 - 29:19\nBut but, you know, you you do become more more thoughtful about it. Something that was interesting was this the app that I built over the weekend actually fit in with, like, only a bit of extra usage. So it wasn't like a, you know, thousands of dollars to build this thing that, like, is a personal thing to to myself. But it was also spaced out a little bit more. Probably the the in between of that, what we'll probably have to do the most thinking about is the sort of hobbyist or, like, independent who's, like, not, you know, within the larger company, but also is thoughtful about about the pricing as well.\n\nSpeaker 1 | 29:19 - 29:49\nI think, like, my overall advice is, like, just give it a try and see how much it can do without you having to then do a lot of follow ups. And it's like I think measuring cost has gotten so multifaceted now because there's the per turn cost. And then there's, like, what did it cost you not to just do the task, but, like, complete the task to your satisfaction? And I think that's where FameWall has really shined for me, which is it actually just does it right so that I don't have to go spend the, like, nine, ten subsequent turns be like, no. That was not quite what I meant.\n\nSpeaker 1 | 29:49 - 29:51\nLike, can you also do this piece?\n\nSpeaker 2 | 29:51 - 30:06\nIt's been really impressive for me because you ask it to go do something, and then it just does it does a thing, and you're like, wow. You thought through all the little details of this thing in a way that I've never seen another model do. I don't know how much you can reveal about the training process, but what makes the model different?\n\nSpeaker 1 | 30:06 - 30:42\nI mean, I think, in many ways, a continuation of a lot of the work that the team has done, and I, like, bow down in total awe of our of our teams, both, you know, on the pretraining and on the RL side. I think that the the piece that it has evolved in that, at least I noticed the most, is kind of adjacent to that as well, which is a sense of the system more than just the individual piece of the work. Like, I will often be very positively surprised when it will write something and say, alright. But, you know, I know that, like, in production, this needs to be different. Like and then it will keep bugging you.\n\nSpeaker 1 | 30:42 - 30:54\nLike, have you turned on that, like, feature flag yet? Like, it's not gonna work until you do. And, you know, sometimes it'd be in sessions that could have gone on for days and be like, look. You still haven't done that thing. Like, you better you know, like I was like, you're right.\n\nSpeaker 1 | 30:54 - 31:16\nLike, I didn't turn on that feature flag. I should go off and do that. Or if we change this, the contract will change over there. Or watching it actually, one of my favorite times of seeing it in action, I think where it demonstrates some of the some of the training is watching it respond to code review feedback either from people or from from other Claude reviewers, where it doesn't just say, oh, yeah. That's an issue.\n\nSpeaker 1 | 31:16 - 31:34\nI'm gonna go fix it. And actually be really thoughtful around, hey. Like, for this level of, like, sort of fidelity of what we're building, I'm gonna accept this risk. Or I see what you mean, other code reviewer, which is often just another fable model, like, to you. Like, I see what you mean, but, like, I'm actually gonna push back.\n\nSpeaker 1 | 31:34 - 31:49\nI don't I think that that's actually not right. And I think getting the model to have that judgment is really important. And I think if I had to pinpoint, like, an area where I feel like it's really progressed, it is that sort of not just immediate knee jerk. Yeah. Yeah.\n\nSpeaker 1 | 31:49 - 31:55\nThat's right. I gotta go fix it and more, I'll think about that for a minute. No. I thought about it and I still disagree. You know?\n\nSpeaker 1 | 31:55 - 32:29\nAnd I think that's a very useful sort of ability. It's so valuable to have products like Cloud Code out there because you have now like a living, breathing thing where people are like, this is where the model is doing well. And like, you know, we have like people who test it. I count the every folks as, like, very, very high on the list where, like, we really trust the feedback because it is being put to its paces in, like, repeated multi day, you know, hard tasks. And that also, like, very much feeds into how we think about, like, what do we need to improve on the next slide?\n\nSpeaker 1 | 32:29 - 32:33\nLike, what are the tasks that we need to specifically think about the model being better at?\n\nSpeaker 2 | 32:33 - 32:45\nIs chat the right interface for this model? Because it's not very turn by turn. It's it's very like I'm delegating something for you. So how does that change how you should use it or how you think about the interface?\n\nSpeaker 1 | 32:45 - 33:05\nI don't think, like, the fundamental, like, you are, like, sending messages and it is giving your message back is, like, totally wrong. I think that there's ways we need to evolve. But, like, one is maybe, like, three that come to mind. Like, one is, is your laptop the right place for it? So, like, I think that's number one where I mentioned with the side project I was working on how useful it was to have the mobile side.\n\nSpeaker 1 | 33:06 - 33:18\nBoris, who who created Cloud Code, he's always, like, you know, ahead of the curve on on how these models get used. About almost a year ago, maybe nine months, I was talking to him. He's like, yeah. I've moved a lot of my Cloud Code work to mobile. Was like, no way.\n\nSpeaker 1 | 33:18 - 33:49\nAnd, like, it took me a while to get there, but especially with the Famil class, like, there's oftentimes where, you know, because it can keep the session going and we we use, like, kind of remote dev boxes at Anthropic, like, it is, like, I have a thought. Like, okay. Need can you keep keep up on doing that? So, I mean, number one is, like, decoupling the the where the work is happening from where I'm talking to about the work. The second one touches a little bit on what I was mentioning earlier around, like, what are how do you take everything that Fable has sort of discussed or decided or proposed about something and make it comprehensible?\n\nSpeaker 1 | 33:49 - 34:04\nAnd that's an area that we're thinking a lot about. Like, there are some skills that are out there that we've used around, like, alright. Can you diagram this? Can you do that? So that's a place where the current chat UI, I think, is insufficient, where, like, it will can experience this with ThinkBlow.\n\nSpeaker 1 | 34:04 - 34:15\nIt will give you, like, a lot of tech here. Like, this I need to, like, take a walk with property to fully understand this. And I think that that is a a piece of property I have. Some things will do with Fables. Like, okay.\n\nSpeaker 1 | 34:15 - 34:45\nLike, have a lot more context on this than I do. Can you, like, back it up? Like like, let's do, like, more progressive disclosure of the complexity here. So I think that that that piece is interesting. The last one that I I, you know, I think is we're still early in pulling on is thinking through multiplayer where, you know, at some abstraction levels and, like, because we have this sort of DRI and, like, ownership area, usually, like, a chunk of significant work, a human, and a couple of clods, like, that is still flowing together.\n\nSpeaker 1 | 34:46 - 35:18\nBut another case is that is less the case, right, where it's, you know, maybe it's an incident response where multiple people are thinking about it. Maybe it's, you know, a project where there's multiple competing or not competing, but, like, conjoining areas that are coming together. And thinking through, like, what would it mean for you know, and we have, like, chat sharing, which gets you a little bit of the way there. But I think there is going to be a need for more, like, alright. You've got an independent club that's doing a lot of work that was, you know, kicked off by somebody, but can it be keeping up with all the other work happening on the team?\n\nSpeaker 1 | 35:18 - 35:38\nI think that is an interesting and an underexplored sort of next frontier about how this work ends up happening. But I think it's really exciting because I think, again, it's it's the it's the level of teammate collaborator that that the models are now capable of, and we're almost holding them back by not having the right abstractions around them for that to happen.\n\nSpeaker 2 | 35:38 - 36:00\nYeah. It makes me think I've I've mostly been using this for my own vibe coded stuff. So so I haven't really had to I I haven't really had to think about this, but there's there's a problem when you're using this inside of an organization, which is, do I really understand every part of this? And and therefore, how do I transfer the context of what the model just did into my brain? Like, that's one of the big bottlenecks.\n\nSpeaker 2 | 36:00 - 36:09\nHow you think about drawing the line, especially with a model like this, around how much you actually need to understand, and how to make sure that you have enough context on what it's done to feel comfortable?\n\nSpeaker 1 | 36:09 - 37:05\nI I think there's like two big pieces here. The first is verification where I I became like fully verification pulled earlier this year, and now, like, almost in the same way, and actually it connects to how I think I used to do when I was typing code more full time, which is try to find the sort of tightest dev loop that you can around the idea that you're trying to develop in. Like, sometimes with Instagram that meant, like, you know, actually build making a new build target in Exco that was just that screen with some sort of synthetic data and just doing that dev loop. And I'm not and I would mentor newer engineers if, like, if there's one thing that I can impart on you, like, it is try to get that for any project you're working on, and things will go much more quickly. I think that is no longer exactly the case here, but I think what is the case now is anytime I set it up, like, how do I get, like, for every pull request that Claude is putting out, that there is an attached, you know, photo or video, whether that's an iOS PR, whether that's, you know, something in the UI.\n\nSpeaker 1 | 37:05 - 37:25\nAnd that's I think that that that helps you gain a lot of confidence because even now, you know, you might have, like, you know, Fablegoff and do work for a couple of hours and be like, it's I'm done. And it's really useful to say, and here's the, like, full screenshot gallery of the full UI. Because you might say, oh, you know what? On screenshot eight, that error is it. I've never actually seen it, but I can see how, you know, a person might hit it.\n\nSpeaker 1 | 37:25 - 37:49\nLet's actually make that different. And so getting that comprehensive verification, I think, is something we've been working on a lot internally and, like, sort of publishing more and more skills and knowledge about, but I think is is a really key piece there. And then the second one is, I think you ultimately, as a person, still need to stand behind the work that you are doing, especially if you're putting it into a production system. Like, a lot of people use Cloud every day. There's still the accountability of, oh, no.\n\nSpeaker 1 | 37:49 - 38:27\nIt's still Cloud might have written a bit, like, you need to understand, you know, the the the at least the the general decisions that were made on these pieces as well. And so I have seen a fair amount of engineers actually adopt this practice where, like, Cloud will have done the work, but then there is, like, the follow-up conversation around, well, can you, like can can I make sure I deeply understand, like, all the trade offs that you made and and and that, and whatever lowercase a artifacts need to be produced in order to make that comprehensible is important. It is really interesting, though, to be in meetings where somebody will say, oh, yeah. And and I have this this PR ready, and somebody else asks her, like, oh, that's interesting. Like, did you do x or y?\n\nSpeaker 1 | 38:27 - 38:38\nAnd have that moment of pause, they're like, you know what? I'm not entirely sure I will forward. We merge this PR. And that's you know, I I think that adapting to that norm and figuring out and work with that is something we'll have to do.\n\nSpeaker 2 | 38:38 - 38:47\nTell me more about the verification loops. It's a hot topic right now. It sounds like one way that you do that is with screenshots and screen shares, but what are the other ways that you think about that?\n\nSpeaker 1 | 38:47 - 39:17\nI think part of it, it starts in, can you get to a place where you are exercising real, like, sort of real flows that aren't just like a static injected piece. And this thing gets more complex, that gets more and more complicated. So we've invested a bunch. It's like even just getting it so that the the iOS app can log in to staging on a real account and, like, have real data. But you don't want it to then go through, like, an each stage onboarding process every time everybody is just trying to test, the second part of the screen.\n\nSpeaker 1 | 39:18 - 39:39\nSo there's a lot of work around, like, how do you, know, is there a special affordance? Is there, like, some shared secret? Whatever that is around getting the the the the, like, app, you know, to really feel as human, you know, using the product as possible. So that's one one aspect of it. The second is like this mix of like well known paths versus the things you're exercising in the exact moment.\n\nSpeaker 1 | 39:39 - 40:08\nLike the former being really useful for regression testing, and so, you know, if I could places where we've expressed like sort of ideal workflows in text, basically, and that Claude can repeatedly check that. And then there's also, and Claude does a really good job of this, sort of expressing the intent of the current change at hand, so that gets really, really deeply exercised. So I think that the combination of those two things is important. The visual verification I mentioned as well, Video has been really cool to to see. Actually, video is a very underexplored tool to give Claude as well.\n\nSpeaker 1 | 40:08 - 40:45\nLike, I think I've been prototyping is just giving Claude video captures of the thing that it has built and then giving it just basically an FFmpeg, and you'll watch it scrub through and say, oh, this animation has some jank in it. I'm gonna go fix that. And it would never would be able to do it with, a screenshot sort of latency capture because it will have missed the moment. So I think that's that's another piece that is that's really, really important. And then for the pieces that aren't sort of easily testable end to end because there is some more complex system, getting Claude to go and build, like, as robust a sort of, you know, mock back end as possible or use ones off the shelf has been also really interesting.\n\nSpeaker 1 | 40:45 - 41:20\nLike, I think when I think about Artifact, we had really comprehensive tests. This is kind of pre LLM. And one of the ways that we were able to do that really robustly was that basically every piece of info we had, whether it was Postgres, Redis, you know, all the AWS things, had a really good in memory implementation that you could just do really quickly in unit tests. And kind of extending that to, like, Cloudland now, you know, I was working on something where it had, like, a pretty robust back end, and for kind of complicated reasons, it was hard to spin that up on my dev server. But it was able to, again, one shot a really good, like, proxy for that.\n\nSpeaker 1 | 41:21 - 41:37\nBy proxy, mean, like, a substitute for that. And that was so valuable. And over time, it's been interesting as that, like, substitute has evolved as the rest of the code has evolved, which is the thing that, you know, if you had pitched that idea to be before, it'd be like, well, that's gonna be really hard because the upstream's gonna change. How are gonna keep it in sync? And I don't think about that anymore.\n\nSpeaker 1 | 41:37 - 41:42\nI'm like, yeah. Cloud will read the changes, and it'll adapt the thing, and it'll keep the two in sync, that that's that's fine.\n\nSpeaker 2 | 41:43 - 41:57\nThere's some really interesting architectures around when you get a bug, it just automatically goes out and closes it. You know, the the agent just gets kicked off, it closes it, and then it sends a message to the customer being like, it's it's fixed. Are you noticing with Fable any change in in how that process works?\n\nSpeaker 1 | 41:57 - 42:29\nYeah. I think there's a couple of things, a very, like, human to human or human to cloud level, one of the things that I've seen it do I've had better other models than the cable, but I just needed to do it really consistently too, is if the bug report, for example, came from somebody, you you know, mentioning something in our, like, feedback channel in Slack, and then, like, the thing that got fed into the Cloud Code session is like, oh, there's this, and because of the Slack MCP, you can actually pull the thread. Have it then actually post back, you know, as me. It'll be like, hey, this is Mike's Claude. Like, I fixed it.\n\nSpeaker 1 | 42:29 - 42:41\nHere's the, you know, here's the pull request. But then, I think and the previous Claude's who've done it, but think it does really well, is then say, but hold tight. It's not in production yet. I'll follow-up when it actually is. And then, like, maybe a few hours later, like, oh, like, this deploy went out.\n\nSpeaker 1 | 42:41 - 43:01\nLike, you should go test it. Is it fixed now? Like, that level of follow through, I think, is is new on on the closing the loop piece, and it's five the fans of these long running Cloud Code sessions are basically, like, interacting as as me, I guess. Let's put some disclaimer in there too. And the second goes back to that, like, taste and discernment piece that we were talking about, which is, like, it's one thing to say, there was a bug report.\n\nSpeaker 1 | 43:01 - 43:11\nTherefore, I must go fix this thing. And it's another one to say, you know what? Like, this like, the I hit this over the weekend. One of our internal systems basically had been running without restarting for a while. There was a memory leak.\n\nSpeaker 1 | 43:12 - 43:24\nAnd it was I had good discernment saying, alright, Mike. Like, it's the weekend. Like, just rebounce the server. It's gonna solve it for now. And, like, we'll work on the, like, asynchronously get the PR going to, like, fix this more long term.\n\nSpeaker 1 | 43:24 - 43:48\nSo I think if you're gonna have Claude in the loop in this kind of, like, sort of close the loop bug report or system sort of issue to change, I think you really wanted to understand where, you know, as any good SRE or engineer in the loop would, okay, to solve the problem at hand, let's, like, defer the question of, like, do we need to rearchitect on top of a completely different language? Found and and understanding that balance is really important.\n\nSpeaker 2 | 43:48 - 44:11\nOne of the things that's really exciting, mostly exciting to me about new models is it raises the floor so that everyone can kind of go build apps in one shot. But it also raises the ceiling for experts. So if you're a software engineer or a founder, you can just go do things that you never would have been able to before because you have access to this really powerful model. So for me, I built this one shot version of Borges', Infinite Library. It's like a three d game version of the of the of the library.\n\nSpeaker 2 | 44:11 - 44:18\nIt's wild. It runs right in the browser. It's so good. I can find, like, any every essay inside of it. I'll send you the link.\n\nSpeaker 2 | 44:18 - 44:37\nIt's sick. But I think there's gonna be this flowering of people doing things like, oh, I made a game, or maybe I trained a new model, or or or whatever that they couldn't do they couldn't do before. And I'd love to give people some inspiration, some examples of things that they might be able to do that they might not be thinking to do with this model. What are some ideas that come to you?\n\nSpeaker 1 | 44:37 - 44:56\nYeah. I think a few. Maybe I'll start with the fun side and, like, riffing off the game piece. Like, I think people have a lot of, like, creative ideas for how do they express the complexity of what they are, like, their world. Like, everybody has the thing that they know really, really well, and there's probably some level of, like, how do I then explain that to somebody else?\n\nSpeaker 1 | 44:57 - 45:36\nOr how do I apply techniques elsewhere that I could then go go off and do? My wife is studying, like, environmental engineering, like, studying geothermal, like, very complex math and simulations. And I've seen, like, as the models have gotten better, she has been able to apply even more complex techniques from even outside of that domain into that work. And I think what people should be able to do, you know, like, full on PyTorch end to end simulations of that work in a way that wouldn't be possible. Think that maybe just one is, bring the, like, beautiful complexity of what you have and either show it to other people by, like, maybe making a game or maybe making a visualization, which I've seen her do as well, or at least, like, make you know, bring other techniques to bear.\n\nSpeaker 1 | 45:36 - 46:04\nAnd the second piece is its ability to compose software that like solves a really unique problem to you. I've seen that internally. A lot of the work that we've been doing is how do we get as many of our internal systems like MCPified with the right permissioning structure and the right deployment kind of setup. Although externally, you have good options around some of these, like, platform as a service pieces, and you can just ask Cloud about them, and they'll, like, help you set things up. But, like, I love that feeling of, like, that thing that you always wished that you had.\n\nSpeaker 1 | 46:04 - 46:42\nAnd then what has blown my mind, there was a a person who works in our go to market organization, has been, like, building this, like, really, like, for deep deeply thought integration of Quad into every part of her whole process. And you don't have to stop at that one shot. Like, she's been working on it for months now, and she can keep going. And, like, I think one of the things that is maybe underappreciated about the models is I think in previous generations, they would eventually get to a complexity level where it was hard to iterate on it without feeling like you then would break the thing that they had, you know, like, under or over abstracted. Whereas this is actually, you know, she's had access to from the Fable or Fable like for a couple months, and, like, you've just seen it keep growing and growing and growing and growing.\n\nSpeaker 1 | 46:42 - 46:55\nAnd now she's, like, deploying it to the whole GTM org and, I think that is really cool. Like, the the ceiling of complexity that a a person that does not start out as technical can now build for solving problems within their domain is, like, is impressive at it.\n\nSpeaker 2 | 46:55 - 47:14\nI agree. It it it writes great code. Like, my my benchmark that I have is called the senior engineer benchmark. I just have it see if it can rewrite a code base from, from first principles. And the nearest model, the the, like, previous top was, like, a 62 or 63 out of a 100, and this model got a 90 on the benchmark or 91, which is human senior engineer level.\n\nSpeaker 2 | 47:14 - 47:22\nLike, you can just keep going with this thing in a way that's it's it's really fantastic. I'm curious, though, one other thing that's really powerful that you mentioned is dynamic workflows. Tell us about that.\n\nSpeaker 1 | 47:22 - 47:40\nThis is you know, we'll build things internally sometimes, and I will go really aggressively bug the engineer who built it and be like, when are we shipping this publicly? Because I think people are gonna really like it. I realize there's a good reason why it was, like, built internally. But, like, we try to ship as many of these as possible. And Dynamic Workflows was, like, definitely that to me.\n\nSpeaker 1 | 47:40 - 48:07\nI the person who built this is engineering, Sid, who's awesome. And I was like, Sid, like, I want to get this out to the world because it's so good. But I think it's especially good with a model like Fable for two really big reasons. One, it helps sort of create the scaffold for, like, deep, meaningful work. The craziest dynamic workflow I I did and used Fable for was I had an internal project that we had written in Python, but we needed it actually in TypeScript for, like, a really specific deployment reason.\n\nSpeaker 1 | 48:07 - 48:28\nAnd having been internal to Instagram, we were like, should we rewrite the whole thing into Hacker and, you know, port it to the PHP engine that Facebook? I like, you never would have done that. Like, maybe they can now with with the model. But, you know, at the time, it seemed impossible. But here, I had, you know, pretty complex code base, and I was like, I'm just gonna set up a dynamic workflow and just let it run over the weekend.\n\nSpeaker 1 | 48:28 - 48:36\nAnd it did. And it it was the workflow was so cool. It was like, alright. I'm gonna do, like, deep understanding of the work. I'm gonna create sort of, like, a almost like a spec of how everything works.\n\nSpeaker 1 | 48:36 - 48:43\nI'm gonna go module by module. I'm gonna translate these pieces. I'm gonna test it incrementally. I'm gonna do another adversarial test. I'm gonna go check for anything that I missed.\n\nSpeaker 1 | 48:43 - 49:04\nAnd it was this, like, really cool, like, series of steps that the workflow was able to to orchestrate. And I came back, and I was like, yeah. This thing is a, like, TypeScript and BUN port of that thing, and it's actually better in these ways. And it was very, you know, sort of documented. Like, these are the things I couldn't port, but most of these were, like, very specific to this specific implementation.\n\nSpeaker 1 | 49:04 - 49:46\nIt wasn't worth porting. And I do not think you could have done that, a, with previous models at that level of of success, and b, with without, like, the kind of scaffolding that workflows provide. So I think that is extremely exciting kind of kind of combination of model capabilities and then our own ability to, like, orchestrate them over longer and longer time horizon with that feeling of, like, you you had a goal, you broke it down effectively, and and then you were able to work make make it work. The other piece is, I think over time, we'll be able to also make some of those subtasks sort of tune to the have the model be tuned to the level of complexity of it. So you can imagine that some parts of the dynamic workflow don't need extra high thinking.\n\nSpeaker 1 | 49:46 - 49:57\nThey could use, you know, a medium thinking to get it done or even a smaller model. And I think that's really the the future of where these things are going. So, yeah, I I'm a huge workflows DA here.\n\nSpeaker 2 | 49:57 - 50:04\nFor people who haven't used it before, tell me about how you got that workflow made. How did you design it? How did you make sure it was good?\n\nSpeaker 1 | 50:04 - 50:22\nYeah. It was pretty iterative, but sort of just started with Cloud Code, like, hey, I'm I have this complex, you know, kind of task, like, let's design a workflow to go and do it. It kind of showed me the the plan. I was like, oh, this is, like, close to what I want. I wanna make sure that you do these three or four levels of of, like, additional verification for missed features.\n\nSpeaker 1 | 50:22 - 50:40\nIt's like, here's what you have. Are you ready to go? And it expressed in the workflows and code, which I think is really valuable to kinda see what it was about to do. And then what was interesting is it did the full port, and then I had, like, a couple of, like, follow-up kind of questions that I had or, like, little tweaks. And I did those as sort of, like, mini workflows that built off the the previous one as well.\n\nSpeaker 1 | 50:40 - 51:05\nBut I think that's, like you know, we we talked a little bit about whether chat was the was the right interface. So we've had that conversation over the last year, and I think workflows are good middle ground of you can compose them using chat, but they're expressed using code. And then they're executed with, like, I think, a nice clean UI around what's happening at every stage. And, like, I think we'll start bridging longer horizon work with chat in ways like that over time.\n\nSpeaker 2 | 51:05 - 51:10\nMike, this is such a great conversation. Thank you so much for joining and telling us all about this new model.\n\nSpeaker 1 | 51:10 - 51:31\nI'm really excited to to get to spend time with you and really, really looking forward to what people, think outside too. Oh my gosh, folks. You absolutely, positively have to smash that like button and subscribe to AI and I. Why? Because this show is the epitome of awesomeness.\n\nSpeaker 1 | 51:31 - 51:55\nIt's like finding a treasure chest in your backyard, but instead of gold, it's filled with pure unadulterated knowledge bombs about chat GPT. Every episode is a roller coaster of emotions, insights, and laughter that will leave you on the edge of your seat craving for more. It's not just a show. It's a journey into the future with Dan Shipper as the captain of the spaceship. So do yourself a favor.\n\nSpeaker 1 | 51:55 - 52:05\nHit like, smash subscribe, and strap in for the ride of your life. And now without any further ado, let me just say, Dan, I'm absolutely, hopelessly in love with you."
+    }
+  ],
+  "x": [
+    {
+      "source": "x",
+      "name": "Swyx",
+      "handle": "swyx",
+      "bio": "achieve ambition with intentionality, intensity, integrity & insanity.\n\naffiliations:\n- @dxtipshq \n- @cognition\n- @temporalio\n- @aidotengineer\n- @latentspacepod",
+      "tweets": [
+        {
+          "id": "2064698525917827092",
+          "text": "wooh https://t.co/TCPfb1tyr1",
+          "createdAt": "2026-06-10T13:17:43.000Z",
+          "url": "https://x.com/swyx/status/2064698525917827092",
+          "likes": 8,
+          "retweets": 1,
+          "replies": 1,
+          "isQuote": true,
+          "quotedTweetId": "2064671802509410806"
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Josh Woodward",
+      "handle": "joshwoodward",
+      "bio": "VP, @Google @GoogleLabs @GeminiApp @GoogleAIStudio",
+      "tweets": [
+        {
+          "id": "2064869366290841716",
+          "text": "Update: Everything is back up and running, sorry again!",
+          "createdAt": "2026-06-11T00:36:34.000Z",
+          "url": "https://x.com/joshwoodward/status/2064869366290841716",
+          "likes": 429,
+          "retweets": 27,
+          "replies": 43,
+          "isQuote": false,
+          "quotedTweetId": null
+        },
+        {
+          "id": "2064762269674918013",
+          "text": "Heads up: Gemini is currently experiencing an outage. We're on it and will get everything back up ASAP. Some of the fixes are in, the rest coming very soon. Stay tuned for updates, and thanks for bearing with us!",
+          "createdAt": "2026-06-10T17:31:01.000Z",
+          "url": "https://x.com/joshwoodward/status/2064762269674918013",
+          "likes": 1553,
+          "retweets": 137,
+          "replies": 123,
+          "isQuote": false,
+          "quotedTweetId": null
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Peter Yang",
+      "handle": "petergyang",
+      "bio": "Practical AI tutorials and interviews to help busy people become AI builders | Join 150K+ readers at https://t.co/XYKTmGVH14",
+      "tweets": [
+        {
+          "id": "2064799855059616172",
+          "text": "Give yourself permission to build.\n\nThe traditional career ladder pushes everyone to become a leader, but I just want to be a builder.\n\nAs you climb the ladder at most companies, you’re expected to step away from building and fill your time with product reviews, cross-functional alignment, managing up, and performance calibrations.\n\nI know a lot of builders who spent their best years climbing the wrong ladder.\n\nThe good news is that this is finally changing. Companies are rewarding builders and ICs more than ever, and even managers are increasingly expected to do IC work too.\n\nBut becoming a good builder takes reps, and it’s hard to put in those reps when you’re in back-to-back meetings all day.\n\nSo if you’re a builder at heart, embrace it. You don’t have to give up what you’re good at to be a “leader.”\n\n📌 Watch now: https://t.co/wv2SINll18",
+          "createdAt": "2026-06-10T20:00:22.000Z",
+          "url": "https://x.com/petergyang/status/2064799855059616172",
+          "likes": 52,
+          "retweets": 1,
+          "replies": 8,
+          "isQuote": true,
+          "quotedTweetId": "2064713829637099629"
+        },
+        {
+          "id": "2064760792684335133",
+          "text": "This shit is actually working unbelievable https://t.co/0wtkHtT6kD",
+          "createdAt": "2026-06-10T17:25:09.000Z",
+          "url": "https://x.com/petergyang/status/2064760792684335133",
+          "likes": 8,
+          "retweets": 0,
+          "replies": 1,
+          "isQuote": false,
+          "quotedTweetId": null
+        },
+        {
+          "id": "2064748427892945313",
+          "text": "The more I use Codex the more ambitious my requests get. Or maybe this is not ambitious enough? https://t.co/C0qgjmKGRt",
+          "createdAt": "2026-06-10T16:36:01.000Z",
+          "url": "https://x.com/petergyang/status/2064748427892945313",
+          "likes": 48,
+          "retweets": 0,
+          "replies": 12,
+          "isQuote": false,
+          "quotedTweetId": null
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Nan Yu",
+      "handle": "thenanyu",
+      "bio": "head of product @linear",
+      "tweets": [
+        {
+          "id": "2064733338779177459",
+          "text": "gangprompting https://t.co/ZnO5TTrFv6",
+          "createdAt": "2026-06-10T15:36:03.000Z",
+          "url": "https://x.com/thenanyu/status/2064733338779177459",
+          "likes": 10,
+          "retweets": 0,
+          "replies": 2,
+          "isQuote": true,
+          "quotedTweetId": "2064732709579080021"
+        },
+        {
+          "id": "2064711789556732316",
+          "text": "There's a thing they say about being a boat owner: the two best days of being a boat owner are the day you buy the boat and the day you sell the boat. https://t.co/ohqCRBqpUA",
+          "createdAt": "2026-06-10T14:10:25.000Z",
+          "url": "https://x.com/thenanyu/status/2064711789556732316",
+          "likes": 15,
+          "retweets": 0,
+          "replies": 0,
+          "isQuote": true,
+          "quotedTweetId": "2064672567311393162"
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Madhu Guru",
+      "handle": "realmadhuguru",
+      "bio": "Prev: Product Leader at Google - Gemini, Veo, Nano Banana.",
+      "tweets": [
+        {
+          "id": "2064794601320481150",
+          "text": "Right from the early days of Gemini, enterprises would get the quality/cost tradeoff wrong. They’d often start with the smallest, cheapest model.\n\nThe rule of thumb we gave customers:\n\nReplacing a traditional ML model with an LLM - start small, cos you already know what good looks like.\n\nBuilding something new - start with the most capable model. Think magically. Figure out what’s actually possible first.\n\nOnce they had a high-quality working application, we’d help them move to a smaller model while maintaining quality.",
+          "createdAt": "2026-06-10T19:39:29.000Z",
+          "url": "https://x.com/realmadhuguru/status/2064794601320481150",
+          "likes": 20,
+          "retweets": 1,
+          "replies": 0,
+          "isQuote": true,
+          "quotedTweetId": "2064771714492596407"
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Thariq",
+      "handle": "trq212",
+      "bio": "Claude Code @anthropicai.   prev YC W20, @southpkcommons, @medialab",
+      "tweets": [
+        {
+          "id": "2064828193446740023",
+          "text": "and the video for reference: https://t.co/tw0w0tmjIK\n\n(I didnt get to use the updated designs in time)",
+          "createdAt": "2026-06-10T21:52:58.000Z",
+          "url": "https://x.com/trq212/status/2064828193446740023",
+          "likes": 92,
+          "retweets": 1,
+          "replies": 5,
+          "isQuote": true,
+          "quotedTweetId": "2064399512664526853"
+        },
+        {
+          "id": "2064826541947940910",
+          "text": "here's the deck from this video if you want to go over it yourself: https://t.co/6adKYvxUxD\n\nlmk if you have any questions!",
+          "createdAt": "2026-06-10T21:46:24.000Z",
+          "url": "https://x.com/trq212/status/2064826541947940910",
+          "likes": 203,
+          "retweets": 9,
+          "replies": 13,
+          "isQuote": false,
+          "quotedTweetId": null
+        },
+        {
+          "id": "2064826394589442448",
+          "text": "Lots of people asked how I used Fable to edit its own launch video so I made a video about that!\n\nTLDR it wrote a lot of code &amp;  tool calls to use transcription services, ffmpeg, do colorgrading, use the figma mcp, make remotion UI and render it. \n\nI didn't touch a video editor. https://t.co/hJRdJye5Fy",
+          "createdAt": "2026-06-10T21:45:49.000Z",
+          "url": "https://x.com/trq212/status/2064826394589442448",
+          "likes": 6036,
+          "retweets": 367,
+          "replies": 207,
+          "isQuote": false,
+          "quotedTweetId": null
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Google Labs",
+      "handle": "GoogleLabs",
+      "bio": "Google’s home for our latest AI tools and experiments.",
+      "tweets": [
+        {
+          "id": "2064801929339752527",
+          "text": "🌍 Project Genie access is expanding even more! Starting today, Google AI Ultra 5X subscribers (our latest tier!) globally can access Project Genie.\n\nTry it out here! https://t.co/4BFYHSiAMv https://t.co/VL4MCvc44B",
+          "createdAt": "2026-06-10T20:08:36.000Z",
+          "url": "https://x.com/GoogleLabs/status/2064801929339752527",
+          "likes": 365,
+          "retweets": 60,
+          "replies": 13,
+          "isQuote": true,
+          "quotedTweetId": "2057179491693470166"
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Amjad Masad",
+      "handle": "amasad",
+      "bio": "ceo @replit. civilizationist",
+      "tweets": [
+        {
+          "id": "2064864439275536495",
+          "text": "Automate your job search with Replit! https://t.co/OiJSdTvhi2",
+          "createdAt": "2026-06-11T00:17:00.000Z",
+          "url": "https://x.com/amasad/status/2064864439275536495",
+          "likes": 164,
+          "retweets": 5,
+          "replies": 8,
+          "isQuote": true,
+          "quotedTweetId": "2064630129116996074"
+        },
+        {
+          "id": "2064864076430504282",
+          "text": "🇺🇸🇺🇸🇺🇸 https://t.co/EBM3X4YQ5T",
+          "createdAt": "2026-06-11T00:15:33.000Z",
+          "url": "https://x.com/amasad/status/2064864076430504282",
+          "likes": 802,
+          "retweets": 40,
+          "replies": 49,
+          "isQuote": true,
+          "quotedTweetId": "2064799872914727206"
+        },
+        {
+          "id": "2064806473352540643",
+          "text": "Super interesting approach to enterprise agents. Congrats on the launch @markiewagner https://t.co/BfGani53y1",
+          "createdAt": "2026-06-10T20:26:40.000Z",
+          "url": "https://x.com/amasad/status/2064806473352540643",
+          "likes": 185,
+          "retweets": 11,
+          "replies": 7,
+          "isQuote": true,
+          "quotedTweetId": "2064778239164461316"
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Guillermo Rauch",
+      "handle": "rauchg",
+      "bio": "@vercel CEO",
+      "tweets": [
+        {
+          "id": "2064777495422161205",
+          "text": "🇬🇧 London calling\nExcited for Vercel Ship next week\nSome special announcements… https://t.co/WmOe53Q0Au https://t.co/ks68xJOHL7",
+          "createdAt": "2026-06-10T18:31:31.000Z",
+          "url": "https://x.com/rauchg/status/2064777495422161205",
+          "likes": 182,
+          "retweets": 8,
+          "replies": 28,
+          "isQuote": true,
+          "quotedTweetId": "2064773592328601731"
+        },
+        {
+          "id": "2064732935484514729",
+          "text": "What I love about Silicon Valley is that the future is up for grabs, ready for anyone to build. \n\nI get intros for angel investing to all kinds of people. I take everyone equally seriously. 2 lads &amp; a dog, or a 5-time award-winning entrepreneur.\n\nNo place more meritocratic.",
+          "createdAt": "2026-06-10T15:34:27.000Z",
+          "url": "https://x.com/rauchg/status/2064732935484514729",
+          "likes": 815,
+          "retweets": 20,
+          "replies": 53,
+          "isQuote": false,
+          "quotedTweetId": null
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Aaron Levie",
+      "handle": "levie",
+      "bio": "ceo @box - your business lives in content. unleash it with AI",
+      "tweets": [
+        {
+          "id": "2064922814688481678",
+          "text": "Lots of evidence of huge jumps in capability for Fable across coding (and related) tasks. It’s also a major jump in accuracy and success in complex knowledge work tasks.\n\nIn our Box AI Complex Work Eval, we tested the model against Opus 4.8 and saw huge boosts across almost every industry. For our eval we give the Box AI Agent, using Fable, a set of hard real world knowledge work problems that deal with enterprise documents. Then score how the agent performs the tasks.\n\nThe main differentiators for Fable vs Opus 4.8 is that it doesn't take shortcuts on complex reasoning, it gets multi-step calculations right, and it's significantly more consistent across runs. We saw the biggest leaps in Media & Entertainment (78% vs 61%), Technology (81% vs 73%), Financial Services (89% vs 83%), and Healthcare (66% vs 60%).\n\nHere are some specific examples:\n\n* Legal M&A due diligence: On a task reviewing NDA terms against a semiconductor company's contracting policy, Fable correctly identified that a joint-ownership clause violates exclusivity requirements while a liability cap is permitted under a Super Cap exception. Fable scored 100% vs Opus's 78%.\n\n* Healthcare: On a clinical radiology error audit across 12 reports, Fable precisely categorized each error by severity grade and correctly concluded no Grade 3 errors existed. Opus prematurely escalated a case to \"major error requiring immediate departmental review\" when the evidence didn't support it — Fable 63% vs Opus 41%.\n\n* Media & Entertainment: On a genre profitability projection task, Fable correctly recognized that a 20% Argentine tax deduction was already embedded in the source spreadsheet figures and didn't double-apply it. Opus applied it again on top — a compounding error across 4 genre calculations that took its score negative on the task vs Fable's 74%.\n\n* Retail analytics: On a task analyzing high-growth product articles against an investment benchmark, Fable correctly computed each article's growth rate individually and identified that only 2 of 5 exceeded the threshold. Opus confused \"high growth relative to average\" with \"above the benchmark\" — scoring 61% vs Fable's 94%.\n\n* Financial Services: On a 5-year debt facility projection, Fable correctly applied interest to opening balances and used the right capex figure. Opus applied interest to the total facility amount and computed tax from the wrong base — two compounding errors. Fable scored 83% vs Opus's 62%.\n\n* Technology: On a SaaS feature valuation requiring computation of a Feature Value Index across multiple regions, Fable applied the formula correctly and got exact values for the markets. Opus got the arithmetic wrong on multiple criteria — Fable scored 100% vs Opus's 74%.\n\nOverall, huge step change in complex analysis, work that requires analytical reasoning, and deep domain understanding. Fable will be available shortly in the Box AI Studio for customers to build agents with.",
+          "createdAt": "2026-06-11T04:08:58.000Z",
+          "url": "https://x.com/levie/status/2064922814688481678",
+          "likes": 177,
+          "retweets": 19,
+          "replies": 26,
+          "isQuote": true,
+          "quotedTweetId": "2064394151441863006"
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Garry Tan",
+      "handle": "garrytan",
+      "bio": "President & CEO @ycombinator —Founder @garryslist—Creator of GStack & GBrain—designer/engineer who helps founders—SF Dem accelerating the boom loop",
+      "tweets": [
+        {
+          "id": "2064948068076986657",
+          "text": "May common sense reign in San Francisco for 100 years\n\nAaron Peskin, enjoy being a private citizen. https://t.co/QjawbyY7mj",
+          "createdAt": "2026-06-11T05:49:18.000Z",
+          "url": "https://x.com/garrytan/status/2064948068076986657",
+          "likes": 54,
+          "retweets": 4,
+          "replies": 11,
+          "isQuote": true,
+          "quotedTweetId": "2064677753526575128"
+        },
+        {
+          "id": "2064947547735789715",
+          "text": "Performative nonprofit industrial complex must be rooted out and defunded. \n\nTheir political cronies and grifter friends must not be allowed to squander the gifts of San Francisco any longer. https://t.co/rMPnV732TZ",
+          "createdAt": "2026-06-11T05:47:14.000Z",
+          "url": "https://x.com/garrytan/status/2064947547735789715",
+          "likes": 114,
+          "retweets": 9,
+          "replies": 7,
+          "isQuote": true,
+          "quotedTweetId": "2064778169249599591"
+        },
+        {
+          "id": "2064947145652994510",
+          "text": "Nessie just became the best way to get all your existing context, memory and history from ChatGPT, Perplexity, and Gemini into all the other places you have memory, and also get it into OpenClaw/Hermes Agent. Their OpenClaw and MCP servers are ace. \n\nhttps://t.co/0L1JaBlTvg",
+          "createdAt": "2026-06-11T05:45:39.000Z",
+          "url": "https://x.com/garrytan/status/2064947145652994510",
+          "likes": 269,
+          "retweets": 23,
+          "replies": 41,
+          "isQuote": false,
+          "quotedTweetId": null
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Matt Turck",
+      "handle": "mattturck",
+      "bio": "VC at @FirstMarkCap.  Host: MAD Podcast; Organizer: Data Driven NYC, Author: MAD Landscape.",
+      "tweets": [
+        {
+          "id": "2064806681612362113",
+          "text": "2026 is a BRUTAL grind in VC. You start in Davos, freeze in Aspen, hit Upfront, survive Milken, then it’s straight to Paris for the French Open.  Briefly back in NYC for the Knicks. Then, total blur: SuperReturn in Berlin, Founders Forum in London, then back stateside for the World Cup, back to Paris for Raise AI, Idaho for Sun Valley, quick respite in Mykonos, then the Goldman tech gauntlet, Slush in Finland, NeurIPS in freakin’ Sydney… and *boom*, a productive year of thought leadership and adding value is over, and you’re a wreck.",
+          "createdAt": "2026-06-10T20:27:29.000Z",
+          "url": "https://x.com/mattturck/status/2064806681612362113",
+          "likes": 488,
+          "retweets": 22,
+          "replies": 32,
+          "isQuote": false,
+          "quotedTweetId": null
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Zara Zhang",
+      "handle": "zarazhangrui",
+      "bio": "Builder. Dangerously skips permissions. Harvard’17. GitHub: https://t.co/KCuEajezlL YouTube: https://t.co/8xzbGWtf6w",
+      "tweets": [
+        {
+          "id": "2064843560248332577",
+          "text": "This is so good\n\nIncreasingly the output of an agency looks like a folder of files for agents, instead of one-off assets\n\n\"Get paid for your mind, not your hands\" https://t.co/C1O4J2HW2F https://t.co/WMf0DetvTY",
+          "createdAt": "2026-06-10T22:54:02.000Z",
+          "url": "https://x.com/zarazhangrui/status/2064843560248332577",
+          "likes": 104,
+          "retweets": 7,
+          "replies": 5,
+          "isQuote": true,
+          "quotedTweetId": "2054539694097015171"
+        },
+        {
+          "id": "2064835289559023958",
+          "text": "People should build agents/skills for their cross-functional teams.\n\nFor example, if a design team builds a design agent/skill for the marketing team (trained on all of the brand's guidelines and design patterns), then the marketing team can produce more on-brand assets without having to bug designers every time\n\nBut the marketing team couldn't have built this on their own; it takes the designer with their expertise, context, and knowledge\n\nSame thing applies to every pair of teams that work closely with each other, often rely on each other, and complain about each other's limited bandwidth\n\nBuilding agents for your cross-functional teams ensures each team can be more self-sufficient, and moves us to a direction where teams can be organized by \"loops\" rather than \"functions\"",
+          "createdAt": "2026-06-10T22:21:10.000Z",
+          "url": "https://x.com/zarazhangrui/status/2064835289559023958",
+          "likes": 50,
+          "retweets": 3,
+          "replies": 12,
+          "isQuote": false,
+          "quotedTweetId": null
+        },
+        {
+          "id": "2064825302359150870",
+          "text": "It seems like most startups in San Francisco are selling products to each other\n\nWhen I ask founders who their target audience is, 90% of the time it's \"engineering and product teams, AI-native startups\"\n\nFeels like the same small group of target audience is being bombarded with a million products, whereas very few people are building for the 99% of the world",
+          "createdAt": "2026-06-10T21:41:29.000Z",
+          "url": "https://x.com/zarazhangrui/status/2064825302359150870",
+          "likes": 203,
+          "retweets": 17,
+          "replies": 66,
+          "isQuote": false,
+          "quotedTweetId": null
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Nikunj Kothari",
+      "handle": "nikunj",
+      "bio": "partner @fpvventures - investing in seed/A. previous: early hire @meter, @opendoor, @atlassian & others. love @shimoleejhaveri + 👦👧",
+      "tweets": [
+        {
+          "id": "2064901295383990417",
+          "text": "TIL: You can just roast your way into getting some legit coffee at the Cognition office ☕️ https://t.co/kfMU1x2Xez https://t.co/WXthHoSa1U",
+          "createdAt": "2026-06-11T02:43:27.000Z",
+          "url": "https://x.com/nikunj/status/2064901295383990417",
+          "likes": 26,
+          "retweets": 0,
+          "replies": 4,
+          "isQuote": true,
+          "quotedTweetId": "2060419667244765384"
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Dan Shipper",
+      "handle": "danshipper",
+      "bio": "ceo @every | the only subscription you need to stay at the edge of AI",
+      "tweets": [
+        {
+          "id": "2064916544417829027",
+          "text": "absolutely insane game",
+          "createdAt": "2026-06-11T03:44:03.000Z",
+          "url": "https://x.com/danshipper/status/2064916544417829027",
+          "likes": 91,
+          "retweets": 0,
+          "replies": 8,
+          "isQuote": false,
+          "quotedTweetId": null
+        },
+        {
+          "id": "2064777216656097445",
+          "text": "I predicted this might happen on on @lennysan’s pod last year \n\nHigher productivity from each individual employee with AI, makes it appealing to reshore certain jobs back to the US to be close to customers https://t.co/rNpLF3BerE",
+          "createdAt": "2026-06-10T18:30:24.000Z",
+          "url": "https://x.com/danshipper/status/2064777216656097445",
+          "likes": 164,
+          "retweets": 15,
+          "replies": 13,
+          "isQuote": true,
+          "quotedTweetId": "2064734707497996543"
+        },
+        {
+          "id": "2064767202767602122",
+          "text": "fable maxxing on the plane to SF https://t.co/KDB8T8Z8Ci",
+          "createdAt": "2026-06-10T17:50:37.000Z",
+          "url": "https://x.com/danshipper/status/2064767202767602122",
+          "likes": 50,
+          "retweets": 0,
+          "replies": 7,
+          "isQuote": false,
+          "quotedTweetId": null
+        }
+      ]
+    },
+    {
+      "source": "x",
+      "name": "Claude",
+      "handle": "claudeai",
+      "bio": "Claude is an AI assistant built by @anthropicai to be safe, accurate, and secure. Talk to Claude on https://t.co/ZhTwG8d1e5 or download the app.",
+      "tweets": [
+        {
+          "id": "2064757539762295177",
+          "text": "From The Problem Solvers, our series featuring founders taking on hard problems with Claude: https://t.co/lXWwc2eHPe",
+          "createdAt": "2026-06-10T17:12:13.000Z",
+          "url": "https://x.com/claudeai/status/2064757539762295177",
+          "likes": 137,
+          "retweets": 11,
+          "replies": 14,
+          "isQuote": false,
+          "quotedTweetId": null
+        },
+        {
+          "id": "2064757537992249734",
+          "text": "Michael Truell (@mntruell) fell in love with coding at 12. The company he co-founded, @cursor_ai, went from 15 people to 700 in two years.\n\nToday, over 60% of the Fortune 500 build with its AI coding platform. https://t.co/1UROi02oHJ",
+          "createdAt": "2026-06-10T17:12:13.000Z",
+          "url": "https://x.com/claudeai/status/2064757537992249734",
+          "likes": 5258,
+          "retweets": 246,
+          "replies": 175,
+          "isQuote": false,
+          "quotedTweetId": null
+        },
+        {
+          "id": "2064741184547795408",
+          "text": "Scheduled deployments and environment variables in vaults are available today on the Claude Platform.\n\nRead more: https://t.co/kCYH1FnRbO",
+          "createdAt": "2026-06-10T16:07:14.000Z",
+          "url": "https://x.com/claudeai/status/2064741184547795408",
+          "likes": 119,
+          "retweets": 10,
+          "replies": 9,
+          "isQuote": false,
+          "quotedTweetId": null
+        }
+      ]
+    }
+  ],
+  "blogs": [],
+  "scoredSignals": [
+    {
+      "type": "x_tweet",
+      "author": "Zara Zhang",
+      "handle": "zarazhangrui",
+      "title": "It seems like most startups in San Francisco are selling products to each other When I as...",
+      "summary": "It seems like most startups in San Francisco are selling products to each other When I ask founders who their target audience is, 90% of the time it's \"engineering and product teams, AI-native startups\" Feels like the s...",
+      "url": "https://x.com/zarazhangrui/status/2064825302359150870",
+      "publishedAt": "2026-06-10T21:41:29.000Z",
+      "signalIntent": "both",
+      "metrics": {
+        "likes": 203,
+        "retweets": 17,
+        "replies": 66
+      },
+      "explainability": {
+        "sourceReason": "高密度 agent / builder 信号,且和你的关注方向高度一致",
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.8200000000000001,
+        "writeability": 0.7000000000000001,
+        "actionability": 0.58,
+        "novelty": 0.68,
+        "engagement": 0.65,
+        "recency": 0.75,
+        "base": 0.715,
+        "sourceWeight": 1.25,
+        "penalty": 1,
+        "total": 0.894,
+        "sectionScore": 0.992
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Zara Zhang",
+      "handle": "zarazhangrui",
+      "title": "People should build agents/skills for their cross-functional teams. For example, if a des...",
+      "summary": "People should build agents/skills for their cross-functional teams. For example, if a design team builds a design agent/skill for the marketing team (trained on all of the brand's guidelines and design patterns), then t...",
+      "url": "https://x.com/zarazhangrui/status/2064835289559023958",
+      "publishedAt": "2026-06-10T22:21:10.000Z",
+      "signalIntent": "both",
+      "metrics": {
+        "likes": 50,
+        "retweets": 3,
+        "replies": 12
+      },
+      "explainability": {
+        "sourceReason": "高密度 agent / builder 信号,且和你的关注方向高度一致",
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": "HIGH_SOURCE_LOW_ENG",
+      "scoring": {
+        "relevance": 0.8200000000000001,
+        "writeability": 0.76,
+        "actionability": 0.58,
+        "novelty": 0.7,
+        "engagement": 0.35,
+        "recency": 0.75,
+        "base": 0.705,
+        "sourceWeight": 1.25,
+        "penalty": 1,
+        "total": 0.882,
+        "sectionScore": 0.983
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Aaron Levie",
+      "handle": "levie",
+      "title": "Lots of evidence of huge jumps in capability for Fable across coding (and related) tasks....",
+      "summary": "Lots of evidence of huge jumps in capability for Fable across coding (and related) tasks. It's also a major jump in accuracy and success in complex knowledge work tasks. In our Box AI Complex Work Eval, we tested the mo...",
+      "url": "https://x.com/levie/status/2064922814688481678",
+      "publishedAt": "2026-06-11T04:08:58.000Z",
+      "signalIntent": "both",
+      "metrics": {
+        "likes": 177,
+        "retweets": 19,
+        "replies": 26
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.9400000000000001,
+        "writeability": 0.7000000000000001,
+        "actionability": 0.8999999999999999,
+        "novelty": 0.62,
+        "engagement": 0.5,
+        "recency": 0.9,
+        "base": 0.812,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.812,
+        "sectionScore": 0.92
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Thariq",
+      "handle": "trq212",
+      "title": "Lots of people asked how I used Fable to edit its own launch video so I made a video abou...",
+      "summary": "Lots of people asked how I used Fable to edit its own launch video so I made a video about that! TLDR it wrote a lot of code & tool calls to use transcription services, ffmpeg, do colorgrading, use the figma mcp, make r...",
+      "url": "https://x.com/trq212/status/2064826394589442448",
+      "publishedAt": "2026-06-10T21:45:49.000Z",
+      "signalIntent": "product_signal",
+      "metrics": {
+        "likes": 6036,
+        "retweets": 367,
+        "replies": 207
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.5,
+        "actionability": 0.82,
+        "novelty": 0.68,
+        "engagement": 1,
+        "recency": 0.75,
+        "base": 0.762,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.762,
+        "sectionScore": 0.845
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Guillermo Rauch",
+      "handle": "rauchg",
+      "title": "🇬🇧 London calling Excited for Vercel Ship next week Some special announcements…",
+      "summary": "🇬🇧 London calling Excited for Vercel Ship next week Some special announcements…",
+      "url": "https://x.com/rauchg/status/2064777495422161205",
+      "publishedAt": "2026-06-10T18:31:31.000Z",
+      "signalIntent": "both",
+      "metrics": {
+        "likes": 182,
+        "retweets": 8,
+        "replies": 28
+      },
+      "explainability": {
+        "sourceReason": "产品范式变化和 platform 视角常有高信号",
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": "SHORT_TEXT",
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.45,
+        "actionability": 0.54,
+        "novelty": 0.62,
+        "engagement": 0.5,
+        "recency": 0.75,
+        "base": 0.654,
+        "sourceWeight": 1.15,
+        "penalty": 1,
+        "total": 0.752,
+        "sectionScore": 0.829
+      },
+      "reviewNote": "边界信号，分数尚可 — 保留"
+    },
+    {
+      "type": "x_tweet",
+      "author": "Claude",
+      "handle": "claudeai",
+      "title": "Michael Truell (@mntruell) fell in love with coding at 12. The company he co-founded, @cu...",
+      "summary": "Michael Truell (@mntruell) fell in love with coding at 12. The company he co-founded, @cursor_ai, went from 15 people to 700 in two years. Today, over 60% of the Fortune 500 build with its AI coding platform.",
+      "url": "https://x.com/claudeai/status/2064757537992249734",
+      "publishedAt": "2026-06-10T17:12:13.000Z",
+      "signalIntent": "product_signal",
+      "metrics": {
+        "likes": 5258,
+        "retweets": 246,
+        "replies": 175
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.6200000000000001,
+        "actionability": 0.58,
+        "novelty": 0.68,
+        "engagement": 1,
+        "recency": 0.75,
+        "base": 0.729,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.729,
+        "sectionScore": 0.804
+      }
+    },
+    {
+      "type": "podcast_episode",
+      "author": "AI & I by Every",
+      "title": "How Anthropic Uses Claude Fable 5 With Mike Krieger",
+      "summary": "Speaker 1 | 00:04 - 00:07\nMike, welcome to the show. Great to be here, Dan. Good to see you.\n\nSpeaker 2 | 00:07 - 00:17\nSo for people who don't know you, you're the head of Anthropic Labs, and you're the cofounder of In...",
+      "url": "https://www.youtube.com/watch?v=XWpTgCvgYaE",
+      "publishedAt": "2026-06-10T17:27:38.000Z",
+      "signalIntent": "product_signal",
+      "explainability": {
+        "sourceReason": "播客源当前未单独加权,按内容信号本身排序",
+        "modeEffect": "按默认模式处理"
+      },
+      "scoring": {
+        "relevance": 0.84,
+        "writeability": 0.8,
+        "actionability": 0.58,
+        "novelty": 0.8200000000000001,
+        "engagement": 0.2,
+        "recency": 0.75,
+        "base": 0.727,
+        "sourceWeight": 1,
+        "total": 0.727,
+        "sectionScore": 0.805
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Peter Yang",
+      "handle": "petergyang",
+      "title": "Give yourself permission to build. The traditional career ladder pushes everyone to becom...",
+      "summary": "Give yourself permission to build. The traditional career ladder pushes everyone to become a leader, but I just want to be a builder. As you climb the ladder at most companies, you're expected to step away from building...",
+      "url": "https://x.com/petergyang/status/2064799855059616172",
+      "publishedAt": "2026-06-10T20:00:22.000Z",
+      "signalIntent": "product_signal",
+      "metrics": {
+        "likes": 52,
+        "retweets": 1,
+        "replies": 8
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.8,
+        "actionability": 0.7,
+        "novelty": 0.62,
+        "engagement": 0.35,
+        "recency": 0.75,
+        "base": 0.721,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.721,
+        "sectionScore": 0.815
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Google Labs",
+      "handle": "GoogleLabs",
+      "title": "🌍 Project Genie access is expanding even more! Starting today, Google AI Ultra 5X subscr...",
+      "summary": "🌍 Project Genie access is expanding even more! Starting today, Google AI Ultra 5X subscribers (our latest tier!) globally can access Project Genie. Try it out here!",
+      "url": "https://x.com/GoogleLabs/status/2064801929339752527",
+      "publishedAt": "2026-06-10T20:08:36.000Z",
+      "signalIntent": "neither",
+      "metrics": {
+        "likes": 365,
+        "retweets": 60,
+        "replies": 13
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.6200000000000001,
+        "actionability": 0.58,
+        "novelty": 0.62,
+        "engagement": 0.65,
+        "recency": 0.75,
+        "base": 0.694,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.694,
+        "sectionScore": 0.694
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Matt Turck",
+      "handle": "mattturck",
+      "title": "2026 is a BRUTAL grind in VC. You start in Davos, freeze in Aspen, hit Upfront, survive M...",
+      "summary": "2026 is a BRUTAL grind in VC. You start in Davos, freeze in Aspen, hit Upfront, survive Milken, then it's straight to Paris for the French Open. Briefly back in NYC for the Knicks. Then, total blur: SuperReturn in Berli...",
+      "url": "https://x.com/mattturck/status/2064806681612362113",
+      "publishedAt": "2026-06-10T20:27:29.000Z",
+      "signalIntent": "neither",
+      "metrics": {
+        "likes": 488,
+        "retweets": 22,
+        "replies": 32
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.6200000000000001,
+        "actionability": 0.5,
+        "novelty": 0.68,
+        "engagement": 0.65,
+        "recency": 0.75,
+        "base": 0.689,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.689,
+        "sectionScore": 0.686
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Claude",
+      "handle": "claudeai",
+      "title": "Scheduled deployments and environment variables in vaults are available today on the Clau...",
+      "summary": "Scheduled deployments and environment variables in vaults are available today on the Claude Platform. Read more:",
+      "url": "https://x.com/claudeai/status/2064741184547795408",
+      "publishedAt": "2026-06-10T16:07:14.000Z",
+      "signalIntent": "product_signal",
+      "metrics": {
+        "likes": 119,
+        "retweets": 10,
+        "replies": 9
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.45,
+        "actionability": 0.62,
+        "novelty": 0.68,
+        "engagement": 0.5,
+        "recency": 0.75,
+        "base": 0.68,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.68,
+        "sectionScore": 0.749
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Garry Tan",
+      "handle": "garrytan",
+      "title": "Nessie just became the best way to get all your existing context, memory and history from...",
+      "summary": "Nessie just became the best way to get all your existing context, memory and history from ChatGPT, Perplexity, and Gemini into all the other places you have memory, and also get it into OpenClaw/Hermes Agent. Their Open...",
+      "url": "https://x.com/garrytan/status/2064947145652994510",
+      "publishedAt": "2026-06-11T05:45:39.000Z",
+      "signalIntent": "product_signal",
+      "metrics": {
+        "likes": 269,
+        "retweets": 23,
+        "replies": 41
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.5,
+        "actionability": 0.5,
+        "novelty": 0.64,
+        "engagement": 0.65,
+        "recency": 0.9,
+        "base": 0.678,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.678,
+        "sectionScore": 0.744
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Peter Yang",
+      "handle": "petergyang",
+      "title": "The more I use Codex the more ambitious my requests get. Or maybe this is not ambitious e...",
+      "summary": "The more I use Codex the more ambitious my requests get. Or maybe this is not ambitious enough?",
+      "url": "https://x.com/petergyang/status/2064748427892945313",
+      "publishedAt": "2026-06-10T16:36:01.000Z",
+      "signalIntent": "neither",
+      "metrics": {
+        "likes": 48,
+        "retweets": 0,
+        "replies": 12
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.68,
+        "actionability": 0.58,
+        "novelty": 0.56,
+        "engagement": 0.35,
+        "recency": 0.75,
+        "base": 0.671,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.671,
+        "sectionScore": 0.677
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Josh Woodward",
+      "handle": "joshwoodward",
+      "title": "Heads up: Gemini is currently experiencing an outage. We're on it and will get everything...",
+      "summary": "Heads up: Gemini is currently experiencing an outage. We're on it and will get everything back up ASAP. Some of the fixes are in, the rest coming very soon. Stay tuned for updates, and thanks for bearing with us!",
+      "url": "https://x.com/joshwoodward/status/2064762269674918013",
+      "publishedAt": "2026-06-10T17:31:01.000Z",
+      "signalIntent": "both",
+      "metrics": {
+        "likes": 1553,
+        "retweets": 137,
+        "replies": 123
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.5,
+        "actionability": 0.5,
+        "novelty": 0.56,
+        "engagement": 0.8,
+        "recency": 0.75,
+        "base": 0.663,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.663,
+        "sectionScore": 0.733
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Madhu Guru",
+      "handle": "realmadhuguru",
+      "title": "Right from the early days of Gemini, enterprises would get the quality/cost tradeoff wron...",
+      "summary": "Right from the early days of Gemini, enterprises would get the quality/cost tradeoff wrong. They'd often start with the smallest, cheapest model. The rule of thumb we gave customers: Replacing a traditional ML model wit...",
+      "url": "https://x.com/realmadhuguru/status/2064794601320481150",
+      "publishedAt": "2026-06-10T19:39:29.000Z",
+      "signalIntent": "both",
+      "metrics": {
+        "likes": 20,
+        "retweets": 1,
+        "replies": 0
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.5,
+        "actionability": 0.58,
+        "novelty": 0.62,
+        "engagement": 0.35,
+        "recency": 0.75,
+        "base": 0.658,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.658,
+        "sectionScore": 0.73
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Amjad Masad",
+      "handle": "amasad",
+      "title": "Super interesting approach to enterprise agents. Congrats on the launch @markiewagner",
+      "summary": "Super interesting approach to enterprise agents. Congrats on the launch @markiewagner",
+      "url": "https://x.com/amasad/status/2064806473352540643",
+      "publishedAt": "2026-06-10T20:26:40.000Z",
+      "signalIntent": "product_signal",
+      "metrics": {
+        "likes": 185,
+        "retweets": 11,
+        "replies": 7
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": "SHORT_TEXT",
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.45,
+        "actionability": 0.54,
+        "novelty": 0.62,
+        "engagement": 0.5,
+        "recency": 0.75,
+        "base": 0.654,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.654,
+        "sectionScore": 0.721
+      },
+      "reviewNote": "边界信号，分数尚可 — 保留"
+    },
+    {
+      "type": "x_tweet",
+      "author": "Dan Shipper",
+      "handle": "danshipper",
+      "title": "I predicted this might happen on on @lennysan's pod last year Higher productivity from ea...",
+      "summary": "I predicted this might happen on on @lennysan's pod last year Higher productivity from each individual employee with AI, makes it appealing to reshore certain jobs back to the US to be close to customers",
+      "url": "https://x.com/danshipper/status/2064777216656097445",
+      "publishedAt": "2026-06-10T18:30:24.000Z",
+      "signalIntent": "neither",
+      "metrics": {
+        "likes": 164,
+        "retweets": 15,
+        "replies": 13
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.5,
+        "actionability": 0.5,
+        "novelty": 0.56,
+        "engagement": 0.5,
+        "recency": 0.75,
+        "base": 0.642,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.642,
+        "sectionScore": 0.639
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Garry Tan",
+      "handle": "garrytan",
+      "title": "Performative nonprofit industrial complex must be rooted out and defunded. Their politica...",
+      "summary": "Performative nonprofit industrial complex must be rooted out and defunded. Their political cronies and grifter friends must not be allowed to squander the gifts of San Francisco any longer.",
+      "url": "https://x.com/garrytan/status/2064947547735789715",
+      "publishedAt": "2026-06-11T05:47:14.000Z",
+      "signalIntent": "neither",
+      "metrics": {
+        "likes": 114,
+        "retweets": 9,
+        "replies": 7
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.5,
+        "actionability": 0.42,
+        "novelty": 0.56,
+        "engagement": 0.5,
+        "recency": 0.9,
+        "base": 0.638,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.638,
+        "sectionScore": 0.635
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Josh Woodward",
+      "handle": "joshwoodward",
+      "title": "Update: Everything is back up and running, sorry again!",
+      "summary": "Update: Everything is back up and running, sorry again!",
+      "url": "https://x.com/joshwoodward/status/2064869366290841716",
+      "publishedAt": "2026-06-11T00:36:34.000Z",
+      "signalIntent": "product_signal",
+      "metrics": {
+        "likes": 429,
+        "retweets": 27,
+        "replies": 43
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": "SHORT_TEXT",
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.45,
+        "actionability": 0.42,
+        "novelty": 0.56,
+        "engagement": 0.65,
+        "recency": 0.75,
+        "base": 0.63,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.63,
+        "sectionScore": 0.693
+      },
+      "reviewNote": "边界信号，分数尚可 — 保留"
+    },
+    {
+      "type": "x_tweet",
+      "author": "Guillermo Rauch",
+      "handle": "rauchg",
+      "title": "What I love about Silicon Valley is that the future is up for grabs, ready for anyone to ...",
+      "summary": "What I love about Silicon Valley is that the future is up for grabs, ready for anyone to build. I get intros for angel investing to all kinds of people. I take everyone equally seriously. 2 lads & a dog, or a 5-time awa...",
+      "url": "https://x.com/rauchg/status/2064732935484514729",
+      "publishedAt": "2026-06-10T15:34:27.000Z",
+      "signalIntent": "both",
+      "metrics": {
+        "likes": 815,
+        "retweets": 20,
+        "replies": 53
+      },
+      "explainability": {
+        "sourceReason": "产品范式变化和 platform 视角常有高信号",
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": "HIGH_ENG_LOW_MATCH",
+      "scoring": {
+        "relevance": 0.38,
+        "writeability": 0.6200000000000001,
+        "actionability": 0.5,
+        "novelty": 0.68,
+        "engagement": 0.65,
+        "recency": 0.75,
+        "base": 0.535,
+        "sourceWeight": 1.15,
+        "penalty": 1,
+        "total": 0.615,
+        "sectionScore": 0.669
+      },
+      "reviewNote": "高互动信号，关键词未命中但互动强 — 按互动判断保留"
+    },
+    {
+      "type": "x_tweet",
+      "author": "Dan Shipper",
+      "handle": "danshipper",
+      "title": "fable maxxing on the plane to SF",
+      "summary": "fable maxxing on the plane to SF",
+      "url": "https://x.com/danshipper/status/2064767202767602122",
+      "publishedAt": "2026-06-10T17:50:37.000Z",
+      "signalIntent": "x_angle",
+      "metrics": {
+        "likes": 50,
+        "retweets": 0,
+        "replies": 7
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": "SHORT_TEXT",
+      "scoring": {
+        "relevance": 0.82,
+        "writeability": 0.45,
+        "actionability": 0.42,
+        "novelty": 0.56,
+        "engagement": 0.35,
+        "recency": 0.75,
+        "base": 0.609,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.609,
+        "sectionScore": 0.641
+      },
+      "reviewNote": "边界信号，分数尚可 — 保留"
+    },
+    {
+      "type": "x_tweet",
+      "author": "Thariq",
+      "handle": "trq212",
+      "title": "and the video for reference: (I didnt get to use the updated designs in time)",
+      "summary": "and the video for reference: (I didnt get to use the updated designs in time)",
+      "url": "https://x.com/trq212/status/2064828193446740023",
+      "publishedAt": "2026-06-10T21:52:58.000Z",
+      "signalIntent": "x_angle",
+      "metrics": {
+        "likes": 92,
+        "retweets": 1,
+        "replies": 5
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.38,
+        "writeability": 0.45,
+        "actionability": 0.5,
+        "novelty": 0.56,
+        "engagement": 0.5,
+        "recency": 0.75,
+        "base": 0.482,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.482,
+        "sectionScore": 0.514
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Nan Yu",
+      "handle": "thenanyu",
+      "title": "There's a thing they say about being a boat owner: the two best days of being a boat owne...",
+      "summary": "There's a thing they say about being a boat owner: the two best days of being a boat owner are the day you buy the boat and the day you sell the boat.",
+      "url": "https://x.com/thenanyu/status/2064711789556732316",
+      "publishedAt": "2026-06-10T14:10:25.000Z",
+      "signalIntent": "neither",
+      "metrics": {
+        "likes": 15,
+        "retweets": 0,
+        "replies": 0
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": null
+      },
+      "needsReview": false,
+      "reviewReason": null,
+      "scoring": {
+        "relevance": 0.38,
+        "writeability": 0.5,
+        "actionability": 0.42,
+        "novelty": 0.56,
+        "engagement": 0.35,
+        "recency": 0.75,
+        "base": 0.462,
+        "sourceWeight": 1,
+        "penalty": 1,
+        "total": 0.462,
+        "sectionScore": 0.459
+      }
+    },
+    {
+      "type": "x_tweet",
+      "author": "Amjad Masad",
+      "handle": "amasad",
+      "title": "Automate your job search with Replit!",
+      "summary": "Automate your job search with Replit!",
+      "url": "https://x.com/amasad/status/2064864439275536495",
+      "publishedAt": "2026-06-11T00:17:00.000Z",
+      "signalIntent": "x_angle",
+      "metrics": {
+        "likes": 164,
+        "retweets": 5,
+        "replies": 8
+      },
+      "explainability": {
+        "sourceReason": null,
+        "modeEffect": "当前模式为平衡输出",
+        "lowSignalPenalty": "低信号惩罚 ×0.5"
+      },
+      "needsReview": false,
+      "reviewReason": "SHORT_TEXT,PENALIZED_BUT_ENGAGED",
+      "scoring": {
+        "relevance": 0.38,
+        "writeability": 0.45,
+        "actionability": 0.5,
+        "novelty": 0.56,
+        "engagement": 0.5,
+        "recency": 0.75,
+        "base": 0.482,
+        "sourceWeight": 1,
+        "penalty": 0.5,
+        "total": 0.241,
+        "sectionScore": 0.257
+      },
+      "reviewNote": "内容形式偏低信号，但互动可以 — 保留"
+    }
+  ],
+  "draftCandidates": [
+    {
+      "rank": 1,
+      "sourceType": "x_tweet",
+      "title": "It seems like most startups in San Francisco are selling products to each other When I as...",
+      "summary": "It seems like most startups in San Francisco are selling products to each other When I ask founders who their target audience is, 90% of the time it's \"engineering and product teams, AI-native startups\" Feels like the s...",
+      "author": "zarazhangrui",
+      "angle": "这条信号值得写,不是因为它是新闻,而是因为它暴露了 AI / agent / workflow 判断的变化。",
+      "suggestedOpening": "我越来越感觉,真正值得关注的不是又出了什么新功能,而是这类信号背后产品逻辑已经在变。",
+      "sourceUrl": "https://x.com/zarazhangrui/status/2064825302359150870",
+      "score": 0.894
+    },
+    {
+      "rank": 2,
+      "sourceType": "x_tweet",
+      "title": "People should build agents/skills for their cross-functional teams. For example, if a des...",
+      "summary": "People should build agents/skills for their cross-functional teams. For example, if a design team builds a design agent/skill for the marketing team (trained on all of the brand's guidelines and design patterns), then t...",
+      "author": "zarazhangrui",
+      "angle": "这条信号值得写,不是因为它是新闻,而是因为它暴露了 AI / agent / workflow 判断的变化。",
+      "suggestedOpening": "我越来越感觉,真正值得关注的不是又出了什么新功能,而是这类信号背后产品逻辑已经在变。",
+      "sourceUrl": "https://x.com/zarazhangrui/status/2064835289559023958",
+      "score": 0.882
+    }
+  ],
+  "modeViews": {
+    "signal_only": [
+      {
+        "type": "x_tweet",
+        "title": "It seems like most startups in San Francisco are selling products to each other When I as...",
+        "author": "Zara Zhang",
+        "score": 0.894,
+        "whyItMatters": "它不是普通更新,因为它直接指向 AI / agent 的判断变化。",
+        "sourceUrl": "https://x.com/zarazhangrui/status/2064825302359150870"
+      },
+      {
+        "type": "x_tweet",
+        "title": "People should build agents/skills for their cross-functional teams. For example, if a des...",
+        "author": "Zara Zhang",
+        "score": 0.882,
+        "whyItMatters": "它不是普通更新,因为它直接指向 AI / agent 的判断变化。",
+        "sourceUrl": "https://x.com/zarazhangrui/status/2064835289559023958"
+      },
+      {
+        "type": "x_tweet",
+        "title": "Lots of evidence of huge jumps in capability for Fable across coding (and related) tasks....",
+        "author": "Aaron Levie",
+        "score": 0.812,
+        "whyItMatters": "它不是普通更新,因为它直接指向 AI / agent 的判断变化。",
+        "sourceUrl": "https://x.com/levie/status/2064922814688481678"
+      },
+      {
+        "type": "x_tweet",
+        "title": "Lots of people asked how I used Fable to edit its own launch video so I made a video abou...",
+        "author": "Thariq",
+        "score": 0.762,
+        "whyItMatters": "它不是普通更新,因为它直接指向 AI / agent 的判断变化。",
+        "sourceUrl": "https://x.com/trq212/status/2064826394589442448"
+      },
+      {
+        "type": "x_tweet",
+        "title": "🇬🇧 London calling Excited for Vercel Ship next week Some special announcements…",
+        "author": "Guillermo Rauch",
+        "score": 0.752,
+        "whyItMatters": "它不是普通更新,因为它直接指向 AI / agent 的判断变化。",
+        "sourceUrl": "https://x.com/rauchg/status/2064777495422161205"
+      }
+    ],
+    "x_draft": [
+      {
+        "rank": 1,
+        "sourceType": "x_tweet",
+        "title": "It seems like most startups in San Francisco are selling products to each other When I as...",
+        "summary": "It seems like most startups in San Francisco are selling products to each other When I ask founders who their target audience is, 90% of the time it's \"engineering and product teams, AI-native startups\" Feels like the s...",
+        "author": "zarazhangrui",
+        "angle": "这条信号值得写,不是因为它是新闻,而是因为它暴露了 AI / agent / workflow 判断的变化。",
+        "suggestedOpening": "我越来越感觉,真正值得关注的不是又出了什么新功能,而是这类信号背后产品逻辑已经在变。",
+        "sourceUrl": "https://x.com/zarazhangrui/status/2064825302359150870",
+        "score": 0.894
+      },
+      {
+        "rank": 2,
+        "sourceType": "x_tweet",
+        "title": "People should build agents/skills for their cross-functional teams. For example, if a des...",
+        "summary": "People should build agents/skills for their cross-functional teams. For example, if a design team builds a design agent/skill for the marketing team (trained on all of the brand's guidelines and design patterns), then t...",
+        "author": "zarazhangrui",
+        "angle": "这条信号值得写,不是因为它是新闻,而是因为它暴露了 AI / agent / workflow 判断的变化。",
+        "suggestedOpening": "我越来越感觉,真正值得关注的不是又出了什么新功能,而是这类信号背后产品逻辑已经在变。",
+        "sourceUrl": "https://x.com/zarazhangrui/status/2064835289559023958",
+        "score": 0.882
+      },
+      {
+        "rank": 3,
+        "sourceType": "x_tweet",
+        "title": "Lots of evidence of huge jumps in capability for Fable across coding (and related) tasks....",
+        "summary": "Lots of evidence of huge jumps in capability for Fable across coding (and related) tasks. It's also a major jump in accuracy and success in complex knowledge work tasks. In our Box AI Complex Work Eval, we tested the mo...",
+        "author": "levie",
+        "angle": "这条信号值得写,不是因为它是新闻,而是因为它暴露了 AI / agent / workflow 判断的变化。",
+        "suggestedOpening": "我越来越感觉,真正值得关注的不是又出了什么新功能,而是这类信号背后产品逻辑已经在变。",
+        "sourceUrl": "https://x.com/levie/status/2064922814688481678",
+        "score": 0.812
+      }
+    ]
+  },
+  "renderedMarkdown": "# 📡 Content Signal Radar\n\n> 2026/6/11 20:57:34 · 21 条高信号 · 33 条原始推文\n\n## 今日判断\n\n今天的信号分布在 📌 综合(3条)、📦 产品(2条)、🏢 企业工作流(1条)。@zarazhangrui 贡献了最强的一条——不是新闻价值高，而是它暴露了判断框架的变化。信号密度不错，值得花时间过一遍。\n\n---\n\n## 今日必看\n\n### 1. It seems like most startups in San Francisco are selling products to each other When I as...\n🏢 企业工作流 · [@zarazhangrui](https://x.com/zarazhangrui/status/2064825302359150870) · ♥ 203 · 🔁 17 · 💬 66\n\n企业工作流的变化比 to-C 慢但粘性高——一旦切入，替换成本极高。\n\n[→ 原文](https://x.com/zarazhangrui/status/2064825302359150870)\n\n### 2. People should build agents/skills for their cross-functional teams. For example, if a des...\n🤖 Agent · [@zarazhangrui](https://x.com/zarazhangrui/status/2064835289559023958) · ♥ 50 · 🔁 3 · 💬 12\n\n每一轮 agent 信号密集出现，都意味着有人在悄悄重构工作流。（权重源、互动偏低，先当早期信号观察）\n\n[→ 原文](https://x.com/zarazhangrui/status/2064835289559023958)\n\n### 3. Lots of evidence of huge jumps in capability for Fable across coding (and related) tasks....\n📌 综合 · [@levie](https://x.com/levie/status/2064922814688481678) · ♥ 177 · 🔁 19 · 💬 26\n\n值得看——不因为新，而因为它能帮你校准方向判断。\n\n[→ 原文](https://x.com/levie/status/2064922814688481678)\n\n## 观察信号\n\n### 📦 产品\n\n#### 4. Lots of people asked how I used Fable to edit its own launch video so I made a video abou...\n📦 产品 · [@trq212](https://x.com/trq212/status/2064826394589442448) · ♥ 6k · 🔁 367 · 💬 207\n\n产品信号的价值不在于知道了什么，而在于该调整什么。\n\n[→ 原文](https://x.com/trq212/status/2064826394589442448)\n\n#### 5. 🇬🇧 London calling Excited for Vercel Ship next week Some special announcements…\n📦 产品 · [@rauchg](https://x.com/rauchg/status/2064777495422161205) · ♥ 182 · 🔁 8 · 💬 28\n\n边界信号，分数尚可 — 保留\n\n[→ 原文](https://x.com/rauchg/status/2064777495422161205)\n\n### 📌 综合\n\n#### 6. How Anthropic Uses Claude Fable 5 With Mike Krieger\n📌 综合 · AI & I by Every\n\n长内容优先看底层逻辑：这条不属于任何热门赛道，但它可能是下一个趋势的早期信号。 → 可写性高，优先扩成帖子\n\n[→ 原文](https://www.youtube.com/watch?v=XWpTgCvgYaE)\n\n#### 7. Give yourself permission to build. The traditional career ladder pushes everyone to becom...\n📌 综合 · [@petergyang](https://x.com/petergyang/status/2064799855059616172) · ♥ 52 · 🔁 1 · 💬 8\n\n值得看——不因为新，而因为它能帮你校准方向判断。 → 可写性高，优先扩成帖子\n\n[→ 原文](https://x.com/petergyang/status/2064799855059616172)\n\n### 💻 编码 Agent\n\n#### 8. Michael Truell (@mntruell) fell in love with coding at 12. The company he co-founded, @cu...\n💻 编码 Agent · [@claudeai](https://x.com/claudeai/status/2064757537992249734) · ♥ 5.3k · 🔁 246 · 💬 175\n\n人机协作写代码的效率曲线正在重新定义高级工程师的含义。\n\n[→ 原文](https://x.com/claudeai/status/2064757537992249734)\n\n---\n\n## ✏️ X 草稿\n\n### 草稿 1\n\n今天这条不一定是大新闻，但适合校准方向：\n\nIt seems like most startups in San Francisco are selling products to ea...\n\n我会先问：它能不能变成一个选题、一个产品假设，或者一个可复用流程？\n\nhttps://x.com/zarazhangrui/status/2064825302359150870\n\n### 草稿 2\n\n如果一个 agent 最后的产物不是聊天记录，而是一组可交付文件，工作流就真的变了。\n\n这条值得展开写。\n\nhttps://x.com/zarazhangrui/status/2064835289559023958\n\n---\n\n## 建议行动\n\n- **写帖优先**：AI & I by Every 的「How Anthropic Uses Claude Fable 5 With ...」可写性最高，建议明早扩成 X 长帖\n- **追踪主题**：📦 产品(2条) 今天重复出现，加入持续观察列表\n- **源覆盖**：今天缺少 博客 来源的高信号，考虑扩充对应信号源\n\n---\n\n## 平台健康摘要\n\n- X: 26 raw / 26 post-seen / 20 high-signal (demoted -3)\n- 即刻: 0 raw / 0 post-seen / 0 high-signal\n- Blogs: 0 raw / 0 post-seen / 0 high-signal\n- Podcasts: 1 raw / 1 post-seen / 1 high-signal\n\n---\n\n<sub>16 builders · 33 tweets · 0 blogs · 1 podcasts · 21 high-signal · 1 filtered · balanced mode</sub>\n",
+  "stats": {
+    "podcastEpisodes": 1,
+    "xBuilders": 16,
+    "totalTweets": 33,
+    "blogPosts": 0,
+    "highSignalCount": 21,
+    "autoResolvedCount": 3,
+    "feedGeneratedAt": "2026-06-11T08:01:30.493Z",
+    "rawCounts": {
+      "x_tweet": 26,
+      "podcast_episode": 1
+    },
+    "postSeenCounts": {
+      "x_tweet": 26,
+      "podcast_episode": 1
+    },
+    "seenFilteredCounts": {
+      "x_tweet": 0,
+      "podcast_episode": 0
+    },
+    "demotedCounts": {
+      "x_tweet": 3
+    },
+    "highSignalCounts": {
+      "x_tweet": 20,
+      "podcast_episode": 1
+    }
+  },
+  "prompts": {
+    "summarize_podcast": "# Podcast Signal Extraction Prompt\n\n把播客内容压缩成对 Maple 真有用的信号。\n\n## 任务\n不是复述对谈过程，而是提炼：\n- 最值得记住的判断\n- 最值得转成内容的表达\n- 最值得迁移到产品/工作流里的方法\n\n## 输出要求\n- 开头一句：这一期最值得记住的核心判断\n- 然后提炼 3-5 个要点，每个要点都回答：\n  1. 核心观点是什么\n  2. 为什么重要\n  3. Maple 可以怎么用在内容、产品或个人系统里\n- 如果原文里有特别锋利的一句原话，可以引用 1 句\n- 语气直接，别写成节目简介\n- 带上原始视频链接",
+    "summarize_tweets": "# X Signal Extraction Prompt\n\n你不是在总结推文，你是在提取信号。\n\n## 任务\n从一个人的最近发言里，提取对 Maple 有价值的内容信号。\n\n## 优先提取\n- 新产品动作或产品方向变化\n- 对 agent / AI 产品 / distribution / personal brand 有启发的判断\n- 反直觉观点\n- 可转译成内容选题的表达\n- 能落成方法论的经验\n\n## 过滤掉\n- 日常碎碎念\n- 纯营销口号\n- 低信息量祝贺/转发\n- 没有具体观点的感想\n\n## 输出要求\n- 先用一句话定义这个人最近在关心什么\n- 再列 1-3 个高信号点\n- 每个信号点回答：\n  1. 他说了什么\n  2. 为什么这不只是普通资讯\n  3. 对 Maple 的内容或产品判断有什么用\n- 保留原始 tweet URL\n- 不要用 @handle 作为正文主体\n- 如果没有实质内容，直接说“无高信号内容”",
+    "summarize_blogs": "# Blog Signal Extraction Prompt\n\n把 blog 文章变成决策信号，不是新闻摘要。\n\n## 输出要求\n- 先说这篇文章真正宣布了什么 / 证明了什么\n- 再说这件事为什么现在值得关心\n- 最后说对 Maple 的内容、产品或工作流意味着什么\n- 如果有具体数字、基准、功能变化，必须点出来\n- 如果文章适合转成 X 观点或小红书选题，顺手标注\n- 必须带原文链接\n- 不要写空话",
+    "digest_intro": "# Maple Signal Radar Prompt\n\n你在组装一份给内容创作者 + AI builder 的信号雷达，不是普通 digest。\n\n## 目标\n\n从输入内容里筛出真正值得 Maple 关注的信号，并把它们转成：\n1. 简报\n2. 可写成 X 的观点角度\n3. X 草稿\n4. 对产品/项目判断有价值的信号\n5. 可执行动作\n\n## 输出模式\n\n`config.outputMode` 可能是：\n- `balanced`：默认平衡输出\n- `signal_only`：更偏判断，只保留高信号内容\n- `x_draft`：更偏内容生产，优先给出 X 角度和草稿\n\n生成时要根据模式调整侧重点：\n- `signal_only`：减少铺陈，强调 why it matters 和产品判断\n- `x_draft`：减少简报篇幅，增加可直接发的表达\n\n## 输出结构\n\n标题：\nContent Signal Radar — [Date]\n\n然后按这个顺序输出：\n\n1. 今日简报\n2. X 可写角度\n3. X 草稿\n4. 产品/项目相关信号\n5. 下一步动作\n6. 原始链接索引（如果配置要求输出 raw_links）\n\n如果 `disabledSections` 包含某 section，就不要输出该 section。\n如果 `outputSections` 里没有某 section，也不要输出。\n如果 `scoredSignals` 已提供，优先使用高分内容，低于 `config.scoring.minimum` 的尽量不要进入主输出。\n\n## 筛选规则\n\n- 只保留高信号内容，不要把所有内容机械塞进去\n- 优先：新观点、反直觉判断、具体产品动作、可迁移的方法论、会影响内容或产品决策的信息\n- 降权：纯宣传、空洞鸡汤、重复观点、低信息量转发\n- 每条都要隐含回答一个问题：为什么 Maple 现在要关心这个？\n- `sourceWeights` 已经体现 Maple 对不同 source 的长期信任度，遇到同等信号时，优先保留高权重 source\n\n## 写作要求\n\n- 默认用中文，直接、清楚，少废话\n- 别写成资讯播报，要写成“这意味着什么”\n- 如果一条信号适合转成内容，明确指出适合发 X，为什么\n- 如果一条信号适合影响产品判断，明确指出应该关注什么变化\n- 所有引用内容都必须带原始链接\n- 不要编造，不要脑补，JSON 里没有的就别写\n\n## 各 section 规则\n\n### 1. 今日简报\n- 默认 3-5 条，具体看 `config.limits.brief`\n- 每条 2-4 句\n- 结构：发生了什么 / 为什么值得关心 / 原始链接\n\n### 2. X 可写角度\n- 默认给 3 条，具体看 `config.limits.x_angles`\n- 每条包含：\n  - 角度标题\n  - 为什么能写\n  - 一句可直接展开成帖子开头的话\n  - 对应原始链接\n\n### 3. X 草稿\n- 默认给 2 条，具体看 `config.limits.x_drafts`\n- 每条 80-180 字\n- 语气要像能直接发，但不用刻意写成线程\n- 要有明确观点，不是总结\n- 给一个建议标题或首句\n- 带对应原始链接\n\n### 4. 产品/项目相关信号\n- 默认 1-3 条，具体看 `config.limits.product_signals`\n- 更偏判断，不偏复述\n- 说清楚这条信号对 agent、AI 产品、个人工作流或内容系统意味着什么\n\n### 5. 下一步动作\n- 最多 3 条，具体看 `config.limits.action_items`\n- 必须具体，可以今天就做\n\n### 6. 原始链接索引\n- 只列本次输出实际引用过的链接\n\n结尾不要加“Generated through...”之类仓库宣传语。",
+    "translate": "# Translation Prompt\n\n把内容翻成自然中文，不要翻译腔。\n\n## 规则\n- 保留 AI, agent, API, prompt, token, workflow, distribution 等常用英文术语\n- 人名、公司名、产品名保留英文\n- URL 原样保留\n- 语气像一个懂行的人在给朋友做 briefing\n- 简洁，别啰嗦\n- 不用破折号"
+  },
+  "demotedSignals": [
+    {
+      "title": "gangprompting",
+      "handle": "thenanyu",
+      "url": "https://x.com/thenanyu/status/2064733338779177459",
+      "type": "x_tweet",
+      "reviewReason": "SHORT_TEXT",
+      "scoring": {
+        "total": 0.305,
+        "engagement": 0.35,
+        "relevance": 0.82,
+        "penalty": 0.5
+      }
+    },
+    {
+      "title": "TIL: You can just roast your way into getting some legit coffee at the Cognition office ☕️",
+      "handle": "nikunj",
+      "url": "https://x.com/nikunj/status/2064901295383990417",
+      "type": "x_tweet",
+      "reviewReason": "SOCIAL_NOISE:personal_life",
+      "scoring": {
+        "total": 0.263,
+        "engagement": 0.35,
+        "relevance": 0.38,
+        "penalty": 0.55
+      }
+    },
+    {
+      "title": "wooh",
+      "handle": "swyx",
+      "url": "https://x.com/swyx/status/2064698525917827092",
+      "type": "x_tweet",
+      "reviewReason": "SHORT_TEXT",
+      "scoring": {
+        "total": 0.228,
+        "engagement": 0.35,
+        "relevance": 0.38,
+        "penalty": 0.5
+      }
+    }
+  ]
+}
