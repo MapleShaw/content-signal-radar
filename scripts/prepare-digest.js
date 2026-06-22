@@ -24,7 +24,7 @@ const NO_SEEN = process.argv.includes('--no-seen');
 const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
 const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json';
-const FEED_REDDIT_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-reddit.json';
+const FEED_REDDIT_URL = 'https://raw.githubusercontent.com/MapleShaw/content-signal-radar/main/feed-reddit.json';
 
 const PROMPT_FILES = [
   'summarize-podcast.md',
@@ -333,6 +333,7 @@ async function fetchDirectRSSSources(mergedSources) {
   // 本地 RSSHub 抓取 Reddit 已弃用（服务器在中国访问不了 Reddit）
   // Pain-language 检测函数保留给 buildScoredSignals 使用
 
+  return results;
 }
 
 function getSourceWeight(signal, config) {
@@ -683,6 +684,7 @@ function buildScoredSignals(filtered, config) {
   const signals = [];
 
   for (const account of filtered.x || []) {
+    if (account?.type === 'jike_post') continue;
     for (const tweet of account.tweets || []) {
       const text = tweet.text || '';
       const textLower = text.toLowerCase();
@@ -1086,7 +1088,8 @@ function buildHealthSummary(output) {
     { label: 'X', type: 'x_tweet' },
     { label: '即刻', type: 'jike_post' },
     { label: 'Blogs', type: 'blog_post' },
-    { label: 'Podcasts', type: 'podcast_episode' }
+    { label: 'Podcasts', type: 'podcast_episode' },
+    { label: 'Reddit', type: 'reddit_post' }
   ];
 
   return rows.map(({ label, type }) => {
