@@ -57,275 +57,77 @@
         }
       ],
       "x_accounts": [
-        {
-          "name": "Andrej Karpathy",
-          "handle": "karpathy"
-        },
-        {
-          "name": "Swyx",
-          "handle": "swyx"
-        },
-        {
-          "name": "Josh Woodward",
-          "handle": "joshwoodward"
-        },
-        {
-          "name": "Kevin Weil",
-          "handle": "kevinweil"
-        },
-        {
-          "name": "Peter Yang",
-          "handle": "petergyang"
-        },
-        {
-          "name": "Nan Yu",
-          "handle": "thenanyu"
-        },
-        {
-          "name": "Madhu Guru",
-          "handle": "realmadhuguru"
-        },
-        {
-          "name": "Amanda Askell",
-          "handle": "AmandaAskell"
-        },
-        {
-          "name": "Cat Wu",
-          "handle": "_catwu"
-        },
-        {
-          "name": "Thariq",
-          "handle": "trq212"
-        },
-        {
-          "name": "Google Labs",
-          "handle": "GoogleLabs"
-        },
-        {
-          "name": "Amjad Masad",
-          "handle": "amasad"
-        },
-        {
-          "name": "Guillermo Rauch",
-          "handle": "rauchg"
-        },
-        {
-          "name": "Alex Albert",
-          "handle": "alexalbert__"
-        },
-        {
-          "name": "Aaron Levie",
-          "handle": "levie"
-        },
-        {
-          "name": "Ryo Lu",
-          "handle": "ryolu_"
-        },
-        {
-          "name": "Garry Tan",
-          "handle": "garrytan"
-        },
-        {
-          "name": "Matt Turck",
-          "handle": "mattturck"
-        },
-        {
-          "name": "Zara Zhang",
-          "handle": "zarazhangrui"
-        },
-        {
-          "name": "Nikunj Kothari",
-          "handle": "nikunj"
-        },
-        {
-          "name": "Peter Steinberger",
-          "handle": "steipete"
-        },
-        {
-          "name": "Dan Shipper",
-          "handle": "danshipper"
-        },
-        {
-          "name": "Aditya Agarwal",
-          "handle": "adityaag"
-        },
-        {
-          "name": "Sam Altman",
-          "handle": "sama"
-        },
-        {
-          "name": "Claude",
-          "handle": "claudeai"
-        }
+        { "name": "Andrej Karpathy", "handle": "karpathy" },
+        { "name": "Swyx", "handle": "swyx" },
+        { "name": "Josh Woodward", "handle": "joshwoodward" },
+        { "name": "Kevin Weil", "handle": "kevinweil" },
+        { "name": "Peter Yang", "handle": "petergyang" },
+        { "name": "Nan Yu", "handle": "thenanyu" },
+        { "name": "Madhu Guru", "handle": "realmadhuguru" },
+        { "name": "Amanda Askell", "handle": "AmandaAskell" },
+        { "name": "Cat Wu", "handle": "_catwu" },
+        { "name": "Thariq", "handle": "trq212" },
+        { "name": "Google Labs", "handle": "GoogleLabs" },
+        { "name": "Amjad Masad", "handle": "amasad" },
+        { "name": "Guillermo Rauch", "handle": "rauchg" },
+        { "name": "Alex Albert", "handle": "alexalbert__" },
+        { "name": "Aaron Levie", "handle": "levie" },
+        { "name": "Ryo Lu", "handle": "ryolu_" },
+        { "name": "Garry Tan", "handle": "garrytan" },
+        { "name": "Matt Turck", "handle": "mattturck" },
+        { "name": "Zara Zhang", "handle": "zarazhangrui" },
+        { "name": "Nikunj Kothari", "handle": "nikunj" },
+        { "name": "Peter Steinberger", "handle": "steipete" },
+        { "name": "Dan Shipper", "handle": "danshipper" },
+        { "name": "Aditya Agarwal", "handle": "adityaag" },
+        { "name": "Sam Altman", "handle": "sama" },
+        { "name": "Claude", "handle": "claudeai" }
       ]
     },
     "maple": {
       "description": "Maple-focused additions for product, agent, creator, and distribution signals",
       "x_accounts": [
-        {
-          "name": "Cat Wu",
-          "handle": "_catwu"
-        },
-        {
-          "name": "Zara Zhang",
-          "handle": "zarazhangrui"
-        },
-        {
-          "name": "Pieter Levels",
-          "handle": "levelsio"
-        },
-        {
-          "name": "Dan Koe",
-          "handle": "thedankoe"
-        },
-        {
-          "name": "Tuan Dinh",
-          "handle": "tdinh_me"
-        },
-        {
-          "name": "Lex Fridman",
-          "handle": "lexfridman"
-        },
-        {
-          "name": "Lee Robinson",
-          "handle": "leeerob"
-        },
-        {
-          "name": "Peter Steinberger",
-          "handle": "steipete"
-        },
-        {
-          "name": "Naval",
-          "handle": "naval"
-        },
-        {
-          "name": "Greg Isenberg",
-          "handle": "gregisenberg"
-        },
-        {
-          "name": "xiaohu",
-          "handle": "xiaohu"
-        },
-        {
-          "name": "ZHO_ZHO_ZHO",
-          "handle": "ZHO_ZHO_ZHO"
-        },
-        {
-          "name": "yihui indie",
-          "handle": "yihui_indie"
-        },
-        {
-          "name": "aiwarts",
-          "handle": "aiwarts"
-        },
-        {
-          "name": "XianyuLi",
-          "handle": "XianyuLi"
-        },
-        {
-          "name": "CuiMao",
-          "handle": "CuiMao"
-        },
-        {
-          "name": "indiehackercase",
-          "handle": "indiehackercase"
-        },
-        {
-          "name": "Khazix0918",
-          "handle": "Khazix0918"
-        },
-        {
-          "name": "Jackywine",
-          "handle": "Jackywine"
-        },
-        {
-          "name": "cellinlab",
-          "handle": "cellinlab"
-        },
-        {
-          "name": "idoubicc",
-          "handle": "idoubicc"
-        },
-        {
-          "name": "PandaTalk8",
-          "handle": "PandaTalk8"
-        },
-        {
-          "name": "AI Jasonyu",
-          "handle": "AI_Jasonyu"
-        },
-        {
-          "name": "app_sail",
-          "handle": "app_sail"
-        },
-        {
-          "name": "yangyi",
-          "handle": "yangyi"
-        },
-        {
-          "name": "op7418",
-          "handle": "op7418"
-        },
-        {
-          "name": "lxfater",
-          "handle": "lxfater"
-        },
-        {
-          "name": "bearliu",
-          "handle": "bearliu"
-        },
-        {
-          "name": "geekbb",
-          "handle": "geekbb"
-        },
-        {
-          "name": "hzlzh",
-          "handle": "hzlzh"
-        },
-        {
-          "name": "foxshuo",
-          "handle": "foxshuo"
-        },
-        {
-          "name": "luoleiorg",
-          "handle": "luoleiorg"
-        },
-        {
-          "name": "turingou",
-          "handle": "turingou"
-        },
-        {
-          "name": "waylybaye",
-          "handle": "waylybaye"
-        },
-        {
-          "name": "lifesinger",
-          "handle": "lifesinger"
-        },
-        {
-          "name": "sagacity",
-          "handle": "sagacity"
-        },
-        {
-          "name": "interjc",
-          "handle": "interjc"
-        },
-        {
-          "name": "oran_ge",
-          "handle": "oran_ge"
-        },
-        {
-          "name": "vista8",
-          "handle": "vista8"
-        },
-        {
-          "name": "dotey",
-          "handle": "dotey"
-        },
-        {
-          "name": "ruanyf",
-          "handle": "ruanyf"
-        }
+        { "name": "Cat Wu", "handle": "_catwu" },
+        { "name": "Zara Zhang", "handle": "zarazhangrui" },
+        { "name": "Pieter Levels", "handle": "levelsio" },
+        { "name": "Dan Koe", "handle": "thedankoe" },
+        { "name": "Tuan Dinh", "handle": "tdinh_me" },
+        { "name": "Lex Fridman", "handle": "lexfridman" },
+        { "name": "Lee Robinson", "handle": "leeerob" },
+        { "name": "Peter Steinberger", "handle": "steipete" },
+        { "name": "Naval", "handle": "naval" },
+        { "name": "Greg Isenberg", "handle": "gregisenberg" },
+        { "name": "xiaohu", "handle": "xiaohu" },
+        { "name": "ZHO_ZHO_ZHO", "handle": "ZHO_ZHO_ZHO" },
+        { "name": "yihui indie", "handle": "yihui_indie" },
+        { "name": "aiwarts", "handle": "aiwarts" },
+        { "name": "XianyuLi", "handle": "XianyuLi" },
+        { "name": "CuiMao", "handle": "CuiMao" },
+        { "name": "indiehackercase", "handle": "indiehackercase" },
+        { "name": "Khazix0918", "handle": "Khazix0918" },
+        { "name": "Jackywine", "handle": "Jackywine" },
+        { "name": "cellinlab", "handle": "cellinlab" },
+        { "name": "idoubicc", "handle": "idoubicc" },
+        { "name": "PandaTalk8", "handle": "PandaTalk8" },
+        { "name": "AI Jasonyu", "handle": "AI_Jasonyu" },
+        { "name": "app_sail", "handle": "app_sail" },
+        { "name": "yangyi", "handle": "yangyi" },
+        { "name": "op7418", "handle": "op7418" },
+        { "name": "lxfater", "handle": "lxfater" },
+        { "name": "bearliu", "handle": "bearliu" },
+        { "name": "geekbb", "handle": "geekbb" },
+        { "name": "hzlzh", "handle": "hzlzh" },
+        { "name": "foxshuo", "handle": "foxshuo" },
+        { "name": "luoleiorg", "handle": "luoleiorg" },
+        { "name": "turingou", "handle": "turingou" },
+        { "name": "waylybaye", "handle": "waylybaye" },
+        { "name": "lifesinger", "handle": "lifesinger" },
+        { "name": "sagacity", "handle": "sagacity" },
+        { "name": "interjc", "handle": "interjc" },
+        { "name": "oran_ge", "handle": "oran_ge" },
+        { "name": "vista8", "handle": "vista8" },
+        { "name": "dotey", "handle": "dotey" },
+        { "name": "ruanyf", "handle": "ruanyf" }
       ],
       "blogs": [
         {
@@ -333,52 +135,25 @@
           "type": "rss",
           "indexUrl": "https://pmthinking.substack.com/feed",
           "fetchMethod": "http"
+        },
+        {
+          "name": "少数派",
+          "type": "rss",
+          "indexUrl": "https://sspai.com/feed",
+          "fetchMethod": "http"
         }
       ],
       "podcasts": [],
-      "jike_accounts": [
-        {
-          "name": "歸藏",
-          "uuid": "0ae2afa7-9b10-4b3a-ab7e-15fbf847038d",
-          "rsshub": "https://rsshub.ktachibana.party/jike/user/0ae2afa7-9b10-4b3a-ab7e-15fbf847038d"
-        },
-        {
-          "name": "孟岩",
-          "uuid": "c28c4303-ea82-4043-9938-cc6ed14f83d0",
-          "rsshub": "https://rsshub.ktachibana.party/jike/user/c28c4303-ea82-4043-9938-cc6ed14f83d0"
-        },
-        {
-          "name": "李继刚",
-          "uuid": "752D3103-1107-43A0-BA49-20EC29D09E36",
-          "rsshub": "https://rsshub.ktachibana.party/jike/user/752D3103-1107-43A0-BA49-20EC29D09E36"
-        },
-        {
-          "name": "阑夕",
-          "uuid": "FBAA4408-2343-45AD-9B4F-4ABD52FB84CA",
-          "rsshub": "https://rsshub.ktachibana.party/jike/user/FBAA4408-2343-45AD-9B4F-4ABD52FB84CA"
-        },
-        {
-          "name": "汗青HQ",
-          "uuid": "E76DDB17-C788-4A7B-A4F7-4206F60F2B4A",
-          "rsshub": "https://rsshub.ktachibana.party/jike/user/E76DDB17-C788-4A7B-A4F7-4206F60F2B4A"
-        }
+      "bilibili_accounts": [
+        { "name": "影视飓风", "uid": "385670211", "rsshub": "https://rsshub.ktachibana.party/bilibili/user/dynamic/385670211" },
+        { "name": "赛博禅心", "uid": "313468110", "rsshub": "https://rsshub.ktachibana.party/bilibili/user/dynamic/313468110" }
       ],
-      "reddit_subreddits": [
-        {
-          "name": "smallbusiness",
-          "rsshub": "http://localhost:1200/reddit/r/smallbusiness/hot",
-          "notes": "真实痛点抱怨"
-        },
-        {
-          "name": "Entrepreneur",
-          "rsshub": "http://localhost:1200/reddit/r/Entrepreneur/hot",
-          "notes": "创业讨论"
-        },
-        {
-          "name": "SaaS",
-          "rsshub": "http://localhost:1200/reddit/r/SaaS/hot",
-          "notes": "SaaS产品讨论"
-        }
+      "jike_accounts": [
+        { "name": "歸藏", "uuid": "0ae2afa7-9b10-4b3a-ab7e-15fbf847038d", "rsshub": "https://rsshub.ktachibana.party/jike/user/0ae2afa7-9b10-4b3a-ab7e-15fbf847038d" },
+        { "name": "孟岩", "uuid": "c28c4303-ea82-4043-9938-cc6ed14f83d0", "rsshub": "https://rsshub.ktachibana.party/jike/user/c28c4303-ea82-4043-9938-cc6ed14f83d0" },
+        { "name": "李继刚", "uuid": "752D3103-1107-43A0-BA49-20EC29D09E36", "rsshub": "https://rsshub.ktachibana.party/jike/user/752D3103-1107-43A0-BA49-20EC29D09E36" },
+        { "name": "阑夕", "uuid": "FBAA4408-2343-45AD-9B4F-4ABD52FB84CA", "rsshub": "https://rsshub.ktachibana.party/jike/user/FBAA4408-2343-45AD-9B4F-4ABD52FB84CA" },
+        { "name": "汗青HQ", "uuid": "E76DDB17-C788-4A7B-A4F7-4206F60F2B4A", "rsshub": "https://rsshub.ktachibana.party/jike/user/E76DDB17-C788-4A7B-A4F7-4206F60F2B4A" }
       ]
     }
   }

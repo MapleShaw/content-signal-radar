@@ -5,26 +5,15 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-function isPainLanguage(text) {
-  if (!text) return false;
-  return PAIN_PATTERNS.some(p => p.test(text));
-}
-function painBoost(text) {
-  if (!text) return 0;
-  return PAIN_PATTERNS.filter(p => p.test(text)).length * 0.06;
-}
-
 const USER_DIR = join(homedir(), '.content-signal-radar');
 const CONFIG_PATH = join(USER_DIR, 'config.json');
 const CUSTOM_SOURCES_PATH = join(USER_DIR, 'custom-sources.json');
 const SEEN_SIGNALS_PATH = join(USER_DIR, 'seen-signals.json');
-const SEEN_SIGNALS_TTL_DAYS = 1;
 const NO_SEEN = process.argv.includes('--no-seen');
 
 const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
 const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json';
-const FEED_REDDIT_URL = 'https://raw.githubusercontent.com/MapleShaw/content-signal-radar/main/feed-reddit.json';
 
 const PROMPT_FILES = [
   'summarize-podcast.md',
@@ -111,7 +100,7 @@ function normalizeConfig(input = {}) {
       'AI 产品', 'AI 出海', '出海', '独立开发'
     ],
     contentGoals: input.contentGoals || ['product_insights', 'x_posts', 'learning'],
-    outputSections: input.outputSections || ['brief', 'x_angles', 'product_signals', 'x_drafts', 'action_items'],
+    outputSections: input.outputSections || ['brief', 'x_angles', 'product_signals', 'action_items'],
     outputMode: input.outputMode || 'balanced',
     sourceProfiles: input.sourceProfiles || ['default', 'maple'],
     disabledSections: input.disabledSections || ['xiaohongshu_topics'],
@@ -153,7 +142,7 @@ function normalizeConfig(input = {}) {
       brief: input.limits?.brief ?? 5,
       x_angles: input.limits?.x_angles ?? 3,
       product_signals: input.limits?.product_signals ?? 3,
-      x_drafts: input.limits?.x_drafts ?? 2,
+      x_drafts: 0,
       action_items: input.limits?.action_items ?? 3
     },
     onboardingComplete: input.onboardingComplete ?? false
@@ -220,7 +209,7 @@ async function loadLocalSourceProfiles(configDir) {
 
 async function loadCustomSources() {
   if (!existsSync(CUSTOM_SOURCES_PATH)) {
-    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], reddit_subreddits: [], zh_creators: { enabled: false, sources: [] } };
+    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], bilibili_accounts: [], zh_creators: { enabled: false, sources: [] } };
   }
   try {
     const parsed = JSON.parse(await readFile(CUSTOM_SOURCES_PATH, 'utf-8'));
@@ -229,16 +218,16 @@ async function loadCustomSources() {
       blogs: parsed.blogs || [],
       podcasts: parsed.podcasts || [],
       jike_accounts: parsed.jike_accounts || [],
-      reddit_subreddits: parsed.reddit_subreddits || [],
+      bilibili_accounts: parsed.bilibili_accounts || [],
       zh_creators: parsed.zh_creators || { enabled: false, sources: [] }
     };
   } catch {
-    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], reddit_subreddits: [], zh_creators: { enabled: false, sources: [] } };
+    return { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], bilibili_accounts: [], zh_creators: { enabled: false, sources: [] } };
   }
 }
 
 function mergeSources(profiles, enabledProfiles, customSources) {
-  const merged = { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], reddit_subreddits: [] };
+  const merged = { x_accounts: [], blogs: [], podcasts: [], jike_accounts: [], bilibili_accounts: [] };
   for (const profileName of enabledProfiles) {
     const profile = profiles[profileName];
     if (!profile) continue;
@@ -246,39 +235,37 @@ function mergeSources(profiles, enabledProfiles, customSources) {
     merged.blogs.push(...(profile.blogs || []));
     merged.podcasts.push(...(profile.podcasts || []));
     merged.jike_accounts.push(...(profile.jike_accounts || []));
-    merged.reddit_subreddits.push(...(profile.reddit_subreddits || []));
+    merged.bilibili_accounts.push(...(profile.bilibili_accounts || []));
   }
   merged.x_accounts.push(...(customSources.x_accounts || []));
   merged.blogs.push(...(customSources.blogs || []));
   merged.podcasts.push(...(customSources.podcasts || []));
   merged.jike_accounts.push(...(customSources.jike_accounts || []));
-  merged.reddit_subreddits.push(...(customSources.reddit_subreddits || []));
+  merged.bilibili_accounts.push(...(customSources.bilibili_accounts || []));
 
   return {
     x_accounts: uniqBy(merged.x_accounts, item => (item.handle || '').toLowerCase()),
     blogs: uniqBy(merged.blogs, item => item.indexUrl || item.name),
     podcasts: uniqBy(merged.podcasts, item => item.playlistId || item.channelHandle || item.url || item.name),
     jike_accounts: uniqBy(merged.jike_accounts, item => item.uuid || item.rsshub),
-    reddit_subreddits: merged.reddit_subreddits
+    bilibili_accounts: uniqBy(merged.bilibili_accounts, item => item.uid || item.rsshub)
   };
 }
 
-function filterFeedBySources(feedX, feedPodcasts, feedBlogs, feedReddit, mergedSources) {
+function filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources) {
   const allowedHandles = new Set((mergedSources.x_accounts || []).map(a => (a.handle || '').toLowerCase()));
   const allowedPodcastKeys = new Set((mergedSources.podcasts || []).map(p => p.name));
   const allowedBlogKeys = new Set((mergedSources.blogs || []).map(b => b.name));
-  const allowedRedditKeys = new Set((mergedSources.reddit_subreddits || []).map(r => (r.name || '').toLowerCase()));
 
   return {
     x: (feedX?.x || []).filter(item => allowedHandles.has((item.handle || '').toLowerCase())),
     podcasts: (feedPodcasts?.podcasts || []).filter(item => allowedPodcastKeys.has(item.name)),
-    blogs: (feedBlogs?.blogs || []).filter(item => allowedBlogKeys.has(item.name)),
-    reddit: (feedReddit?.reddit || []).filter(item => allowedRedditKeys.has((item.subreddit || '').toLowerCase()))
+    blogs: (feedBlogs?.blogs || []).filter(item => allowedBlogKeys.has(item.name))
   };
 }
 
 async function fetchDirectRSSSources(mergedSources) {
-  const results = { jike: [], rss_blogs: [], x_rss: [], x_rss_handles: new Set() };
+  const results = { jike: [], rss_blogs: [], bilibili: [] };
 
   // 抓即刻账号
   const jikeAccounts = mergedSources.jike_accounts || [];
@@ -328,10 +315,30 @@ async function fetchDirectRSSSources(mergedSources) {
   );
   results.rss_blogs = rssResults.flat();
 
-  // Pain-language: see global isPainLanguage() / painBoost()
-  // 从 GitHub 拉取的 Reddit feed 已经通过 filterFeedBySources 进入 filtered.reddit
-  // 本地 RSSHub 抓取 Reddit 已弃用（服务器在中国访问不了 Reddit）
-  // Pain-language 检测函数保留给 buildScoredSignals 使用
+  // 抓 Bilibili 账号
+  const bilibiliAccounts = mergedSources.bilibili_accounts || [];
+  if (bilibiliAccounts.length > 0) {
+    console.error(`[fetchDirectRSS] Fetching ${bilibiliAccounts.length} bilibili accounts...`);
+  }
+  const bilibiliResults = await Promise.all(
+    bilibiliAccounts.map(async (account) => {
+      if (!account.rsshub) return [];
+      const items = await fetchRSSFeed(account.rsshub);
+      console.error(`[fetchDirectRSS] bilibili ${account.name}: ${items.length} items`);
+      return items.slice(0, 3).map(item => ({
+        type: 'bilibili_dynamic',
+        handle: account.name,
+        name: account.name,
+        title: item.title || clip(item.summary, 60),
+        summary: clip(item.summary, 280),
+        url: item.link || '',
+        publishedAt: item.pubDate || null,
+        metrics: { likes: 0, retweets: 0, replies: 0 },
+        source: 'bilibili'
+      }));
+    })
+  );
+  results.bilibili = bilibiliResults.flat();
 
   return results;
 }
@@ -596,7 +603,7 @@ function detectReviewNeed({ engagement, relevance, sourceWeight, wordCount, sign
 
   // Very short text — keyword matching is unreliable
   // jike_post: title is always truncated preview; skip SHORT_TEXT check
-  if (wordCount < 15 && type !== 'jike_post') {
+  if (wordCount < 15 && type !== 'jike_post' && type !== 'bilibili_dynamic') {
     reasons.push('SHORT_TEXT');
   }
 
@@ -684,7 +691,6 @@ function buildScoredSignals(filtered, config) {
   const signals = [];
 
   for (const account of filtered.x || []) {
-    if (account?.type === 'jike_post') continue;
     for (const tweet of account.tweets || []) {
       const text = tweet.text || '';
       const textLower = text.toLowerCase();
@@ -763,7 +769,7 @@ function buildScoredSignals(filtered, config) {
 
   // 即刻动态
   for (const signal of filtered.x || []) {
-    if (signal.type !== 'jike_post') continue;
+    if (signal.type !== 'jike_post' && signal.type !== 'bilibili_dynamic') continue;
     // jike title is a truncated preview (e.g. "发布了: ..."); strip prefix and fall back to title when summary is empty
     const jikeContent = signal.summary || signal.title.replace(/^(发布了|转发了):\s*/, '');
     const text = `${signal.title} ${jikeContent}`.trim();
@@ -926,63 +932,6 @@ function buildScoredSignals(filtered, config) {
   }
 
   // Per-handle dedup: if 3+ signals from same handle, keep only top 2
-
-
-  // ── Reddit posts (pain-language boosted) ──────────────────
-  for (const post of filtered.reddit || []) {
-    const text = normalizeTextForScoring(`${post.title || ''} ${post.summary || ''}`);
-    const dims = scoreTextDimensions(text, 'reddit_post');
-    const relevance = includesAny(text, keywords) ? Math.max(dims.relevance, 0.82) : Math.max(dims.relevance, 0.55);
-    const writeability = Math.max(dims.writeability, 0.5);
-    const actionability = Math.max(dims.actionability, 0.65);
-    const novelty = Math.max(dims.novelty, 0.5);
-    const engagement = 0.15;
-    const recency = normalizeRecency(hoursAgo(post.publishedAt));
-    const baseScore = (
-      relevance * weights.relevance +
-      writeability * weights.writeability +
-      actionability * weights.actionability +
-      novelty * weights.novelty +
-      engagement * weights.engagement +
-      recency * weights.recency
-    );
-    const painBoost = post._painBoost || 0;
-    const sourceWeight = 1.0;
-    const weightedScore = Math.min(1.0, baseScore * sourceWeight + painBoost);
-    const boostNote = post._isPain ? `痛点语言加成 +${(painBoost).toFixed(2)}` : null;
-
-    const redditScoringObj = { relevance, writeability, actionability, novelty, engagement, recency };
-    const redditSectionScore = computeSectionScore(redditScoringObj, 'product_signal') * sourceWeight;
-
-    signals.push({
-      type: 'reddit_post',
-      _source: 'reddit',
-      author: post.subreddit,
-      subreddit: post.subreddit,
-      title: post.title,
-      summary: post.summary,
-      url: post.url,
-      publishedAt: post.publishedAt,
-      signalIntent: 'product_signal',
-      explainability: {
-        sourceReason: `Reddit r/${post.subreddit}: 用户真实抱怨/痛点讨论`,
-        modeEffect: boostNote || '按默认模式处理'
-      },
-      scoring: {
-        relevance,
-        writeability,
-        actionability,
-        novelty,
-        engagement,
-        recency,
-        base: Number(baseScore.toFixed(3)),
-        sourceWeight,
-        total: Number(weightedScore.toFixed(3)),
-        sectionScore: Number(redditSectionScore.toFixed(3))
-      }
-    });
-  }
-
   const deduped = deduplicateByHandle(signals);
 
   return deduped.sort((a, b) => b.scoring.total - a.scoring.total);
@@ -999,11 +948,14 @@ async function loadSeenSignals() {
   }
 }
 
+function getTodayStartMs() {
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
+  return new Date(todayStr + 'T00:00:00+08:00').getTime();
+}
+
 async function saveSeenSignals(seenMap, newUrls) {
-  // Only keep entries from today (Asia/Shanghai) — feed has 24h rolling window,
-  // so cross-day dedup causes false negatives every morning.
-  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }); // YYYY-MM-DD
-  const todayStart = new Date(todayStr + 'T00:00:00+08:00').getTime();
+  // Natural-day TTL: prune entries from before today in Asia/Shanghai
+  const todayStart = getTodayStartMs();
   const pruned = Object.fromEntries(
     Object.entries(seenMap).filter(([, ts]) => ts >= todayStart)
   );
@@ -1013,6 +965,26 @@ async function saveSeenSignals(seenMap, newUrls) {
     if (url) pruned[url] = now;
   }
   await writeFile(SEEN_SIGNALS_PATH, JSON.stringify(pruned, null, 2), 'utf8');
+}
+
+// Seen fallback: recover high-score seen signals when today is too sparse
+function recoverSeenSignals(scoredSignals, seenMap, minimum) {
+  const fallbackThreshold = Math.max(0.62, minimum + 0.08);
+  const recovered = [];
+  const seenUrls = new Set(Object.keys(seenMap));
+  for (const signal of scoredSignals) {
+    if (!signal.url || !seenUrls.has(signal.url)) continue;
+    if (signal.scoring.total >= fallbackThreshold) {
+      recovered.push({
+        ...signal,
+        repeatObservation: true,
+        reviewNote: `🔄 seen fallback: 高分内容(${signal.scoring.total.toFixed(2)})昨天已阅，今天信号不足时补回`
+      });
+    }
+  }
+  // Sort by total score desc, keep top
+  recovered.sort((a, b) => b.scoring.total - a.scoring.total);
+  return recovered;
 }
 
 function filterSeenSignals(scoredSignals, seenMap) {
@@ -1025,20 +997,8 @@ function filterSeenSignals(scoredSignals, seenMap) {
 }
 
 function buildDraftCandidates(scoredSignals, config) {
-  return scoredSignals
-    .filter(signal => signal.scoring.total >= config.scoring.minimum)
-    .slice(0, config.limits.x_drafts)
-    .map((signal, index) => ({
-      rank: index + 1,
-      sourceType: signal.type,
-      title: signal.title,
-      summary: signal.summary,
-      author: signal.handle || signal.author || '',
-      angle: `这条信号值得写,不是因为它是新闻,而是因为它暴露了 ${config.focusTopics[0]} / ${config.focusTopics[1]} / workflow 判断的变化。`,
-      suggestedOpening: `我越来越感觉,真正值得关注的不是又出了什么新功能,而是这类信号背后产品逻辑已经在变。`,
-      sourceUrl: signal.url,
-      score: signal.scoring.total
-    }));
+  // x_drafts section removed — return empty
+  return [];
 }
 
 function buildModeViews(scoredSignals, config) {
@@ -1051,11 +1011,8 @@ function buildModeViews(scoredSignals, config) {
       score: signal.scoring.total,
       whyItMatters: `它不是普通更新,因为它直接指向 ${config.focusTopics.slice(0, 2).join(' / ')} 的判断变化。`,
       sourceUrl: signal.url
-    })),
-    x_draft: buildDraftCandidates(scoredSignals, {
-      ...config,
-      limits: { ...config.limits, x_drafts: Math.max(config.limits.x_drafts, 3) }
-    })
+    }))
+    // x_draft view removed
   };
 }
 
@@ -1088,8 +1045,7 @@ function buildHealthSummary(output) {
     { label: 'X', type: 'x_tweet' },
     { label: '即刻', type: 'jike_post' },
     { label: 'Blogs', type: 'blog_post' },
-    { label: 'Podcasts', type: 'podcast_episode' },
-    { label: 'Reddit', type: 'reddit_post' }
+    { label: 'Podcasts', type: 'podcast_episode' }
   ];
 
   return rows.map(({ label, type }) => {
@@ -1119,7 +1075,7 @@ function renderRadar(output) {
   const allSignals = output.scoredSignals || [];
   const topSignals = allSignals.filter(s => s.scoring.total >= output.config.scoring.minimum);
   const totalTweets = output.stats?.totalTweets || 0;
-  const xDrafts = (output.draftCandidates || []).slice(0, output.config.limits.x_drafts);
+  // xDrafts removed — section no longer used
   const lowSignalCount = allSignals.filter(s =>
     s.scoring.penalty !== undefined && s.scoring.penalty < 1 && s.scoring.total < output.config.scoring.minimum
   ).length;
@@ -1249,7 +1205,7 @@ function renderRadar(output) {
       return `[@${item.handle}](${url})`;
     }
     if (item.author) return item.author;
-    const typeEmoji = { x_tweet: '🐦', blog_post: '📝', podcast_episode: '🎙️', jike_post: '🟡' };
+    const typeEmoji = { x_tweet: '🐦', blog_post: '📝', podcast_episode: '🎙️', jike_post: '🟡', bilibili_dynamic: '📺' };
     return typeEmoji[item.type] || '📌';
   };
 
@@ -1355,7 +1311,7 @@ function renderRadar(output) {
   lines.push(buildLead());
   lines.push('');
 
-  // 信号（unified list）
+  // 信号（unified list）— compact format
   lines.push('---');
   lines.push('');
   lines.push('## 信号');
@@ -1366,53 +1322,27 @@ function renderRadar(output) {
     const badge = engagementBadge(item);
     const source = sourceTag(item);
     const label = topicLabel[topic] || '📌 综合';
+    const isRecovered = item.repeatObservation;
 
-    lines.push(`### ${i + 1}. ${item.title}`);
-    lines.push(`${source} · \`${label}\`${badge ? ' · ' + badge : ''}`);
+    lines.push(`**${i + 1}.** ${item.title}`);
+    lines.push(`\`${label}\`${isRecovered ? ' · 🔄 重复观察' : ''} · ${source}${badge ? ' · ' + badge : ''}`);
     lines.push('');
-    lines.push(item.reviewNote || signalNote(item));
-    lines.push('');
+    lines.push(`> ${item.reviewNote || signalNote(item)}`);
     if (item.url) lines.push(`[→ 原文](${item.url})`);
     lines.push('');
   }
 
-  // X 草稿
-  if (xDrafts.length > 0) {
-    lines.push('---');
-    lines.push('');
-    lines.push('## ✏️ X 草稿');
-    lines.push('');
-    for (const [i, draft] of xDrafts.entries()) {
-      lines.push(`### 草稿 ${i + 1}`);
-      lines.push('');
-      lines.push(makeDraftText(draft));
-      lines.push('');
-    }
-  }
-
-  // 下一步
+  // 下一步（collapsed into a compact block）
   lines.push('---');
   lines.push('');
-  lines.push('## 下一步');
+  lines.push('### 下一步');
   lines.push('');
   for (const action of buildActions()) {
     lines.push(`- ${action}`);
   }
   lines.push('');
 
-  // Platform health summary
-  lines.push('---');
-  lines.push('');
-  lines.push('## 平台健康摘要');
-  lines.push('');
-  for (const row of buildHealthSummary(output)) {
-    lines.push(row);
-  }
-  lines.push('');
-
-  // Stats footer
-  lines.push('---');
-  lines.push('');
+  // Stats footer（collapsed into a single line）
   const stats = output.stats || {};
   const footerParts = [
     `${stats.xBuilders || 0} builders`,
@@ -1420,6 +1350,7 @@ function renderRadar(output) {
     `${stats.blogPosts || 0} blogs`,
     `${stats.podcastEpisodes || 0} podcasts`,
     `${topSignals.length} high-signal`,
+    stats.recoveredSeenCount ? `${stats.recoveredSeenCount} recovered` : null,
     lowSignalCount > 0 ? `${lowSignalCount} filtered` : null,
   ].filter(Boolean).join(' · ');
   lines.push(`<sub>${footerParts} · ${output.config.outputMode} mode</sub>`);
@@ -1446,11 +1377,10 @@ async function main() {
   const userPromptsDir = join(USER_DIR, 'prompts');
   const configDir = join(rootDir, 'config');
 
-  const [feedX, feedPodcasts, feedBlogs, feedReddit, profiles, customSources] = await Promise.all([
+  const [feedX, feedPodcasts, feedBlogs, profiles, customSources] = await Promise.all([
     fetchJSON(FEED_X_URL),
     fetchJSON(FEED_PODCASTS_URL),
     fetchJSON(FEED_BLOGS_URL),
-    fetchJSON(FEED_REDDIT_URL),
     loadLocalSourceProfiles(configDir),
     loadCustomSources()
   ]);
@@ -1458,7 +1388,6 @@ async function main() {
   if (!feedX) errors.push('Could not fetch tweet feed');
   if (!feedPodcasts) errors.push('Could not fetch podcast feed');
   if (!feedBlogs) errors.push('Could not fetch blog feed');
-  if (!feedReddit) errors.push('Could not fetch reddit feed');
 
   const prompts = {};
   for (const filename of PROMPT_FILES) {
@@ -1469,28 +1398,13 @@ async function main() {
   }
 
   const mergedSources = mergeSources(profiles, config.sourceProfiles, customSources);
-  const filtered = filterFeedBySources(feedX, feedPodcasts, feedBlogs, feedReddit, mergedSources);
+  const filtered = filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources);
 
   // 抓取即刻 RSS 和自定义 RSS 博客
   const directRSS = await fetchDirectRSSSources(mergedSources);
   filtered.x.push(...directRSS.jike);
   filtered.blogs.push(...directRSS.rss_blogs);
-  // Reddit 数据已由 filterFeedBySources 从 GitHub Actions feed-reddit.json 填入
-  // 转换原生格式 → buildScoredSignals 期望的格式（加 pain-language 标记）
-  filtered.reddit = (filtered.reddit || []).map(post => ({
-    type: 'reddit_post',
-    _source: 'reddit',
-    subreddit: post.subreddit || '',
-    title: post.title || '',
-    summary: clip(post.text || '', 400),
-    url: post.url,
-    publishedAt: post.createdAt,
-    author: post.author,
-    score: post.score || 0,
-    numComments: post.numComments || 0,
-    _painBoost: painBoost(`${post.title || ''} ${post.text || ''}`),
-    _isPain: isPainLanguage(`${post.title || ''} ${post.text || ''}`),
-  }));
+  filtered.x.push(...directRSS.bilibili);
 
   const rawScoredSignals = buildScoredSignals(filtered, config);
   const rawCounts = countSignalsByType(rawScoredSignals);
@@ -1508,11 +1422,26 @@ async function main() {
   // Auto-resolve all needsReview flags — no LLM needed
   const { keep: scoredSignals, demote: demotedSignals } = autoResolveReview(unseenSignals);
   const demotedCounts = countSignalsByType(demotedSignals);
-  const highSignalCounts = countSignalsByType(
+  let highSignalCounts = countSignalsByType(
     scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum)
   );
   if (demotedSignals.length > 0) {
     process.stderr.write(`[auto-review] Demoted ${demotedSignals.length} low-signal flagged item(s)\n`);
+  }
+
+  // Seen fallback: if too few high-signal today, recover from yesterday's seen
+  let recoveredSeenCount = 0;
+  const highSignalTotal = Object.values(highSignalCounts).reduce((a, b) => a + b, 0);
+  if (highSignalTotal < 5 && !NO_SEEN && Object.keys(seenMap).length > 0) {
+    const recovered = recoverSeenSignals(rawScoredSignals, seenMap, config.scoring.minimum);
+    if (recovered.length > 0) {
+      process.stderr.write(`[seen-fallback] Recovered ${recovered.length} high-score seen signal(s)\n`);
+      scoredSignals.push(...recovered);
+      recoveredSeenCount = recovered.length;
+      highSignalCounts = countSignalsByType(
+        scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum)
+      );
+    }
   }
 
   const draftCandidates = buildDraftCandidates(scoredSignals, config);
@@ -1551,8 +1480,9 @@ async function main() {
       totalTweets: (filtered.x || []).reduce((sum, a) => sum + (a.tweets?.length || 0), 0),
       blogPosts: filtered.blogs.length || 0,
       highSignalCount: scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum).length,
+      recoveredSeenCount,
       autoResolvedCount: demotedSignals.length,
-      feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || feedReddit?.generatedAt || null,
+      feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || null,
       rawCounts,
       postSeenCounts,
       seenFilteredCounts,
@@ -1591,10 +1521,10 @@ async function main() {
       generatedAt: output.generatedAt,
       stats: output.stats,
       signals: (output.scoredSignals || [])
-        .filter(s => s.scoring && s.scoring.total >= (config.scoring?.minimum ?? 0.62))
+        .filter(s => s.scoring && s.scoring.total >= 0.62)
         .map(s => ({
           id: s.url,
-          source: s.type === 'x_tweet' ? 'x' : s.type === 'blog_post' ? 'blog' : s.type === 'reddit_post' ? 'reddit' : 'podcast',
+          source: s.type === 'x_tweet' ? 'x' : s.type === 'blog_post' ? 'blog' : 'podcast',
           sourceName: s.author || s.handle || s.name || '',
           handle: s.handle || null,
           title: s.title || '',
