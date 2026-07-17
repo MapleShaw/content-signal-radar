@@ -10,6 +10,9 @@ const CONFIG_PATH = join(USER_DIR, 'config.json');
 const CUSTOM_SOURCES_PATH = join(USER_DIR, 'custom-sources.json');
 const SEEN_SIGNALS_PATH = join(USER_DIR, 'seen-signals.json');
 const NO_SEEN = process.argv.includes('--no-seen');
+// Fallback is deliberately opt-in: ordinary/repeated runs must not turn a
+// same-day dedup result into a "new signal insufficient" message.
+const ALLOW_SEEN_FALLBACK = process.argv.includes('--allow-seen-fallback');
 
 const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
@@ -43,6 +46,32 @@ function clip(text = '', max = 280) {
 function includesAny(text = '', keywords = []) {
   const lower = text.toLowerCase();
   return (keywords || []).some(keyword => lower.includes(String(keyword).toLowerCase()));
+}
+
+function keywordMatches(lowerText, keyword) {
+  const normalized = String(keyword || '').trim().toLowerCase();
+  if (!normalized) return false;
+
+  // Avoid one-letter focus topics (for example "X") matching almost every
+  // long-form article through ordinary words. Require token boundaries there.
+  if (/^[a-z0-9]$/i.test(normalized)) {
+    return new RegExp(`(^|[^a-z0-9])${normalized}([^a-z0-9]|$)`, 'i').test(lowerText);
+  }
+
+  return lowerText.includes(normalized);
+}
+
+function matchedKeywords(text = '', keywords = []) {
+  const lower = text.toLowerCase();
+  return (keywords || [])
+    .map(keyword => String(keyword).trim())
+    .filter(Boolean)
+    .filter(keyword => keywordMatches(lower, keyword));
+}
+
+function shanghaiDayStartMs(date = new Date()) {
+  const todayStr = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }); // YYYY-MM-DD
+  return new Date(`${todayStr}T00:00:00+08:00`).getTime();
 }
 
 function hoursAgo(isoString) {
@@ -835,9 +864,11 @@ function buildScoredSignals(filtered, config) {
 
   for (const blog of filtered.blogs || []) {
     const text = `${blog.title || ''} ${blog.description || ''} ${clip(blog.content || '', 500)}`;
-    const relevance = includesAny(text, keywords) ? 1 : 0.55;
-    const writeability = 0.65;
-    const actionability = includesAny(text, ['agent', 'workflow', 'API', 'product']) ? 0.8 : 0.55;
+    const topicHits = matchedKeywords(text, keywords);
+    const hasTopicHit = topicHits.length > 0;
+    const relevance = hasTopicHit ? 1 : 0.34;
+    const writeability = hasTopicHit ? 0.65 : 0.52;
+    const actionability = includesAny(text, ['agent', 'workflow', 'API', 'product']) ? 0.8 : 0.5;
     const novelty = 0.72;
     const engagement = 0.2;
     const recency = normalizeRecency(hoursAgo(blog.publishedAt));
@@ -865,6 +896,7 @@ function buildScoredSignals(filtered, config) {
       signalIntent: 'product_signal',
       explainability: {
         sourceReason: '博客源当前未单独加权,按内容信号本身排序',
+        topicGate: hasTopicHit ? `命中 focus topic: ${topicHits.slice(0, 5).join(', ')}` : '未命中 focus topic, 降低 relevance 以过滤泛博客噪音',
         modeEffect: config.outputMode === 'signal_only' ? 'signal_only 对深度内容略有加权' : '按默认模式处理'
       },
       scoring: {
@@ -942,7 +974,14 @@ async function loadSeenSignals() {
   if (!existsSync(SEEN_SIGNALS_PATH)) return {};
   try {
     const raw = await readFile(SEEN_SIGNALS_PATH, 'utf8');
-    return JSON.parse(raw);
+    const seenMap = JSON.parse(raw);
+    // Natural-day TTL: only today's seen URLs suppress today's run. This avoids
+    // a rolling 24h window blocking yesterday-afternoon high signals from the
+    // next daily digest.
+    const todayStart = shanghaiDayStartMs();
+    return Object.fromEntries(
+      Object.entries(seenMap).filter(([, ts]) => Number(ts) >= todayStart)
+    );
   } catch {
     return {};
   }
@@ -954,10 +993,10 @@ function getTodayStartMs() {
 }
 
 async function saveSeenSignals(seenMap, newUrls) {
-  // Natural-day TTL: prune entries from before today in Asia/Shanghai
-  const todayStart = getTodayStartMs();
+  // Natural-day TTL: only keep entries from today in Asia/Shanghai.
+  const todayStart = shanghaiDayStartMs();
   const pruned = Object.fromEntries(
-    Object.entries(seenMap).filter(([, ts]) => ts >= todayStart)
+    Object.entries(seenMap).filter(([, ts]) => Number(ts) >= todayStart)
   );
   // Add new
   const now = Date.now();
@@ -1013,6 +1052,38 @@ function buildModeViews(scoredSignals, config) {
       sourceUrl: signal.url
     }))
     // x_draft view removed
+  };
+}
+
+function recoverFallbackSignals(rawSignals, currentSignals, seenMap, config, minCount = 5) {
+  const currentUrls = new Set((currentSignals || []).map(s => s.url).filter(Boolean));
+  const seenUrls = new Set(Object.keys(seenMap || {}));
+  const highSignalCount = (currentSignals || [])
+    .filter(s => s.scoring.total >= config.scoring.minimum).length;
+  if (highSignalCount >= minCount) return { signals: currentSignals, recovered: [] };
+
+  const recoveryFloor = Math.max(0.62, config.scoring.minimum + 0.08);
+  // A fallback is context, never a substitute for the day's new signals.
+  // Keep exactly one best candidate even when the gap to minCount is larger.
+  const recovered = (rawSignals || [])
+    .filter(s => s.url && seenUrls.has(s.url) && !currentUrls.has(s.url))
+    .filter(s => s.scoring?.total >= recoveryFloor)
+    .sort((a, b) => (b.scoring.total || 0) - (a.scoring.total || 0))
+    .slice(0, 1)
+    .map(s => ({
+      ...s,
+      repeatObservation: true,
+      reviewNote: [s.reviewNote, '今日新增高信号不足，补充 1 条历史高分观察（重复观察）'].filter(Boolean).join('；'),
+      explainability: {
+        ...(s.explainability || {}),
+        seenFallback: `今日新增高信号不足，补充 1 条历史高分观察；恢复门槛 ${recoveryFloor.toFixed(2)}`
+      }
+    }));
+
+  return {
+    signals: [...(currentSignals || []), ...recovered]
+      .sort((a, b) => (b.scoring?.total || 0) - (a.scoring?.total || 0)),
+    recovered
   };
 }
 
@@ -1154,6 +1225,12 @@ function renderRadar(output) {
   };
 
   // ── signalNote(item): 1-2 sentence editorial comment ──
+  const isGithubRepoSignal = (item) => {
+    const url = item.url || '';
+    const sourceName = (item.author || item.name || item.source || '').toLowerCase();
+    return /github\.com\/[^/\s?#]+\/[^/\s?#]+\/?(?:[?#].*)?$/.test(url) || sourceName.includes('github trending');
+  };
+
   const signalNote = (item) => {
     const text = (item.title || '') + ' ' + (item.summary || '');
     const topic = extractTopic(text);
@@ -1176,7 +1253,9 @@ function renderRadar(output) {
     };
 
     let note = notes[topic] || notes.general;
-    if (item.type === 'blog_post' || item.type === 'podcast_episode') {
+    if (isGithubRepoSignal(item)) {
+      note = '这是开源项目/仓库信号，不是长内容；重点看它为什么上榜、解决什么问题、是否代表某类需求升温。';
+    } else if (item.type === 'blog_post' || item.type === 'podcast_episode') {
       note = '长内容比推文更容易暴露底层逻辑。' + note;
     }
     if (writeHigh) note += ' → 可写性高，优先扩成帖子';
@@ -1420,7 +1499,12 @@ async function main() {
   if (NO_SEEN) process.stderr.write('[seen-signals] Bypassed (--no-seen)\n');
 
   // Auto-resolve all needsReview flags — no LLM needed
-  const { keep: scoredSignals, demote: demotedSignals } = autoResolveReview(unseenSignals);
+  const { keep: reviewedSignals, demote: demotedSignals } = autoResolveReview(unseenSignals);
+  const fallback = NO_SEEN || !ALLOW_SEEN_FALLBACK
+    ? { signals: reviewedSignals, recovered: [] }
+    : recoverFallbackSignals(rawScoredSignals, reviewedSignals, seenMap, config, 5);
+  const scoredSignals = fallback.signals;
+  const recoveredSeenSignals = fallback.recovered;
   const demotedCounts = countSignalsByType(demotedSignals);
   let highSignalCounts = countSignalsByType(
     scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum)
@@ -1428,21 +1512,11 @@ async function main() {
   if (demotedSignals.length > 0) {
     process.stderr.write(`[auto-review] Demoted ${demotedSignals.length} low-signal flagged item(s)\n`);
   }
-
-  // Seen fallback: if too few high-signal today, recover from yesterday's seen
-  let recoveredSeenCount = 0;
-  const highSignalTotal = Object.values(highSignalCounts).reduce((a, b) => a + b, 0);
-  if (highSignalTotal < 5 && !NO_SEEN && Object.keys(seenMap).length > 0) {
-    const recovered = recoverSeenSignals(rawScoredSignals, seenMap, config.scoring.minimum);
-    if (recovered.length > 0) {
-      process.stderr.write(`[seen-fallback] Recovered ${recovered.length} high-score seen signal(s)\n`);
-      scoredSignals.push(...recovered);
-      recoveredSeenCount = recovered.length;
-      highSignalCounts = countSignalsByType(
-        scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum)
-      );
-    }
+  if (recoveredSeenSignals.length > 0) {
+    process.stderr.write(`[seen-signals] Recovered ${recoveredSeenSignals.length} high-score seen fallback signal(s)\n`);
   }
+
+
 
   const draftCandidates = buildDraftCandidates(scoredSignals, config);
   const modeViews = buildModeViews(scoredSignals, config);
@@ -1480,16 +1554,23 @@ async function main() {
       totalTweets: (filtered.x || []).reduce((sum, a) => sum + (a.tweets?.length || 0), 0),
       blogPosts: filtered.blogs.length || 0,
       highSignalCount: scoredSignals.filter(s => s.scoring.total >= config.scoring.minimum).length,
-      recoveredSeenCount,
       autoResolvedCount: demotedSignals.length,
       feedGeneratedAt: feedX?.generatedAt || feedPodcasts?.generatedAt || feedBlogs?.generatedAt || null,
       rawCounts,
       postSeenCounts,
       seenFilteredCounts,
       demotedCounts,
-      highSignalCounts
+      highSignalCounts,
+      recoveredSeenCount: recoveredSeenSignals.length
     },
     prompts,
+    recoveredSeenSignals: recoveredSeenSignals.map(s => ({
+      title: s.title,
+      handle: s.handle,
+      url: s.url,
+      type: s.type,
+      scoring: { total: s.scoring.total, relevance: s.scoring.relevance }
+    })),
     demotedSignals: demotedSignals.map(s => ({
       title: s.title,
       handle: s.handle,
