@@ -55,7 +55,7 @@ function keywordMatches(lowerText, keyword) {
   // Avoid one-letter focus topics (for example "X") matching almost every
   // long-form article through ordinary words. Require token boundaries there.
   if (/^[a-z0-9]$/i.test(normalized)) {
-    return new RegExp(`(^|[^a-z0-9])${normalized}([^a-z0-9]|$)`, 'i').test(lowerText);
+    return lowerText.split(/[^a-z0-9]+/).includes(normalized);
   }
 
   return lowerText.includes(normalized);
@@ -179,6 +179,8 @@ function normalizeConfig(input = {}) {
 }
 
 async function fetchJSON(url) {
+  const parsed = new URL(url);
+  if (!['http:', 'https:'].includes(parsed.protocol)) return null;
   const res = await fetch(url);
   if (!res.ok) return null;
   return res.json();
@@ -198,8 +200,19 @@ async function fetchRSSFeed(url) {
     while ((match = itemPattern.exec(text)) !== null) {
       const block = match[1];
       const getTag = (tag) => {
-        const m = block.match(new RegExp(`<${tag}(?:[^>]*)><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>`, 'i'))
-                || block.match(new RegExp(`<${tag}(?:[^>]*)>([^<]*)<\\/${tag}>`, 'i'));
+        const safeTag = tag.replace(/[^a-z]/gi, '').toLowerCase();
+        const open = `<${safeTag}`;
+        const close = `</${safeTag}>`;
+        const lower = block.toLowerCase();
+        const startIdx = lower.indexOf(open);
+        if (startIdx === -1) return '';
+        const afterOpen = lower.indexOf('>', startIdx);
+        if (afterOpen === -1) return '';
+        const endIdx = lower.indexOf(close, afterOpen);
+        if (endIdx === -1) return '';
+        const raw = block.slice(afterOpen + 1, endIdx).trim();
+        const m = raw.match(/^<!\[CDATA\[([\s\S]*?)\]\]>$/i);
+        return m ? m[1].trim() : raw;
         return m ? m[1].trim() : '';
       };
       const getLinkAttr = () => {
@@ -221,16 +234,18 @@ async function fetchRSSFeed(url) {
   }
 }
 
+const ALLOWED_PROMPTS = new Set(['master-prompt.md', 'x-draft-prompt.md', 'brief-prompt.md', 'product-prompt.md', 'actions-prompt.md']);
 async function loadTextPrompt(filename, localPromptsDir, userPromptsDir) {
-  const userPath = join(userPromptsDir, filename);
-  const localPath = join(localPromptsDir, filename);
+  if (!ALLOWED_PROMPTS.has(filename)) return null;
+  const userPath = `${userPromptsDir}/${filename}`;
+  const localPath = `${localPromptsDir}/${filename}`;
   if (existsSync(userPath)) return readFile(userPath, 'utf-8');
   if (existsSync(localPath)) return readFile(localPath, 'utf-8');
   return null;
 }
 
 async function loadLocalSourceProfiles(configDir) {
-  const path = join(configDir, 'default-sources.json');
+  const path = `${configDir}/default-sources.json`;
   const raw = JSON.parse(await readFile(path, 'utf-8'));
   if (raw.profiles) return raw.profiles;
   return { default: raw };
