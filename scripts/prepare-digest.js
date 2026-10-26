@@ -74,8 +74,11 @@ function isGenericReviewNote(note = '') {
   if (/值得看：/.test(n) && /（钩子：/.test(n)) return true;
   if (/不要和同题空话合并/.test(n)) return true;
   if (/^看点：/.test(n) || /\]\s*看点：/.test(n)) return true;
-  if (/抽一条可复用判断框架|不搬运目录/.test(n)) return true;
   if (/标签说明/.test(n)) return true;
+  // 成稿万能空话（2026-10-26 draft-note-fix）
+  if (/抽一条可复用判断框架/.test(n)) return true;
+  if (/不搬运目录/.test(n)) return true;
+  if (/抽框架/.test(n) && /不搬运/.test(n)) return true;
   // 正文评价必须是「扩帖切口：…」人话一句
   if (!/^扩帖切口：/.test(n)) return true;
   return false;
@@ -1413,52 +1416,10 @@ function renderRadar(output) {
       .replace(/\s*→\s*可写性高.*$/, '')
       .trim();
     if (!a || a.length < 6) return null;
-    if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：|抽一条可复用判断框架|不搬运目录/.test(a)) return null;
+    if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：/.test(a)) return null;
+    if (/抽一条可复用判断框架|不搬运目录|(抽框架.{0,8}不搬运)/.test(a)) return null;
     const note = `扩帖切口：${clip(a, 72)}`;
     return note;
-  };
-
-  /**
-   * Blog/newsletter angles must come from the body: a product action, a number,
-   * or a contrarian claim. Title-only "抽框架" lines are not an angle.
-   */
-  const blogConcreteAngles = (item) => {
-    const title = stripHtmlForDisplay(item.title || '').replace(/\s+/g, ' ').trim();
-    let body = stripHtmlForDisplay(item.fullText || item.summary || item.description || item.content || '')
-      .replace(/https?:\/\/\S+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (title && body.startsWith(title)) {
-      body = body.slice(title.length).replace(/^[\s:：\-—|]+/, '').trim();
-    }
-    if (body.length < 24) return [];
-    const numberRe = /\d+(?:\.\d+)?\s*%|\$\s?\d|\b\d+(?:\.\d+)?\s*(?:x|×|倍)\b|\d+\s*(?:万|亿|小时|分钟|天|美元|元|家)|\b\d{1,3}(?:,\d{3})+\b/i;
-    const contrarianRe = /不是.{0,24}而是|其实|反而|反常识|反直觉|别再|不要只|不应该|unlike|however|\bstill\b|actually|most people|overestimat|underestimat|rather than|\bI still\b|\bbut I\b/i;
-    const actionRe = /发布|上线|推出|支持|新增|下线|定价|涨价|降价|免费|订阅|换成|替代|开放|shipp?ed|launch(?:ed)?|priced|pricing|now supports|\badds\b|\badded\b|replaces|free tier|\bbeta\b/i;
-    return body
-      .split(/(?<=[。！？.!?])\s*/)
-      .map((s) => s.trim().replace(/^["“]+|["”]+$/g, ''))
-      .filter((s) => s.length >= 18 && !/抽一条可复用判断框架|不搬运目录/.test(s))
-      .map((s) => {
-        let score = 0;
-        if (numberRe.test(s)) score += 4;
-        if (contrarianRe.test(s)) score += 3;
-        if (actionRe.test(s)) score += 3;
-        if (title && s.startsWith(title.slice(0, 24))) score -= 2;
-        return { s, score };
-      })
-      .filter((row) => row.score >= 3)
-      .sort((a, b) => b.score - a.score)
-      .map((row) => clip(row.s, 64));
-  };
-
-  const takeBlogAngle = (item) => {
-    for (const angle of blogConcreteAngles(item)) {
-      const note = asAngleNote(angle);
-      if (!note || usedSignalNotes.has(note)) continue;
-      return note;
-    }
-    return null;
   };
 
   /** 从作者原文抽硬判断/具体动作，再压成可写切口；没有则 null */
@@ -1552,7 +1513,82 @@ function renderRadar(output) {
     return null;
   };
 
-  /** 撞车后换一条具体切口；仍写不出则 null */
+  /**
+   * 成稿（blog/newsletter/官网/播客）：从 title+summary/fullText
+   * 抽出「产品动作 / 数字 / 反常识」一句；写不出返回 null。
+   * 禁止回落「抽一条可复用判断框架…不搬运目录」。
+   */
+  const pickBlogConcreteAngle = (item = {}) => {
+    const title = String(item.title || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^\[AINews\]\s*/i, '')
+      .replace(/^🧠\s*/, '')
+      .replace(/^Community Wisdom:\s*/i, '');
+    const body = stripHtmlForDisplay(`${item.summary || ''} ${item.fullText || ''}`)
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!title || title.length < 8) return null;
+
+    const lower = `${title} ${body}`.toLowerCase();
+
+    // 反常识 / 转折：标题本身即切口
+    if (/\bstill (forgot|forget|don'?t|do not|never|can'?t)\b/i.test(title)
+        || /很好看.{0,12}(忘|没用)|漂亮.{0,12}(忘|没用)|却(还是)?忘/.test(title)
+        || (/\bbut\b/i.test(title) && /\b(still|never|forgot|don'?t)\b/i.test(title))
+        || /不是.{0,12}而是/.test(title)) {
+      return clip(title, 56);
+    }
+
+    // 数字 / 量级
+    if (/\b\d+(?:\.\d+)?\s*billion\b|\bover\s+\d+\s*billion\b|\b\d+\s*-\s*\d+\s*[×xX]\b|[×xX]\s*speed|\b\d+\s*months?\b|\b2-3\s*[×xX]\b|\b\d+BA\b|\b\d{2,4}B[-\s]|\d+\s*%|十亿|亿用户|领先.{0,8}\d+\s*个?月|narrows.{0,40}\d+\s*month/i.test(title)) {
+      return clip(title, 56);
+    }
+
+    // 产品动作（securing / scaling / turning X into Y / collaborate / post-training …）
+    if (/^(securing|scaling|turning|building|launching|announcing)\b/i.test(title)
+        || /\bturning\b.+\binto\b/i.test(title)
+        || /\bcollaborate(?:s|d)? with\b|\bcollaborate to\b|\bpost-training\b|\binto rl\b|\bfine-tuned\b|\blook it up\b|\bscam detection\b|\btraining environment\b/i.test(lower)) {
+      return clip(title, 56);
+    }
+
+    // Here's Why → 拆原因（兼容直/弯引号）
+    if (/here[''\u2019]?s why|为什么会|原因在于/i.test(title)) {
+      const core = title.replace(/\.?\s*Here[''\u2019]?s Why\.?/ig, '').replace(/：?\s*为什么.*$/, '').trim();
+      return clip(core ? `${core}——拆原因，不转发结论` : title, 56);
+    }
+
+    // 冒号副标题：副标题非营销空话才用
+    const colon = title.match(/^([^:]{3,48}):\s*(.{6,70})$/);
+    if (colon) {
+      const left = colon[1].trim();
+      const right = colon[2].trim();
+      if (/built to solve|hardest problems|what you need|everything you|a deep dive|our thoughts|introducing\b/i.test(right)) {
+        return null; // 纯发布口号，宁缺
+      }
+      return clip(`${left}——${right}`, 56);
+    }
+
+    // 正文硬判断
+    const claim = pickAuthorClaim(body);
+    if (claim) return claim;
+
+    // 周报/合集/派评：不硬凑
+    if (/weekly|roundup|community wisdom|派评|近期值得关注|what'?s new in\b|\btop\s+\d+\b|links of the/i.test(lower)) {
+      return null;
+    }
+
+    // 标题够具体（含产品/模型关键词）→ 直接压成切口
+    if (title.length >= 20
+        && !/built to solve your hardest|introducing the future|the future of\b/i.test(lower)
+        && /\b(model|agent|train|secur|scal|reward|storage|api|open.?weight|scam|math|duet|trainium|chatgpt|claude|gemini|kimi)\b/i.test(lower)) {
+      return clip(title, 56);
+    }
+
+    return null;
+  };
+
+  /** 撞车后换一条具体切口；仍写不出则 null（成稿不再回落万能模板） */
   const uniqueConcreteNote = (item) => {
     const text = stripHtmlForDisplay(item.fullText || item.summary || item.title || '')
       .replace(/\s+/g, ' ')
@@ -1563,7 +1599,8 @@ function renderRadar(output) {
     const claim = pickAuthorClaim(text);
     if (claim) angles.push(claim);
     if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      angles.push(...blogConcreteAngles(item));
+      const blogAngle = pickBlogConcreteAngle(item);
+      if (blogAngle) angles.push(blogAngle);
     }
     if (isGithubRepoSignal(item) && item.title) {
       angles.push(`开源上榜「${clip(item.title, 28)}」：看需求方向与 demake 点，别当长文读`);
@@ -1590,11 +1627,10 @@ function renderRadar(output) {
           : '开源上榜：看需求方向与 demake 点，别当长文读'
       );
     } else if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      // Body action / number / contrarian line only. No title-template filler.
-      note = takeBlogAngle(item);
-      if (!note) return null;
-      usedSignalNotes.add(note);
-      return note;
+      // 具名启发式优先，否则抽产品动作/数字/反常识；写不出 → null（由 uniqueConcreteNote / 降级处理）
+      const why = whyWorthReading(text, item);
+      const blogAngle = pickBlogConcreteAngle(item);
+      note = asAngleNote(why || blogAngle);
     } else {
       const why = whyWorthReading(text, item);
       note = asAngleNote(why);
