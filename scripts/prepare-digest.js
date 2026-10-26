@@ -74,6 +74,7 @@ function isGenericReviewNote(note = '') {
   if (/值得看：/.test(n) && /（钩子：/.test(n)) return true;
   if (/不要和同题空话合并/.test(n)) return true;
   if (/^看点：/.test(n) || /\]\s*看点：/.test(n)) return true;
+  if (/抽一条可复用判断框架|不搬运目录/.test(n)) return true;
   if (/标签说明/.test(n)) return true;
   // 正文评价必须是「扩帖切口：…」人话一句
   if (!/^扩帖切口：/.test(n)) return true;
@@ -1412,9 +1413,52 @@ function renderRadar(output) {
       .replace(/\s*→\s*可写性高.*$/, '')
       .trim();
     if (!a || a.length < 6) return null;
-    if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：/.test(a)) return null;
+    if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：|抽一条可复用判断框架|不搬运目录/.test(a)) return null;
     const note = `扩帖切口：${clip(a, 72)}`;
     return note;
+  };
+
+  /**
+   * Blog/newsletter angles must come from the body: a product action, a number,
+   * or a contrarian claim. Title-only "抽框架" lines are not an angle.
+   */
+  const blogConcreteAngles = (item) => {
+    const title = stripHtmlForDisplay(item.title || '').replace(/\s+/g, ' ').trim();
+    let body = stripHtmlForDisplay(item.fullText || item.summary || item.description || item.content || '')
+      .replace(/https?:\/\/\S+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (title && body.startsWith(title)) {
+      body = body.slice(title.length).replace(/^[\s:：\-—|]+/, '').trim();
+    }
+    if (body.length < 24) return [];
+    const numberRe = /\d+(?:\.\d+)?\s*%|\$\s?\d|\b\d+(?:\.\d+)?\s*(?:x|×|倍)\b|\d+\s*(?:万|亿|小时|分钟|天|美元|元|家)|\b\d{1,3}(?:,\d{3})+\b/i;
+    const contrarianRe = /不是.{0,24}而是|其实|反而|反常识|反直觉|别再|不要只|不应该|unlike|however|\bstill\b|actually|most people|overestimat|underestimat|rather than|\bI still\b|\bbut I\b/i;
+    const actionRe = /发布|上线|推出|支持|新增|下线|定价|涨价|降价|免费|订阅|换成|替代|开放|shipp?ed|launch(?:ed)?|priced|pricing|now supports|\badds\b|\badded\b|replaces|free tier|\bbeta\b/i;
+    return body
+      .split(/(?<=[。！？.!?])\s*/)
+      .map((s) => s.trim().replace(/^["“]+|["”]+$/g, ''))
+      .filter((s) => s.length >= 18 && !/抽一条可复用判断框架|不搬运目录/.test(s))
+      .map((s) => {
+        let score = 0;
+        if (numberRe.test(s)) score += 4;
+        if (contrarianRe.test(s)) score += 3;
+        if (actionRe.test(s)) score += 3;
+        if (title && s.startsWith(title.slice(0, 24))) score -= 2;
+        return { s, score };
+      })
+      .filter((row) => row.score >= 3)
+      .sort((a, b) => b.score - a.score)
+      .map((row) => clip(row.s, 64));
+  };
+
+  const takeBlogAngle = (item) => {
+    for (const angle of blogConcreteAngles(item)) {
+      const note = asAngleNote(angle);
+      if (!note || usedSignalNotes.has(note)) continue;
+      return note;
+    }
+    return null;
   };
 
   /** 从作者原文抽硬判断/具体动作，再压成可写切口；没有则 null */
@@ -1518,13 +1562,8 @@ function renderRadar(output) {
     if (why) angles.push(why);
     const claim = pickAuthorClaim(text);
     if (claim) angles.push(claim);
-    // 长内容：用标题压成「从 X 抽可复用判断」
     if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      const title = clip(String(item.title || '').replace(/\s+/g, ' ').trim(), 36);
-      const source = item.author || item.name || '';
-      if (title.length >= 8) {
-        angles.push(`从「${title}」抽一条可复用判断框架${source ? `（${source}）` : ''}，不搬运目录`);
-      }
+      angles.push(...blogConcreteAngles(item));
     }
     if (isGithubRepoSignal(item) && item.title) {
       angles.push(`开源上榜「${clip(item.title, 28)}」：看需求方向与 demake 点，别当长文读`);
@@ -1551,11 +1590,11 @@ function renderRadar(output) {
           : '开源上榜：看需求方向与 demake 点，别当长文读'
       );
     } else if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      const title = clip(String(item.title || item.summary || '').replace(/\s+/g, ' ').trim(), 36);
-      const source = item.author || item.name || '';
-      if (title.length >= 8) {
-        note = asAngleNote(`从「${title}」抽一条可复用判断框架${source ? `（${source}）` : ''}，不搬运目录`);
-      }
+      // Body action / number / contrarian line only. No title-template filler.
+      note = takeBlogAngle(item);
+      if (!note) return null;
+      usedSignalNotes.add(note);
+      return note;
     } else {
       const why = whyWorthReading(text, item);
       note = asAngleNote(why);
