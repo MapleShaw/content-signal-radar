@@ -79,6 +79,14 @@ function isGenericReviewNote(note = '', opts = {}) {
   if (/抽一条可复用判断框架/.test(n)) return true;
   if (/不搬运目录/.test(n)) return true;
   if (/抽框架/.test(n) && /不搬运/.test(n)) return true;
+  // 成稿「拆原因」套话（2026-10-26 晚加长去套话）
+  if (/拆背后原因与关键判断/.test(n)) return true;
+  if (/不只转发结论/.test(n)) return true;
+  if (/而不只转发结论/.test(n)) return true;
+  if (/文章在拆背后原因/.test(n)) return true;
+  if (/拆原因[，,]?\s*不转发结论/.test(n)) return true;
+  if (/拆背后原因/.test(n) && /转发结论/.test(n)) return true;
+  if (/——拆原因/.test(n) || /文章在拆背后/.test(n)) return true;
   // 正文评价：知情「扩帖切口：…」；成稿「源文：…」（2026-10-26 晚）
   if (!/^(扩帖切口|源文)：/.test(n)) return true;
   // 成稿区不再收「扩帖切口 / 写xxx帖」主导的评价
@@ -1412,6 +1420,35 @@ function renderRadar(output) {
   // 写不出具体内容 → null 降级移出正文前十。
   const usedSignalNotes = new Set();
 
+  /** 去掉「源文：/扩帖切口：」与主题前缀后，取尾部关键句（≥16 字）做雷同闸 */
+  const noteTailKey = (raw = '') => {
+    let body = String(raw || '')
+      .replace(/^(扩帖切口|源文)：\s*/, '')
+      .replace(/^\[.*?\]\s*/, '')
+      .trim();
+    // 主题前缀：到第一个中文冒号/破折号为止
+    body = body.replace(/^[^：—\-]{0,48}[：:—\-]{1,2}\s*/, '');
+    body = body.replace(/\s+/g, '');
+    if (body.length < 16) return '';
+    return body.slice(-24);
+  };
+
+  const isNoteCollision = (candidate) => {
+    if (!candidate) return true;
+    if (usedSignalNotes.has(candidate)) return true;
+    const tail = noteTailKey(candidate);
+    if (!tail || tail.length < 16) return false;
+    for (const used of usedSignalNotes) {
+      const ut = noteTailKey(used);
+      if (!ut) continue;
+      if (ut === tail || ut.endsWith(tail) || tail.endsWith(ut)) return true;
+      // 关键套话片段命中也算撞
+      if (tail.length >= 16 && ut.includes(tail.slice(0, 16))) return true;
+      if (ut.length >= 16 && tail.includes(ut.slice(0, 16))) return true;
+    }
+    return false;
+  };
+
   /** 剥离评价前缀后做拉丁硬闸：几乎无汉字、或汉字偏少且拉丁过高 → 不合格；专名夹杂英文 OK */
   const stripNotePrefix = (raw = '') => String(raw || '')
     .replace(/^(扩帖切口|源文)：\s*/, '')
@@ -1449,7 +1486,7 @@ function renderRadar(output) {
     return `扩帖切口：${clip(a, 72)}`;
   };
 
-  /** 成稿：规范化为「源文：…」中文简介（可稍长，约 40～90 字） */
+  /** 成稿：规范化为「源文：…」中文简介（目标约 70～120 汉字，可含专名） */
   const asSourceSummaryNote = (summary) => {
     if (!summary) return null;
     let a = stripNotePrefix(summary)
@@ -1461,10 +1498,12 @@ function renderRadar(output) {
     if (!a || a.length < 8) return null;
     if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：/.test(a)) return null;
     if (/抽一条可复用判断框架|不搬运目录|(抽框架.{0,8}不搬运)/.test(a)) return null;
+    // 禁「拆原因」套话出口
+    if (/拆背后原因与关键判断|不只转发结论|而不只转发结论|文章在拆背后原因|拆原因[，,]?\s*不转发结论|——拆原因|文章在拆背后/.test(a)) return null;
     if (/写.{0,24}帖/.test(a) && a.length < 28) return null;
     if (isMostlyLatinAngle(a)) return null;
-    // 简介宜稍长；上限约 90 字
-    return `源文：${clip(a, 96)}`;
+    // 目标 70～120 汉字；上限放宽，勿在 90 砍断
+    return `源文：${clip(a, 140)}`;
   };
 
   /** 从作者原文抽硬判断/具体动作，再压成可写切口；没有则 null */
@@ -1694,7 +1733,7 @@ function renderRadar(output) {
       return null;
     }
 
-    // Here's Why / Why X … → 中文核心 +「——拆原因，不转发结论」
+    // Here's Why / Why X … → 必须落到本篇具体产品/动作；禁止「拆原因」套话尾
     if (/here[''\u2019]?s why|^why\b|为什么会|原因在于/i.test(title)) {
       let core = title
         .replace(/\.?\s*Here[''\u2019]?s Why\.?/ig, '')
@@ -1702,9 +1741,13 @@ function renderRadar(output) {
         .replace(/：?\s*为什么.*$/, '')
         .trim();
       if (!/[\u4e00-\u9fff]/.test(core)) {
-        // 常见 Why 句式意译
-        if (/reddit/i.test(core) && /prototyp|ai/i.test(core)) core = 'Reddit 自建 AI 原型工具';
-        else if (/built (its|their|his|her) own/i.test(core)) {
+        if (/reddit/i.test(core) && /prototyp|ai/i.test(core)) {
+          return 'Reddit 自建 AI 原型工具：写自研管线相对外购的取舍帖';
+        }
+        if (/ai is getting good at math|getting good at math/i.test(title)) {
+          return 'AI 数学变强：写开题证明案例与可预测题型帖';
+        }
+        if (/built (its|their|his|her) own/i.test(core)) {
           const who = (core.match(/^(\w+)/) || [])[1] || brand || '这家';
           core = `${who} 自建工具`;
         } else {
@@ -1712,7 +1755,8 @@ function renderRadar(output) {
         }
       }
       if (!core) return null;
-      return clip(`${core}——拆原因，不转发结论`, 56);
+      // 有具体主题才给切口；禁止回落同一句「拆原因」尾
+      return clip(`${core}：写本篇点名的具体原因/动作帖`, 56);
     }
 
     // 冒号副标题：意译成中文「主题——具体动作」，禁止左右英文原样拼接
@@ -1767,8 +1811,8 @@ function renderRadar(output) {
 
   /**
    * 成稿源文简介：用 title+summary/fullText 压成 1～2 句中文「讲什么」
-   * （产品动作/结论/数字），约 40～90 字；不要「写xxx帖/扩帖切口」。
-   * 禁止整句英文；禁止回落「抽框架/不搬运目录」。
+   * （谁 + 具体动作/数字 + 文中第二信息），目标约 70～120 汉字；
+   * 不要「写xxx帖/扩帖切口」。禁止整句英文；禁止回落「抽框架/不搬运目录/拆原因」套话。
    */
   const pickBlogSourceSummary = (item = {}) => {
     const title = String(item.title || '')
@@ -1785,16 +1829,88 @@ function renderRadar(output) {
     const lower = `${title} ${body}`.toLowerCase();
     const brand = pickBlogBrandHint(item, title);
     const titleHasHan = /[\u4e00-\u9fff]/.test(title);
+    const blob = `${title} ${body}`;
 
-    // 从正文抽一句可意译的要点（中文优先；英文硬判断再压短）
+    // 从正文抽一句可意译的中文要点（第二信息）
     const firstUsefulSentence = () => {
       const parts = body
         .split(/(?<=[。！？.!?])/)
         .map((s) => s.trim())
         .filter((s) => s.length >= 20 && s.length <= 220);
       const zh = parts.find((s) => /[\u4e00-\u9fff]/.test(s) && !/订阅|关注我们|点击|版权/.test(s));
-      if (zh) return clip(zh.replace(/\s+/g, ' '), 72);
+      if (zh) return clip(zh.replace(/\s+/g, ' '), 48);
       return null;
+    };
+
+    /** Here's Why：必须抽出本篇具体产品名/数字/动作；写不出则 null */
+    const buildWhySummary = () => {
+      // Reddit Proto / 自建原型
+      if (/reddit/i.test(blob) && /prototyp/i.test(blob)) {
+        const bits = ['Reddit 讲为何自建 AI 原型工具 Proto'];
+        if (/blair|metcalf/i.test(blob)) bits[0] = 'Reddit 主 UX 工程师 Blair Metcalf 讲为何自建 AI 原型工具 Proto';
+        const extras = [];
+        if (/figma/i.test(blob) && /mcp|cursor/i.test(blob)) extras.push('接 Figma MCP + Cursor 管线');
+        else if (/figma|mcp|cursor/i.test(blob)) extras.push('接设计系统 MCP / Cursor 管线');
+        if (/100\s*%|full adoption|reached 100/i.test(blob)) extras.push('UX/产品侧接近全员采纳');
+        if (/\b700\b/.test(blob)) extras.push('700+ 原型在线');
+        if (/no git|without git|minutes/i.test(blob)) extras.push('设计师分钟级出可分享原型、不必碰 Git');
+        if (!extras.length) extras.push('相对外购工具要自研管线的取舍，并落到设计师侧怎么用');
+        return clip(`${bits[0]}：${extras.join('，')}；文中还提领导评审与工程交接怎么接`, 130);
+      }
+      // AI math
+      if (/math/i.test(blob) && /good|getting|better|strong|here[''\u2019]?s why/i.test(blob)) {
+        const extras = [];
+        if (/erd[oö]s|unit distance|counterexample/i.test(blob)) extras.push('点到 OpenAI 对 Erdős 单位距离猜想的反例');
+        if (/navier.?stokes/i.test(blob)) extras.push('Navier-Stokes 等开题证明');
+        if (/anthropic/i.test(blob) && /fermat|riemann/i.test(blob)) extras.push('Anthropic 侧 Fermat/Riemann 进展');
+        else if (/anthropic|fermat|riemann/i.test(blob)) extras.push('Anthropic 等侧的形式化/开题进展');
+        if (/depth.?first|verifier|harness|parallel test/i.test(blob)) extras.push('对照人类广度搜索 vs 模型深度搜索+验证器');
+        if (/predict|pattern|tractab|which problems/i.test(blob)) extras.push('并讨论哪些题型可预测下一步会破');
+        if (!extras.length) {
+          // 仅有标题：仍给本篇具体锚（开题/证明/题型），禁止套话尾
+          return clip('Latent Space 讲 AI 数学能力变强：用近期模型啃开题与证明的案例解释为何突然能做，并讨论可预测下一批会破的题型，以及人和模型在搜索方式上的差别', 130);
+        }
+        const head = brand || '这篇';
+        return clip(`${head} 讲 AI 数学能力变强：${extras.join('，')}`, 130);
+      }
+      // built its own …
+      if (/built (its|their|his|her) own/i.test(title)) {
+        const who = brand || (title.match(/^(\w+)/) || [])[1] || '这家';
+        const what = /prototyp/i.test(title) ? '原型工具'
+          : /agent/i.test(title) ? 'Agent 工具'
+          : /model/i.test(title) ? '模型管线'
+          : '自研工具';
+        const extra = firstUsefulSentence();
+        if (extra) return clip(`${who} 讲为何自建${what}：要点——${extra}；文中还落到相对外购的取舍`, 130);
+        return clip(`${who} 讲为何自建${what}：相对外购要自研的产品/工程取舍，并落到团队怎么用这套管线`, 130);
+      }
+      // 通用 Why：必须从正文抠到产品名或数字，否则 null
+      const products = [];
+      for (const [re, name] of [
+        [/\bChatGPT\b/i, 'ChatGPT'], [/\bOpenAI\b/i, 'OpenAI'], [/\bClaude\b/i, 'Claude'],
+        [/\bCursor\b/i, 'Cursor'], [/\bFigma\b/i, 'Figma'], [/\bProto\b/i, 'Proto'],
+        [/\bTrainium\b/i, 'Trainium'], [/\bKimi\b/i, 'Kimi'], [/\bGemini\b/i, 'Gemini'],
+      ]) {
+        if (re.test(blob) && !products.includes(name)) products.push(name);
+      }
+      const nums = blob.match(/\b\d+(?:\.\d+)?\s*(?:%|x|×|billion|million|个月|天|页)?\b|\b\d{2,4}\+\b/ig) || [];
+      const zhExtra = firstUsefulSentence();
+      let core = title
+        .replace(/\.?\s*Here[''\u2019]?s Why\.?/ig, '')
+        .replace(/^Why\s+/i, '')
+        .replace(/：?\s*为什么.*$/, '')
+        .trim();
+      if (!/[\u4e00-\u9fff]/.test(core)) {
+        core = zhThemeFromEnglishTitle(core, brand) || (brand ? `${brand} 这件事` : '');
+      }
+      if (!core) return null;
+      if (!products.length && !nums.length && !zhExtra) return null; // 宁缺勿套话
+      const detail = [
+        products.length ? `点名 ${products.slice(0, 3).join('/')}` : '',
+        nums.length ? `给出 ${nums.slice(0, 2).join('、')} 等数字锚` : '',
+        zhExtra ? `要点——${zhExtra}` : '',
+      ].filter(Boolean).join('，');
+      return clip(`${core}：${detail}；文中还落到可核对的结论与取舍`, 130);
     };
 
     // 反常识 / 转折
@@ -1804,47 +1920,47 @@ function renderRadar(output) {
         || /beautiful/i.test(title) && /forgot|still/i.test(title)
         || /不是.{0,12}而是/.test(title)) {
       if (titleHasHan && /不是.{0,12}而是|却(还是)?忘|很好看|漂亮/.test(title)) {
-        return clip(`讲的是：${title}`, 88);
+        return clip(`讲的是：${title}；文中还落到好看≠留存的产品落差与日常用不上的原因`, 130);
       }
       const who = brand || '该产品';
-      return `${who} 做得很漂亮，但用户日常仍用不上——文章在拆「好看≠留存」的产品落差`;
+      return `${who} 做得很漂亮，但用户日常仍用不上——对照「好看≠留存」的产品落差，并落到功能没进工作流的具体卡点`;
     }
 
     // scaling / storage / billion
     if (/\bscal(?:e|ing|es)\b/i.test(title) && /\b(storage|billion|user)/i.test(title)) {
       const who = brand || 'OpenAI';
-      return `${who} 讲怎么把在线存储扩到服务十亿用户级：容量瓶颈怎么拆、架构如何取舍（续篇）`;
+      return `${who} 续篇讲怎么把 ChatGPT 在线存储扩到服务十亿用户级：拆容量瓶颈与架构取舍，文中还落到扩容路径与工程权衡，方便对照自家存储方案`;
     }
 
     // securing … training
     if (/\bsecur/i.test(title) && /\btrain/i.test(title)) {
       const who = brand || 'OpenAI';
-      return `${who} 介绍如何锁住前沿模型训练环境：防渗透、隔离边界与安全基线怎么落`;
+      return `${who} 介绍如何锁住前沿模型训练环境：防渗透、隔离边界与安全基线怎么落；文中还提威胁模型、访问控制与可复用的防护清单，方便对照自家训练机房`;
     }
 
     // turning X into Y / RL rewards / post-training
     if (/\bturning\b.+\binto\b/i.test(title) || /\binto rl\b|\brl rewards?\b|\bpost-training\b/i.test(lower)) {
       if (/grading|reward|rl|annotat|label|thinkingbox/i.test(lower)) {
-        return `${brand || 'Hugging Face'} 讲如何把数据库评分转成 RL 奖励，并用 ThinkingBox 做 Agent 后训练`;
+        return `${brand || 'Hugging Face'} 讲如何把数据库评分转成 RL 奖励，并用 ThinkingBox 做 Agent 后训练；文中还落到标注信号怎么接到训练闭环，以及后训练管线怎么搭`;
       }
-      return `${brand || '这篇'} 讲一条「A 变成 B」的转化路径（数据/训练信号怎么接）`;
+      return `${brand || '这篇'} 讲一条「A 变成 B」的转化路径：数据/训练信号怎么接，文中还提落地时的取舍与可复用步骤`;
     }
 
     // collaborate / scam detection
     if (/\bcollaborate/i.test(lower) || (/\bscam detection\b/i.test(lower) && /government|fine-tuned|on-?device/i.test(lower))) {
       const who = brand || 'DeepMind';
-      return `${who} 与新加坡政府合作：端侧微调模型做诈骗检测，怎么落到用户设备侧`;
+      return `${who} 与新加坡政府合作：端侧微调模型做诈骗检测，怎么落到用户设备侧；文中还提 fine-tuned on-device 与官方合作怎么产品化`;
     }
 
     // Trainium
     if (/trainium|look it up|does your model run/i.test(title)) {
-      return `介绍怎么查你的模型能不能跑在 ${brand || 'AWS Trainium'} 上，并给出选型/对照查表`;
+      return `介绍怎么查你的模型能不能跑在 ${brand || 'AWS Trainium'} 上，并给出选型/对照查表；文中还落到查表入口、兼容性判断与对照路径，方便做推理芯片与成本选型`;
     }
 
     // Canvas / Environment Improvements
     if (/\bcanvases?\b/i.test(title) || /environment improvements?/i.test(title)) {
       const who = brand || 'Cursor';
-      return `${who} 更新 Cloud Agent：Canvases 协作画布与运行环境改进，怎么影响日常工作流`;
+      return `${who} 更新 Cloud Agent：Canvases 协作画布与运行环境改进，怎么影响日常 Agent 工作流；文中还提画布协作、环境配置与团队日常怎么接到现有流程`;
     }
 
     // 数字 / 量级
@@ -1855,48 +1971,29 @@ function renderRadar(output) {
         const gap = /narrows.{0,40}(\d+)\s*month|领先.{0,8}(\d+)\s*个?月|to\s+(\d+)\s*month/i.exec(title);
         const months = gap ? (gap[1] || gap[2] || gap[3] || '1') : '';
         const gapZh = months ? `把与闭源差距压到约 ${months} 个月` : '追平闭源窗口';
-        return `${who} 开源权重${gapZh}${speed}——文章在报开闭源窗口变化与可调用性`;
+        return `${who} 开源权重${gapZh}${speed}——文章在报开闭源窗口变化与可调用性，并落到权重可得性与 API 速度对照`;
       }
       if (/\bbillion\b|十亿|亿用户/i.test(title) && /\bstor|scal|user/i.test(title)) {
-        return `${brand || 'OpenAI'} 讲怎么把在线存储扩到服务十亿用户级（容量瓶颈与架构取舍）`;
+        return `${brand || 'OpenAI'} 讲怎么把在线存储扩到服务十亿用户级：容量瓶颈与架构取舍，文中还落到扩容路径与工程权衡`;
       }
       const who = brand || zhThemeFromEnglishTitle(title, brand) || '这篇';
-      return `${who}：用标题里的量级数字谈选型或节奏判断（文章在给可核对的数字锚点）`;
+      return `${who}：用标题里的量级数字谈选型或节奏判断——文章在给可核对的数字锚点，并落到这些数字对选型/排期的含义`;
     }
 
     // 产品动作动词
     if (/^(securing|scaling|turning|building|launching|announcing)\b/i.test(title)
         || /\bfine-tuned\b|\btraining environment\b/i.test(lower)) {
       const theme = zhThemeFromEnglishTitle(title, brand);
-      if (theme) return `${brand ? brand + '：' : ''}${theme}——讲这项产品/工程动作的背景与做法`;
-      if (brand) return `${brand} 在讲一项具体产品/工程动作（见标题），并附背景与取舍`;
+      const extra = firstUsefulSentence();
+      if (theme && extra) return clip(`${brand ? brand + '：' : ''}${theme}——讲这项产品/工程动作的背景与做法；要点——${extra}`, 130);
+      if (theme) return `${brand ? brand + '：' : ''}${theme}——讲这项产品/工程动作的背景与做法，文中还提落地取舍与可核对步骤`;
+      if (brand) return `${brand} 在讲一项具体产品/工程动作（见标题），并附背景、取舍与可落地步骤`;
       return null;
     }
 
     // Here's Why / Why X
     if (/here[''\u2019]?s why|^why\b|为什么会|原因在于/i.test(title)) {
-      let core = title
-        .replace(/\.?\s*Here[''\u2019]?s Why\.?/ig, '')
-        .replace(/^Why\s+/i, '')
-        .replace(/：?\s*为什么.*$/, '')
-        .trim();
-      if (!/[\u4e00-\u9fff]/.test(core)) {
-        if (/reddit/i.test(core) && /prototyp|ai/i.test(core)) core = 'Reddit 自建 AI 原型工具';
-        else if (/built (its|their|his|her) own/i.test(core)) {
-          const who = (core.match(/^(\w+)/) || [])[1] || brand || '这家';
-          core = `${who} 自建工具`;
-        } else if (/ai is getting good at math|getting good at math/i.test(title)) {
-          core = 'AI 数学能力变强';
-        } else {
-          core = zhThemeFromEnglishTitle(core, brand) || (brand ? `${brand} 这件事` : '');
-        }
-      }
-      if (!core) return null;
-      const extra = firstUsefulSentence();
-      if (extra && /[\u4e00-\u9fff]/.test(extra)) {
-        return clip(`${core}：文章在拆背后原因；要点——${extra}`, 96);
-      }
-      return clip(`${core}：文章在拆背后原因与关键判断，而不只转发结论`, 90);
+      return buildWhySummary();
     }
 
     // 冒号副标题
@@ -1908,34 +2005,36 @@ function renderRadar(output) {
         return null;
       }
       if (/[\u4e00-\u9fff]/.test(left) && /[\u4e00-\u9fff]/.test(right)) {
-        return clip(`讲的是：${left}——${right}`, 88);
+        return clip(`讲的是：${left}——${right}；文中还展开副标题点名的具体动作与背景`, 130);
       }
       if (/open.?weight|narrows|closed-?ai|[×xX]\s*speed|\d+\s*month/i.test(title)) {
         const who = brand || left.split(/\s+/)[0] || '这篇';
         const speed = /2-3\s*[×xX]|[×xX]\s*speed|高速/i.test(right + left) ? '，并强调高速 API' : '';
-        return `${who} 开源权重追平闭源窗口${speed}——文章在报能力差距与调用面变化`;
+        return `${who} 开源权重追平闭源窗口${speed}——文章在报能力差距与调用面变化，并落到权重/API 怎么用`;
       }
       if (/post-training|rl reward|grading|thinkingbox/i.test(right + left)) {
-        return `${brand || '这篇'} 讲如何把评分/标注转成 RL 奖励，用于 Agent 后训练`;
+        return `${brand || '这篇'} 讲如何把评分/标注转成 RL 奖励，用于 Agent 后训练；文中还落到信号怎么接到训练闭环`;
       }
       const theme = zhThemeFromEnglishTitle(title, brand) || brand;
-      if (theme) return `${theme}：围绕副标题点名的具体动作展开说明`;
+      if (theme) return `${theme}：围绕副标题点名的具体动作展开说明，并补背景取舍与可核对步骤`;
     }
 
     // GitHub trending 仓库名
     if (isGithubRepoSignal(item)) {
       const repo = title.includes('/') ? title : (item.url || '').replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
-      const hint = body && /[\u4e00-\u9fff]/.test(body) ? clip(body, 40) : '';
+      const hint = body && /[\u4e00-\u9fff]/.test(body) ? clip(body, 48) : '';
       return hint
-        ? `GitHub 日榜开源「${clip(repo || title, 36)}」：${hint}`
-        : `GitHub 日榜开源「${clip(repo || title, 36)}」：看热度背后的需求方向与可 demake 点（不当长文读）`;
+        ? `GitHub 日榜开源「${clip(repo || title, 36)}」：${hint}；看热度背后的需求方向与可 demake 点（不当长文读）`
+        : `GitHub 日榜开源「${clip(repo || title, 36)}」：看热度背后的需求方向与可 demake 点；不当长文读，只抓可复用的产品切口与落地场景`;
     }
 
     // 正文中文要点
     const zhSent = firstUsefulSentence();
     if (zhSent) {
       const head = brand || (titleHasHan ? clip(title, 24) : zhThemeFromEnglishTitle(title, brand));
-      return head ? clip(`${head}：${zhSent}`, 96) : clip(zhSent, 88);
+      return head
+        ? clip(`${head}：${zhSent}；文中还围绕该要点展开背景与可核对结论`, 130)
+        : clip(`${zhSent}；文中还围绕该要点展开背景与可核对结论`, 130);
     }
 
     // 周报/合集
@@ -1947,14 +2046,16 @@ function renderRadar(output) {
     if (title.length >= 20
         && !/built to solve your hardest|introducing the future|the future of\b/i.test(lower)
         && /\b(model|agent|train|secur|scal|reward|storage|api|open.?weight|scam|math|duet|trainium|chatgpt|claude|gemini|kimi|canvas)\b/i.test(lower)) {
-      if (titleHasHan) return clip(`讲的是：${title}`, 88);
+      if (titleHasHan) return clip(`讲的是：${title}；文中还展开相关产品/工程动作与背景取舍`, 130);
       const theme = zhThemeFromEnglishTitle(title, brand);
-      if (theme) return `${theme}——介绍相关产品/工程动作与背景取舍`;
-      if (brand) return `${brand}：围绕标题点名的产品动作展开说明`;
+      if (theme) return `${theme}——介绍相关产品/工程动作与背景取舍，文中还落到可核对的步骤或数字锚点`;
+      if (brand) return `${brand}：围绕标题点名的产品动作展开说明，并补背景取舍与可落地步骤`;
       return null;
     }
 
-    if (titleHasHan && title.length >= 12) return clip(`讲的是：${title}`, 88);
+    if (titleHasHan && title.length >= 12) {
+      return clip(`讲的是：${title}；文中还展开相关背景、具体动作与可核对结论`, 130);
+    }
     return null;
   };
 
@@ -1978,7 +2079,7 @@ function renderRadar(output) {
       }
       for (const a of angles) {
         const note = asSourceSummaryNote(a);
-        if (note && !usedSignalNotes.has(note)) return note;
+        if (note && !isNoteCollision(note)) return note;
       }
       return null;
     }
@@ -1988,7 +2089,7 @@ function renderRadar(output) {
     if (claim) angles.push(claim);
     for (const a of angles) {
       const note = asAngleNote(a);
-      if (note && !usedSignalNotes.has(note)) return note;
+      if (note && !isNoteCollision(note)) return note;
     }
     return null;
   };
@@ -2030,13 +2131,17 @@ function renderRadar(output) {
       note = asAngleNote(why);
     }
 
-    if (!note || usedSignalNotes.has(note)) {
+    if (!note || isNoteCollision(note)) {
       note = uniqueConcreteNote(item);
     }
-    // 出口再闸一次：仍偏英文则降级不进正文
+    // 出口再闸一次：仍偏英文或尾部雷同则降级不进正文
     if (note && isMostlyLatinAngle(note)) {
       note = uniqueConcreteNote(item);
       if (note && isMostlyLatinAngle(note)) note = null;
+    }
+    if (note && isNoteCollision(note)) {
+      note = uniqueConcreteNote(item);
+      if (note && isNoteCollision(note)) note = null;
     }
     if (!note) return null;
     usedSignalNotes.add(note);
@@ -2051,7 +2156,7 @@ function renderRadar(output) {
       const note = draftLike
         ? asSourceSummaryNote(item.reviewNote)
         : asAngleNote(item.reviewNote);
-      if (note && !usedSignalNotes.has(note)) {
+      if (note && !isNoteCollision(note)) {
         usedSignalNotes.add(note);
         return note;
       }
