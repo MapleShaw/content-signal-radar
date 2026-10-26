@@ -14,7 +14,7 @@ const NO_SEEN = process.argv.includes('--no-seen');
 // same-day dedup result into a "new signal insufficient" message.
 const ALLOW_SEEN_FALLBACK = process.argv.includes('--allow-seen-fallback');
 
-const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
+const FEED_X_URL = process.env.FEED_X_URL || 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
 const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json';
 
@@ -41,6 +41,91 @@ function uniqBy(items, keyFn) {
 function clip(text = '', max = 280) {
   if (!text) return '';
   return text.length <= max ? text : `${text.slice(0, max - 1)}...`;
+}
+
+// 正文展示：默认接近全文，只有极长才截断（推文/即刻通常远小于此上限）
+const BODY_TEXT_MAX = 1200;
+const TITLE_BODY_MAX = 1000;
+const REPLY_TEXT_MAX = 180;
+const INFO_SECTION_CAP = 10;   // 知情（X）最多条数
+const DRAFT_SECTION_CAP = 10;  // 成稿原料（非 X）最多条数
+const DRAFT_MATERIAL_TYPES = new Set(['blog_post', 'jike_post', 'podcast_episode', 'bilibili_dynamic']);
+
+function isXSignal(item = {}) {
+  return item.type === 'x_tweet';
+}
+
+function isDraftMaterial(item = {}) {
+  return DRAFT_MATERIAL_TYPES.has(item.type);
+}
+
+/** 万能「保留理由：…」仅作内部/附录，不得进正文评价行 */
+function isGenericReviewNote(note = '') {
+  const n = String(note || '').trim();
+  if (!n) return true;
+  if (/^保留理由：/.test(n)) return true;
+  if (/分数刚过线/.test(n)) return true;
+  if (/主题词没命中/.test(n) && /先当热度/.test(n)) return true;
+  if (/形式分偏低/.test(n)) return true;
+  // 万能主题句（软修前 whyWorthReading 兜底）；不得进正文评价
+  if (/值得看：这条多出来的具体信息/.test(n)) return true;
+  if (/值得看：/.test(n) && /（钩子：/.test(n) && /不要和同题空话合并/.test(n)) return true;
+  return false;
+}
+
+/** 从 item/tweet 上可选字段取高赞回复摘要；没有正文则返回空数组（渲染层标「评论未取到」） */
+function extractTopReplies(source = {}) {
+  const raw =
+    source.topReplies ||
+    source.replySummaries ||
+    source.top_replies ||
+    source.replyTexts ||
+    source.comments ||
+    [];
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  return raw
+    .map((r) => {
+      if (typeof r === 'string') return { text: r.trim(), likes: 0, author: '' };
+      const text = String(r.text || r.summary || r.content || r.body || '').trim();
+      if (!text) return null;
+      return {
+        text,
+        likes: Number(r.likes || r.favorite_count || r.likeCount || 0) || 0,
+        author: String(r.author || r.handle || r.user?.screen_name || r.user?.name || '').replace(/^@/, ''),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 3);
+}
+
+/** 展示层去 HTML：先解实体再剥标签，避免即刻 RSS 的 &lt;br&gt; 残留 */
+function stripHtmlForDisplay(text = '') {
+  let s = String(text || '');
+  s = s
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+  s = s
+    .replace(/<br\s*\/?\s*>/gi, '\n')
+    .replace(/<img\b[^>]*>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    // RSS/即刻摘要常在标签中途被截断，清掉尾部残缺标签
+    .replace(/<(?:img\b|br\b)?[^>]*$/gi, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return s;
+}
+
+function signalBodyText(item = {}) {
+  const raw = stripHtmlForDisplay(item.fullText || item.summary || item.title || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return clip(raw, BODY_TEXT_MAX);
 }
 
 function includesAny(text = '', keywords = []) {
@@ -102,6 +187,36 @@ function normalizeEngagement(metrics = {}) {
   return 0.15;
 }
 
+
+/** Reply heuristic: feed has isQuote but often no inReplyToId/isReply. */
+function isReplyTweet(tweet = {}) {
+  if (tweet.isQuote) return false; // quote-tweets count as main-post form
+  if (tweet.isReply === true || tweet.inReplyToId || tweet.in_reply_to_status_id) return true;
+  const text = String(tweet.text || '').trim();
+  return /^@[\w]+/.test(text);
+}
+
+/** Writability: default 0.55; >=0.8 only for clear tutorial/list/adaptable angle + substance. */
+function scoreWriteability(text = '') {
+  const raw = String(text || '');
+  const t = raw.toLowerCase();
+  const wordCount = t.trim().split(/\s+/).filter(Boolean).length;
+  const hasSubstance = wordCount >= 25 || raw.replace(/\s+/g, ' ').trim().length >= 120;
+  const hasTutorial = /\b(how to|step[- ]by[- ]step|guide|tutorial|checklist|playbook|walkthrough)\b/.test(t)
+    || /教程|清单|步骤|怎么做|如何做/.test(raw)
+    || /(^|\n)\s*(?:[-*•]|\d+[.)])\s+\S+/m.test(raw);
+  const hasAngle = /\b(why |lesson|mistake|unpopular|contrarian|framework|takeaway|here'?s how)\b/.test(t)
+    || /为什么|教训|误区|框架|可改编|写作角度/.test(raw);
+  if ((hasTutorial || hasAngle) && hasSubstance) return 0.85;
+  if (hasTutorial || (hasAngle && wordCount >= 18)) return 0.8;
+  // Soft keyword alone must not jump to 0.8
+  if (includesAny(t, ['why', 'how', 'learn', 'mistake', 'distribution', 'brand', 'agent', 'product', 'workflow'])) {
+    return hasSubstance ? 0.65 : 0.55;
+  }
+  return 0.55;
+}
+
+
 function normalizeConfig(input = {}) {
   return {
     name: input.name || 'Content Signal Radar',
@@ -138,12 +253,12 @@ function normalizeConfig(input = {}) {
       _catwu: 1.2,
       zarazhangrui: 1.25,
       levelsio: 1.15,
-      thedankoe: 1.0,
       tdinh_me: 1.0,
-      lexfridman: 0.95,
-      leeerob: 1.2,
+      lexfridman: 0.35,
+      leerob: 1.2,
       steipete: 1.1,
-      naval: 1.0,
+      naval: 0.35,
+      thedankoe: 0.35,
       gregisenberg: 1.0,
       rauchg: 1.15,
       karpathy: 1.1
@@ -151,7 +266,7 @@ function normalizeConfig(input = {}) {
     sourceWeightReasons: input.sourceWeightReasons || {
       zarazhangrui: '高密度 agent / builder 信号,且和你的关注方向高度一致',
       _catwu: '产品与 builder 视角兼具,噪音相对低',
-      leeerob: 'AI 产品、开发者工具、分发视角稳定',
+      leerob: 'AI 产品、开发者工具、分发视角稳定',
       levelsio: '独立开发 + 分发 + 出海视角强',
       rauchg: '产品范式变化和 platform 视角常有高信号',
       steipete: '开发者工具与 AI 工作流洞察稳定',
@@ -162,8 +277,8 @@ function normalizeConfig(input = {}) {
       writeability: input.scoring?.writeability ?? 0.18,
       actionability: input.scoring?.actionability ?? 0.2,
       novelty: input.scoring?.novelty ?? 0.12,
-      engagement: input.scoring?.engagement ?? 0.07,
-      recency: input.scoring?.recency ?? 0.08,
+      engagement: input.scoring?.engagement ?? 0.10,
+      recency: input.scoring?.recency ?? 0.05,
       minimum: input.scoring?.minimum ?? 0.58,
       sourceWeightCap: input.scoring?.sourceWeightCap ?? 1.3
     },
@@ -179,6 +294,17 @@ function normalizeConfig(input = {}) {
 }
 
 async function fetchJSON(url) {
+  if (!url) return null;
+  // Support local absolute paths and file:// URLs (e.g. FEED_X_URL override).
+  if (url.startsWith('file://') || url.startsWith('/') || /^[A-Za-z]:[\\/]/.test(url)) {
+    const filePath = url.startsWith('file://') ? decodeURIComponent(url.slice('file://'.length)) : url;
+    try {
+      const text = await readFile(filePath, 'utf8');
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  }
   const res = await fetch(url);
   if (!res.ok) return null;
   return res.json();
@@ -572,18 +698,18 @@ function classifySignalIntent(text = '', type = '') {
 function computeSectionScore(scoring, signalIntent) {
   const { relevance, writeability, actionability, novelty, engagement, recency } = scoring;
   if (signalIntent === 'x_angle') {
-    return relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.07 + recency * 0.08;
+    return relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.10 + recency * 0.05;
   }
   if (signalIntent === 'product_signal') {
-    return relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.07 + recency * 0.08;
+    return relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.10 + recency * 0.05;
   }
   if (signalIntent === 'both') {
-    const xScore = relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.07 + recency * 0.08;
-    const pScore = relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.07 + recency * 0.08;
+    const xScore = relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.10 + recency * 0.05;
+    const pScore = relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.10 + recency * 0.05;
     return Math.max(xScore, pScore);
   }
   // 'neither' — no section boost
-  return relevance * 0.35 + writeability * 0.18 + actionability * 0.2 + novelty * 0.12 + engagement * 0.07 + recency * 0.08;
+  return relevance * 0.35 + writeability * 0.18 + actionability * 0.2 + novelty * 0.12 + engagement * 0.10 + recency * 0.05;
 }
 
 // Per-handle deduplication: if a handle has 3+ signals, keep only the top 2 by total score
@@ -654,6 +780,7 @@ function detectReviewNeed({ engagement, relevance, sourceWeight, wordCount, sign
 function autoResolveReview(scoredSignals) {
   const keep = [];
   const demote = [];
+  const appendix = [];
 
   for (const signal of scoredSignals) {
     if (!signal.needsReview) {
@@ -679,23 +806,26 @@ function autoResolveReview(scoredSignals) {
 
     // Rule 3: HIGH_ENG_LOW_MATCH — high engagement overrides low keyword match → keep
     if (reasons.includes('HIGH_ENG_LOW_MATCH')) {
-      signal.reviewNote = '高互动信号，关键词未命中但互动强 — 按互动判断保留';
+      signal.reviewNote = '保留理由：主题词没命中，但互动很强，先当热度信号看具体在吵什么';
       signal.needsReview = false;
       keep.push(signal);
       continue;
     }
 
-    // Rule 4: HIGH_SOURCE_LOW_ENG — authoritative source, keep as potential early signal
+    // Rule 4: HIGH_SOURCE_LOW_ENG — do NOT occupy top-N; park in appendix / demote score
     if (reasons.includes('HIGH_SOURCE_LOW_ENG')) {
-      signal.reviewNote = '权重源新帖，互动偏低但值得关注';
+      signal.reviewNote = '附录：关注账号但互动偏低，只观察不进正文前十';
+      signal.appendixOnly = true;
       signal.needsReview = false;
-      keep.push(signal);
+      // Cap so source weight alone cannot push it into high-signal top-N
+      signal.scoring.total = Number(Math.min(signal.scoring.total, 0.5).toFixed(3));
+      appendix.push(signal);
       continue;
     }
 
     // Rule 5: PENALIZED_BUT_ENGAGED — engagement redeems it
     if (reasons.includes('PENALIZED_BUT_ENGAGED') && engagement >= 0.5) {
-      signal.reviewNote = '内容形式偏低信号，但互动可以 — 保留';
+      signal.reviewNote = '保留理由：形式分偏低，互动还行，看有没有一句能用的结论';
       signal.needsReview = false;
       keep.push(signal);
       continue;
@@ -703,7 +833,7 @@ function autoResolveReview(scoredSignals) {
 
     // Default: keep if total score is above a relaxed threshold (0.52)
     if (signal.scoring.total >= 0.52) {
-      signal.reviewNote = '边界信号，分数尚可 — 保留';
+      signal.reviewNote = '保留理由：分数刚过线，先存着；除非有一句硬判断，否则别急着写';
       signal.needsReview = false;
       keep.push(signal);
     } else {
@@ -711,7 +841,7 @@ function autoResolveReview(scoredSignals) {
     }
   }
 
-  return { keep, demote };
+  return { keep, demote, appendix };
 }
 
 function buildScoredSignals(filtered, config) {
@@ -721,10 +851,13 @@ function buildScoredSignals(filtered, config) {
 
   for (const account of filtered.x || []) {
     for (const tweet of account.tweets || []) {
+      // Only main posts; drop reply/comment threads. Quotes (isQuote) stay.
+      if (isReplyTweet(tweet)) continue;
+
       const text = tweet.text || '';
       const textLower = text.toLowerCase();
       const relevance = includesAny(text, keywords) ? 1 : 0.45;
-      const writeability = includesAny(textLower, ['why', 'how', 'learn', 'mistake', 'distribution', 'brand', 'agent', 'product']) ? 0.8 : 0.55;
+      const writeability = scoreWriteability(text);
       const actionability = includesAny(textLower, ['launch', 'ship', 'workflow', 'process', 'experiment', 'agent', 'automation']) ? 0.85 : 0.5;
       const novelty = tweet.isQuote ? 0.55 : 0.7;
       const penalty = lowSignalPenalty(text);
@@ -739,7 +872,11 @@ function buildScoredSignals(filtered, config) {
         recency * weights.recency
       );
       const sourceWeight = Math.min(config.sourceWeights?.[account.handle] ?? 1, weights.sourceWeightCap ?? 1.3);
-      const weightedScore = applyOutputModeBoosts(baseScore * sourceWeight * penalty, config.outputMode, { type: 'x_tweet' });
+      let weightedScore = applyOutputModeBoosts(baseScore * sourceWeight * penalty, config.outputMode, { type: 'x_tweet' });
+      // High-source + very low engagement: demote so source weight alone cannot take top-N
+      if (sourceWeight >= 1.1 && engagement <= 0.35) {
+        weightedScore = Math.min(weightedScore, 0.5);
+      }
       const signalIntent = classifySignalIntent(text, 'x_tweet');
 
       const scoringObj = {
@@ -758,14 +895,21 @@ function buildScoredSignals(filtered, config) {
         engagement, relevance, sourceWeight, wordCount, signalIntent, penalty
       });
 
+      const normalizedText = text.replace(/\s+/g, ' ').trim();
+      const topReplies = extractTopReplies(tweet);
       signals.push({
         type: 'x_tweet',
         author: account.name,
         handle: account.handle,
-        title: clip(text.replace(/\s+/g, ' ').trim(), 90),
-        summary: clip(text.replace(/\s+/g, ' ').trim(), 220),
+        // 接近全文：标题行即正文主展示，仅极长截断
+        title: clip(normalizedText, TITLE_BODY_MAX),
+        summary: clip(normalizedText, BODY_TEXT_MAX),
+        fullText: normalizedText,
+        topReplies,
         url: tweet.url,
         publishedAt: tweet.createdAt,
+        isQuote: !!tweet.isQuote,
+        isReply: false,
         signalIntent,
         metrics: {
           likes: tweet.likes || 0,
@@ -803,7 +947,7 @@ function buildScoredSignals(filtered, config) {
     const jikeContent = signal.summary || signal.title.replace(/^(发布了|转发了):\s*/, '');
     const text = `${signal.title} ${jikeContent}`.trim();
     const relevance = includesAny(text, keywords) ? 1 : 0.45;
-    const writeability = includesAny(text.toLowerCase(), ['why', 'how', 'learn', 'mistake', 'distribution', 'brand', 'agent', 'product']) ? 0.8 : 0.55;
+    const writeability = scoreWriteability(text);
     const actionability = includesAny(text.toLowerCase(), ['launch', 'ship', 'workflow', 'process', 'experiment', 'agent', 'automation']) ? 0.85 : 0.5;
     const novelty = 0.7;
     const engagement = 0.3;
@@ -835,6 +979,7 @@ function buildScoredSignals(filtered, config) {
       handle: signal.handle,
       title: signal.title,
       summary: signal.summary,
+      fullText: String(jikeContent || signal.summary || signal.title || '').replace(/\s+/g, ' ').trim(),
       url: signal.url,
       publishedAt: signal.publishedAt,
       signalIntent,
@@ -890,7 +1035,8 @@ function buildScoredSignals(filtered, config) {
       type: 'blog_post',
       author: blog.name,
       title: blog.title,
-      summary: clip(blog.description || blog.content || '', 220),
+      summary: clip(blog.description || blog.content || '', BODY_TEXT_MAX),
+      fullText: clip(blog.description || blog.content || '', BODY_TEXT_MAX),
       url: blog.url,
       publishedAt: blog.publishedAt,
       signalIntent: 'product_signal',
@@ -940,7 +1086,8 @@ function buildScoredSignals(filtered, config) {
       type: 'podcast_episode',
       author: podcast.name,
       title: podcast.title,
-      summary: clip(podcast.transcript || '', 220),
+      summary: clip(podcast.transcript || '', BODY_TEXT_MAX),
+      fullText: clip(podcast.transcript || '', BODY_TEXT_MAX),
       url: podcast.url,
       publishedAt: podcast.publishedAt,
       signalIntent: 'product_signal',
@@ -1144,7 +1291,7 @@ function renderMarkdown(output) {
 function renderRadar(output) {
   // ── Data ──
   const allSignals = output.scoredSignals || [];
-  const topSignals = allSignals.filter(s => s.scoring.total >= output.config.scoring.minimum);
+  const topSignals = allSignals.filter(s => s.scoring.total >= output.config.scoring.minimum && !s.appendixOnly);
   const totalTweets = output.stats?.totalTweets || 0;
   // xDrafts removed — section no longer used
   const lowSignalCount = allSignals.filter(s =>
@@ -1185,9 +1332,11 @@ function renderRadar(output) {
     general: '📌 综合',
   };
 
-  // ── Unified signal list ──
-  // Merge all top signals into one list (brief + x_angles + product_signals are now one)
-  const signalItems = topSignals.slice(0, Math.max(output.config.limits.brief + 3, 8));
+  // ── 分区列表（知情 X / 成稿非 X）；挑选在 signalNote 就绪后执行 ──
+  let signalItems = [];
+  let infoItems = [];
+  let draftItems = [];
+  let demotedForNote = [];
 
   // ── buildLead(): dynamic editorial judgment ──
   const buildLead = () => {
@@ -1231,36 +1380,187 @@ function renderRadar(output) {
     return /github\.com\/[^/\s?#]+\/[^/\s?#]+\/?(?:[?#].*)?$/.test(url) || sourceName.includes('github trending');
   };
 
-  const signalNote = (item) => {
-    const text = (item.title || '') + ' ' + (item.summary || '');
-    const topic = extractTopic(text);
-    const writeHigh = item.scoring.writeability >= 0.8;
+  // Editorial note under each signal: WHY it matters. Never restate title or metrics
+  // (those already appear on the header lines above).
+  const usedSignalNotes = new Set();
+  /** 从作者原文抽硬判断/具体动作；没有则 null（兜底勿用万能主题句） */
+  const pickAuthorClaim = (raw = '') => {
+    const cleaned = stripHtmlForDisplay(raw)
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!cleaned) return null;
+    const parts = cleaned
+      .split(/(?<=[。！？.!?])/)
+      .map((s) => s.trim().replace(/^@\w+\s+/, ''))
+      .filter((s) => s.length >= 12);
+    // 硬判断 / 具体动作标记：优先于纯叙事首句
+    const hardRe = /不应该|不该|应该|意味着|关键是|关键在|本质|核心|其实|不是.{0,16}而是|与其|不如|别只|不要|立刻|具体|换成|替代|判断|结论|工作流|可写成|适合当|值得写成|所以我想|终于把|做完/;
+    const hard = parts.find((s) => hardRe.test(s));
+    if (hard) return clip(hard, 56);
+    const first = parts.find((s) => s.length >= 16 && !/^(RT\b|发布了:?\s*$)/i.test(s));
+    if (first) return clip(first, 56);
+    return null;
+  };
 
-    const notes = {
-      security: '供应链信任比代码质量更脆弱——这类信号出现时，先查自己的依赖再说别的。',
-      context: '瓶颈正在从"模型能不能做"转向"人能不能给够上下文"，产品设计的重心在移动。',
-      agent: '不再是"能做什么"的问题，而是"能不能持续超出预期"——评价框架在变。',
-      enterprise_workflow: 'AI 工具从可选变成默认，企业采购逻辑正在翻转。',
-      coding_agent: '工程师的稀缺能力从写代码变成审查判断，边界已经在移动了。',
-      creator: '发布量不是护城河，信号密度和观点锐度才是——创作者竞争维度在变。',
-      revenue: '定价和分发比功能复杂度更关键，从 0 到 MRR 的路径正在重塑。',
-      indie: '独立开发者的核心优势是决策链条短，这类信号可以直接映射到自己的项目。',
-      distribution: '触达正在成为稀缺资源，比产品本身更难复制。',
-      model: '能力拉平的窗口在压缩，产品层差异化的时间窗口也跟着缩。',
-      product: '这条暴露了一个产品判断的转折点，值得对照自己的项目想一遍。',
-      workflow: '自动化边界每扩张一轮，就在重新定义谁的时间更值钱。',
-      general: '值得看——不因为新，而因为它能帮你校准方向判断。',
-    };
-
-    let note = notes[topic] || notes.general;
-    if (isGithubRepoSignal(item)) {
-      note = '这是开源项目/仓库信号，不是长内容；重点看它为什么上榜、解决什么问题、是否代表某类需求升温。';
-    } else if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      note = '长内容比推文更容易暴露底层逻辑。' + note;
+  const whyWorthReading = (rawText, topicHint) => {
+    const t = stripHtmlForDisplay(rawText || '');
+    const lower = t.toLowerCase();
+    // Prefer a concrete claim from keyword patterns; else author hard claim (not topic boilerplate).
+    if (/earliest|early.?stage|前\s*100|早期/.test(lower) && /audience|用户|builder|验证|测想法/.test(lower)) {
+      return '看点：早期优势是用受众测想法/找种子用户，不是分发本身。';
     }
+    // Incident self-protection (keep narrow so "patched a hole in Node" does not steal PHP takes).
+    if (/disconnect|断开|\bvps\b|take them down|下线|停机/.test(lower)) {
+      return '看点：安全事件下的具体自保动作，可写成操作清单或踩坑对照。';
+    }
+    if (/供应链|\bnpm\b|postinstall|依赖投毒/.test(lower)) {
+      return '看点：供应链/依赖风险的具体动作，可写成检查清单。';
+    }
+    // PHP stack debate: allow "AI-assisted" but prefer end-of-PHP framing.
+    if (/\bphp\b/.test(lower) && (/end of php|不看好|\bvibe\b|ai-assisted/.test(lower))) {
+      return '看点：在 AI vibe coding 语境下为 PHP（旧栈）留空间，可当技术选型争论素材。';
+    }
+    if (/planning|规划/.test(lower) && /coding|编码|workflow|工作流/.test(lower)) {
+      return '看点：规划模型 vs 编码模型的分工工作流，可当 Agent 编排案例。';
+    }
+    if (/drop-?in|replacement|faster|替代|更快/.test(lower) && /tsrs|tool|runtime|运行/.test(lower)) {
+      return '看点：具体工具替换+量级收益，适合当「换栈/换工具」短案例，别和同日 Agent 空话混写。';
+    }
+    if (/proactive|off your plate|主动|替你/.test(lower) && /claude|\bagent\b|助手/.test(lower)) {
+      return '看点：产品叙事从「能做什么」转向「主动替你扛事」，可对照自己的 Agent 定位。';
+    }
+    // 两极语义收窄：勿用「自动化」——流水线/自动化管理会被误标成两极化
+    if (/两极|分化|极化/.test(t) && /agent|Agent/.test(t)) {
+      return '看点：Agent 的技术终点 vs 产品终点两极化，适合拆成对照帖。';
+    }
+    // 自动化流水线/管理：独立看点，不套两极化文案
+    if (/自动化流水线|自动化管理|流水线|可视化|定时任务|自动化任务/.test(t)) {
+      return '看点：个人 Agent 自动化流水线/管理界面实践，可当 demake 案例而非概念贴。';
+    }
+    if (/本地|读取|软件|personal agent|个人事务|生活方式/.test(t) && /agent|Agent|AI/.test(t)) {
+      return '看点：个人 Agent 改变线下服务选择的行为信号，偏生活向可写切口。';
+    }
+    // 兜底：作者原句硬判断/具体动作；写不出返回 null → 调用方降级移出正文
+    const claim = pickAuthorClaim(t);
+    if (claim) return `看点：${claim}`;
+    return null;
+  };
+  /** 撞车后换作者硬判断/具体一句；仍写不出则返回 null（调用方降级移出正文） */
+  const uniqueConcreteNote = (item, topicHint) => {
+    const text = stripHtmlForDisplay(item.fullText || item.summary || item.title || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const handle = item.handle ? `@${item.handle}` : (item.author || '');
+    const claim = pickAuthorClaim(text);
+    const candidates = [];
+    if (claim) {
+      candidates.push(`[${topicHint}] 看点：${claim}${handle ? `（${handle}）` : ''}`);
+    }
+    const parts = text
+      .replace(/https?:\/\/\S+/g, '')
+      .split(/(?<=[。！？.!?])/)
+      .map((s) => s.trim())
+      .filter((s) => s.length >= 14);
+    for (const s of parts.slice(0, 6)) {
+      const hook = clip(s.replace(/^@\w+\s+/, ''), 52);
+      candidates.push(`[${topicHint}] 看点：${hook}${hook.length >= 52 ? '…' : ''}${handle ? `（${handle}）` : ''}`);
+    }
+    const snippet = clip(text.replace(/^@\w+\s+/, ''), 52);
+    if (snippet.length >= 12) {
+      candidates.push(`[${topicHint}] 看点：「${snippet}${snippet.length >= 52 ? '…' : ''}」`);
+    }
+    for (const c of candidates) {
+      if (!usedSignalNotes.has(c)) return c;
+    }
+    return null;
+  };
+
+  // 返回评价文案；写不出不撞车的具体看点时返回 null → 降级不进正文
+  const signalNote = (item) => {
+    const text = stripHtmlForDisplay((item.fullText || item.title || '') + ' ' + (item.summary || ''));
+    const topic = extractTopic(text);
+    const writeHigh = (item.scoring && item.scoring.writeability >= 0.8);
+    const topicHint = {
+      security: '安全/供应链',
+      context: '上下文/记忆',
+      agent: 'Agent',
+      enterprise_workflow: '企业工作流',
+      coding_agent: '编码 Agent',
+      creator: '创作者',
+      revenue: '营收/定价',
+      indie: '独立开发',
+      distribution: '分发',
+      model: '模型',
+      product: '产品',
+      workflow: '工作流',
+      general: '综合',
+    }[topic] || '综合';
+
+    let note;
+    if (isGithubRepoSignal(item)) {
+      note = `[开源] 看上榜原因与需求方向，别当长文读。${item.title ? `（${clip(item.title, 36)}）` : ''}`;
+    } else if (item.type === 'blog_post' || item.type === 'podcast_episode') {
+      const hook = clip(String(item.title || item.summary || '').replace(/\s+/g, ' ').trim(), 40);
+      note = hook.length >= 8
+        ? `[长内容/${topicHint}] 抽框架，不搬运目录。（钩子：${hook}${hook.length >= 40 ? '…' : ''}）`
+        : `[长内容/${topicHint}] 优先抽可复用判断框架，不搬运目录。`;
+    } else {
+      const why = whyWorthReading(text, topicHint);
+      if (!why) {
+        note = uniqueConcreteNote(item, topicHint);
+        if (!note) return null;
+      } else {
+        note = `[${topicHint}] ${why}`;
+      }
+    }
+
+    if (usedSignalNotes.has(note)) {
+      note = uniqueConcreteNote(item, topicHint);
+      if (!note) return null;
+    }
+    usedSignalNotes.add(note);
     if (writeHigh) note += ' → 可写性高，优先扩成帖子';
     return note;
   };
+
+  const bodyEditorialNote = (item) => {
+    // 正文禁止输出万能「保留理由：…」；仅用具体 signalNote
+    if (item.reviewNote && !isGenericReviewNote(item.reviewNote)) {
+      // 非万能的内部备注（如 seen fallback）仍可用，但也要去重
+      let note = item.reviewNote;
+      if (usedSignalNotes.has(note)) {
+        note = uniqueConcreteNote(item, '综合');
+        if (!note) return null;
+      }
+      usedSignalNotes.add(note);
+      return note;
+    }
+    return signalNote(item);
+  };
+
+  // ── 正文分区挑选：知情（X）与成稿原料（非 X）分开；成稿绝不拿 X 充数 ──
+  const pickWithNotes = (candidates, cap) => {
+    const picked = [];
+    for (const item of candidates) {
+      if (picked.length >= cap) break;
+      const note = bodyEditorialNote(item);
+      if (!note) {
+        demotedForNote.push(item);
+        continue;
+      }
+      item._bodyNote = note;
+      picked.push(item);
+    }
+    return picked;
+  };
+
+  const xCandidates = topSignals.filter(isXSignal);
+  const draftCandidatesPool = topSignals.filter(isDraftMaterial);
+  // 成稿区：尽量露出 blog/jike 高信号，不与 X 混排、不用 X 补位
+  infoItems = pickWithNotes(xCandidates, INFO_SECTION_CAP);
+  draftItems = pickWithNotes(draftCandidatesPool, DRAFT_SECTION_CAP);
+  signalItems = [...infoItems, ...draftItems];
 
   // ── engagementBadge(item) ──
   const fmtK = (n) => {
@@ -1329,7 +1629,11 @@ function renderRadar(output) {
     const actions = [];
 
     // 1. Most writable signal → recommend writing a post
-    const mostWritable = signalItems.find(s => s.scoring.writeability >= 0.8);
+    const mostWritable = signalItems.find(s =>
+      s.scoring.writeability >= 0.8
+      && !s.appendixOnly
+      && (s.scoring.engagement || 0) > 0.35
+    );
     if (mostWritable) {
       const author = mostWritable.handle ? `@${mostWritable.handle}` : mostWritable.author || '';
       actions.push(`**写帖优先**：${author ? author + ' 的' : ''}「${clip(mostWritable.title, 40)}」可写性最高，建议明早扩成 X 长帖`);
@@ -1381,7 +1685,7 @@ function renderRadar(output) {
   const dateStr = new Date(output.generatedAt).toLocaleString('zh-CN', { timeZone: output.config.timezone, hour12: false });
   const reviewCount = signalItems.filter(s => s.needsReview === true).length;
   const reviewSuffix = reviewCount > 0 ? ` · ${reviewCount} 条待二次确认` : '';
-  lines.push(`> ${dateStr} · ${topSignals.length} 条高信号 · ${totalTweets} 条原始推文${reviewSuffix}`);
+  lines.push(`> ${dateStr} · 知情 ${infoItems.length} · 成稿 ${draftItems.length} · 共 ${topSignals.length} 条高信号 · ${totalTweets} 条原始推文${reviewSuffix}`);
   lines.push('');
 
   // 今日判断
@@ -1390,25 +1694,84 @@ function renderRadar(output) {
   lines.push(buildLead());
   lines.push('');
 
-  // 信号（unified list）— compact format
-  lines.push('---');
-  lines.push('');
-  lines.push('## 信号');
-  lines.push('');
-  for (const [i, item] of signalItems.entries()) {
-    const text = (item.title || '') + ' ' + (item.summary || '');
-    const topic = extractTopic(text);
+  // 分区渲染：知情（X）/ 成稿原料（非 X）
+  const renderSignalEntry = (item, index) => {
+    const blob = (item.fullText || item.title || '') + ' ' + (item.summary || '');
+    const topic = extractTopic(blob);
     const badge = engagementBadge(item);
     const source = sourceTag(item);
     const label = topicLabel[topic] || '📌 综合';
     const isRecovered = item.repeatObservation;
+    const body = signalBodyText(item);
+    const note = item._bodyNote || bodyEditorialNote(item) || '（本条评价降级，仅保留原文）';
 
-    lines.push(`**${i + 1}.** ${item.title}`);
-    lines.push(`\`${label}\`${isRecovered ? ' · 🔄 重复观察' : ''} · ${source}${badge ? ' · ' + badge : ''}`);
+    const out = [];
+    out.push(`**${index}.** ${body}`);
+    out.push(`\`${label}\`${isRecovered ? ' · 🔄 重复观察' : ''} · ${source}${badge ? ' · ' + badge : ''}`);
+    out.push('');
+    out.push(`> ${note}`);
+    if (isXSignal(item)) {
+      const replies = Array.isArray(item.topReplies) ? item.topReplies : [];
+      if (replies.length > 0) {
+        out.push('评论摘要：');
+        for (const r of replies.slice(0, 3)) {
+          const who = r.author ? `@${r.author}：` : '';
+          out.push(`- ${who}${clip(r.text, REPLY_TEXT_MAX)}`);
+        }
+      } else {
+        out.push('评论未取到');
+      }
+    }
+    if (item.url) out.push(`[→ 原文](${item.url})`);
+    out.push('');
+    return out;
+  };
+
+  lines.push('---');
+  lines.push('');
+  lines.push('## 知情（X）');
+  lines.push('');
+  lines.push('> 定位：了解最新');
+  lines.push('');
+  if (infoItems.length === 0) {
+    lines.push('_今日暂无足够强的 X 高信号。_');
     lines.push('');
-    lines.push(`> ${item.reviewNote || signalNote(item)}`);
-    if (item.url) lines.push(`[→ 原文](${item.url})`);
+  } else {
+    for (const [i, item] of infoItems.entries()) {
+      lines.push(...renderSignalEntry(item, i + 1));
+    }
+  }
+
+  lines.push('---');
+  lines.push('');
+  lines.push('## 成稿原料（非 X）');
+  lines.push('');
+  lines.push('> 定位：可扩早档帖的一手（博客 / 即刻 / 官网等）；不成则宁缺，不拿 X 充数');
+  lines.push('');
+  if (draftItems.length === 0) {
+    lines.push('_今日成稿原料不足（高信号非 X 为空）。_');
     lines.push('');
+  } else {
+    for (const [i, item] of draftItems.entries()) {
+      lines.push(...renderSignalEntry(item, i + 1));
+    }
+  }
+
+  // 附录：权重源低互动（不占正文前十）
+  const appendixItems = (output.appendixSignals || []).slice(0, 5);
+  if (appendixItems.length > 0) {
+    lines.push('---');
+    lines.push('');
+    lines.push('### 附录：权重源低互动');
+    lines.push('');
+    for (const item of appendixItems) {
+      const source = sourceTag(item);
+      const badge = engagementBadge(item);
+      lines.push(`- ${item.title}`);
+      lines.push(`  ${source}${badge ? ' · ' + badge : ''} · ${item.reviewNote || '附录观察'}`);
+      if (item.url) lines.push(`  [→ 原文](${item.url})`);
+      lines.push('');
+    }
   }
 
   // 下一步（collapsed into a compact block）
@@ -1428,7 +1791,8 @@ function renderRadar(output) {
     `${totalTweets} tweets`,
     `${stats.blogPosts || 0} blogs`,
     `${stats.podcastEpisodes || 0} podcasts`,
-    `${topSignals.length} high-signal`,
+    `知情${infoItems.length}+成稿${draftItems.length}/${topSignals.length} high-signal`,
+    demotedForNote.length ? `${demotedForNote.length} note-demoted` : null,
     stats.recoveredSeenCount ? `${stats.recoveredSeenCount} recovered` : null,
     lowSignalCount > 0 ? `${lowSignalCount} filtered` : null,
   ].filter(Boolean).join(' · ');
@@ -1499,7 +1863,7 @@ async function main() {
   if (NO_SEEN) process.stderr.write('[seen-signals] Bypassed (--no-seen)\n');
 
   // Auto-resolve all needsReview flags — no LLM needed
-  const { keep: reviewedSignals, demote: demotedSignals } = autoResolveReview(unseenSignals);
+  const { keep: reviewedSignals, demote: demotedSignals, appendix: appendixSignals = [] } = autoResolveReview(unseenSignals);
   const fallback = NO_SEEN || !ALLOW_SEEN_FALLBACK
     ? { signals: reviewedSignals, recovered: [] }
     : recoverFallbackSignals(rawScoredSignals, reviewedSignals, seenMap, config, 5);
@@ -1511,6 +1875,9 @@ async function main() {
   );
   if (demotedSignals.length > 0) {
     process.stderr.write(`[auto-review] Demoted ${demotedSignals.length} low-signal flagged item(s)\n`);
+  }
+  if (appendixSignals.length > 0) {
+    process.stderr.write(`[auto-review] Appendix ${appendixSignals.length} high-source low-eng item(s)\n`);
   }
   if (recoveredSeenSignals.length > 0) {
     process.stderr.write(`[seen-signals] Recovered ${recoveredSeenSignals.length} high-score seen fallback signal(s)\n`);
@@ -1571,6 +1938,7 @@ async function main() {
       type: s.type,
       scoring: { total: s.scoring.total, relevance: s.scoring.relevance }
     })),
+    appendixSignals,
     demotedSignals: demotedSignals.map(s => ({
       title: s.title,
       handle: s.handle,
