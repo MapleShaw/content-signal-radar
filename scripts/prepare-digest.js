@@ -60,7 +60,7 @@ function isDraftMaterial(item = {}) {
 }
 
 /** 万能/旧腔评价仅作内部/附录，不得进正文评价行 */
-function isGenericReviewNote(note = '') {
+function isGenericReviewNote(note = '', opts = {}) {
   const n = String(note || '').trim();
   if (!n) return true;
   if (/^保留理由：/.test(n)) return true;
@@ -79,8 +79,13 @@ function isGenericReviewNote(note = '') {
   if (/抽一条可复用判断框架/.test(n)) return true;
   if (/不搬运目录/.test(n)) return true;
   if (/抽框架/.test(n) && /不搬运/.test(n)) return true;
-  // 正文评价必须是「扩帖切口：…」人话一句
-  if (!/^扩帖切口：/.test(n)) return true;
+  // 正文评价：知情「扩帖切口：…」；成稿「源文：…」（2026-10-26 晚）
+  if (!/^(扩帖切口|源文)：/.test(n)) return true;
+  // 成稿区不再收「扩帖切口 / 写xxx帖」主导的评价
+  if (opts.forDraft) {
+    if (/^扩帖切口：/.test(n)) return true;
+    if (/写.{0,24}帖/.test(n) || /扩帖/.test(n)) return true;
+  }
   return false;
 }
 
@@ -1402,15 +1407,21 @@ function renderRadar(output) {
     return /github\.com\/[^/\s?#]+\/[^/\s?#]+\/?(?:[?#].*)?$/.test(url) || sourceName.includes('github trending');
   };
 
-  // Editorial note: 正文评价只保留一句人话，固定前缀「扩帖切口：…」
-  // 必须点名读者能写成帖的具体角度；写不出 → null 降级移出正文前十。
+  // Editorial note（2026-10-26 晚）：
+  // 知情（X）→「扩帖切口：…」；成稿（blog/播客/官网/github）→「源文：…」中文简介讲什么。
+  // 写不出具体内容 → null 降级移出正文前十。
   const usedSignalNotes = new Set();
 
-  /** 切口正文：几乎无汉字、或汉字偏少且拉丁过高 → 不合格；专名夹杂英文 OK */
+  /** 剥离评价前缀后做拉丁硬闸：几乎无汉字、或汉字偏少且拉丁过高 → 不合格；专名夹杂英文 OK */
+  const stripNotePrefix = (raw = '') => String(raw || '')
+    .replace(/^(扩帖切口|源文)：\s*/, '')
+    .replace(/^\[.*?\]\s*/, '')
+    .replace(/^看点：\s*/, '')
+    .replace(/^值得看：\s*/, '')
+    .trim();
+
   const isMostlyLatinAngle = (raw = '') => {
-    const body = String(raw || '')
-      .replace(/^扩帖切口：\s*/, '')
-      .replace(/\s+/g, '');
+    const body = stripNotePrefix(raw).replace(/\s+/g, '');
     if (!body) return true;
     const han = (body.match(/[\u4e00-\u9fff]/g) || []).length;
     const latin = (body.match(/[A-Za-z]/g) || []).length;
@@ -1424,13 +1435,10 @@ function renderRadar(output) {
     return latin / denom > 0.50;
   };
 
+  /** 知情（X）：规范化为「扩帖切口：…」 */
   const asAngleNote = (angle) => {
     if (!angle) return null;
-    let a = String(angle).trim()
-      .replace(/^扩帖切口：\s*/, '')
-      .replace(/^\[.*?\]\s*/, '')
-      .replace(/^看点：\s*/, '')
-      .replace(/^值得看：\s*/, '')
+    let a = stripNotePrefix(angle)
       .replace(/\s*→\s*可写性高.*$/, '')
       .trim();
     if (!a || a.length < 6) return null;
@@ -1438,8 +1446,25 @@ function renderRadar(output) {
     if (/抽一条可复用判断框架|不搬运目录|(抽框架.{0,8}不搬运)/.test(a)) return null;
     // 硬闸：整句英文标题禁止进「扩帖切口」；专名夹杂少量英文 OK
     if (isMostlyLatinAngle(a)) return null;
-    const note = `扩帖切口：${clip(a, 72)}`;
-    return note;
+    return `扩帖切口：${clip(a, 72)}`;
+  };
+
+  /** 成稿：规范化为「源文：…」中文简介（可稍长，约 40～90 字） */
+  const asSourceSummaryNote = (summary) => {
+    if (!summary) return null;
+    let a = stripNotePrefix(summary)
+      .replace(/\s*→\s*可写性高.*$/, '')
+      .replace(/[：:]\s*写.{0,40}帖\s*$/u, '')
+      .replace(/——写.{0,40}帖\s*$/u, '')
+      .replace(/：写.{0,40}$/u, '')
+      .trim();
+    if (!a || a.length < 8) return null;
+    if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：/.test(a)) return null;
+    if (/抽一条可复用判断框架|不搬运目录|(抽框架.{0,8}不搬运)/.test(a)) return null;
+    if (/写.{0,24}帖/.test(a) && a.length < 28) return null;
+    if (isMostlyLatinAngle(a)) return null;
+    // 简介宜稍长；上限约 90 字
+    return `源文：${clip(a, 96)}`;
   };
 
   /** 从作者原文抽硬判断/具体动作，再压成可写切口；没有则 null */
@@ -1740,23 +1765,227 @@ function renderRadar(output) {
     return null;
   };
 
-  /** 撞车后换一条具体切口；仍写不出则 null（成稿不再回落万能模板） */
+  /**
+   * 成稿源文简介：用 title+summary/fullText 压成 1～2 句中文「讲什么」
+   * （产品动作/结论/数字），约 40～90 字；不要「写xxx帖/扩帖切口」。
+   * 禁止整句英文；禁止回落「抽框架/不搬运目录」。
+   */
+  const pickBlogSourceSummary = (item = {}) => {
+    const title = String(item.title || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^\[AINews\]\s*/i, '')
+      .replace(/^🧠\s*/, '')
+      .replace(/^Community Wisdom:\s*/i, '');
+    const body = stripHtmlForDisplay(`${item.summary || ''} ${item.fullText || ''}`)
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!title || title.length < 8) return null;
+
+    const lower = `${title} ${body}`.toLowerCase();
+    const brand = pickBlogBrandHint(item, title);
+    const titleHasHan = /[\u4e00-\u9fff]/.test(title);
+
+    // 从正文抽一句可意译的要点（中文优先；英文硬判断再压短）
+    const firstUsefulSentence = () => {
+      const parts = body
+        .split(/(?<=[。！？.!?])/)
+        .map((s) => s.trim())
+        .filter((s) => s.length >= 20 && s.length <= 220);
+      const zh = parts.find((s) => /[\u4e00-\u9fff]/.test(s) && !/订阅|关注我们|点击|版权/.test(s));
+      if (zh) return clip(zh.replace(/\s+/g, ' '), 72);
+      return null;
+    };
+
+    // 反常识 / 转折
+    if (/\bstill (forgot|forget|don'?t|do not|never|can'?t)\b/i.test(title)
+        || /很好看.{0,12}(忘|没用)|漂亮.{0,12}(忘|没用)|却(还是)?忘/.test(title)
+        || (/\bbut\b/i.test(title) && /\b(still|never|forgot|don'?t)\b/i.test(title))
+        || /beautiful/i.test(title) && /forgot|still/i.test(title)
+        || /不是.{0,12}而是/.test(title)) {
+      if (titleHasHan && /不是.{0,12}而是|却(还是)?忘|很好看|漂亮/.test(title)) {
+        return clip(`讲的是：${title}`, 88);
+      }
+      const who = brand || '该产品';
+      return `${who} 做得很漂亮，但用户日常仍用不上——文章在拆「好看≠留存」的产品落差`;
+    }
+
+    // scaling / storage / billion
+    if (/\bscal(?:e|ing|es)\b/i.test(title) && /\b(storage|billion|user)/i.test(title)) {
+      const who = brand || 'OpenAI';
+      return `${who} 讲怎么把在线存储扩到服务十亿用户级：容量瓶颈怎么拆、架构如何取舍（续篇）`;
+    }
+
+    // securing … training
+    if (/\bsecur/i.test(title) && /\btrain/i.test(title)) {
+      const who = brand || 'OpenAI';
+      return `${who} 介绍如何锁住前沿模型训练环境：防渗透、隔离边界与安全基线怎么落`;
+    }
+
+    // turning X into Y / RL rewards / post-training
+    if (/\bturning\b.+\binto\b/i.test(title) || /\binto rl\b|\brl rewards?\b|\bpost-training\b/i.test(lower)) {
+      if (/grading|reward|rl|annotat|label|thinkingbox/i.test(lower)) {
+        return `${brand || 'Hugging Face'} 讲如何把数据库评分转成 RL 奖励，并用 ThinkingBox 做 Agent 后训练`;
+      }
+      return `${brand || '这篇'} 讲一条「A 变成 B」的转化路径（数据/训练信号怎么接）`;
+    }
+
+    // collaborate / scam detection
+    if (/\bcollaborate/i.test(lower) || (/\bscam detection\b/i.test(lower) && /government|fine-tuned|on-?device/i.test(lower))) {
+      const who = brand || 'DeepMind';
+      return `${who} 与新加坡政府合作：端侧微调模型做诈骗检测，怎么落到用户设备侧`;
+    }
+
+    // Trainium
+    if (/trainium|look it up|does your model run/i.test(title)) {
+      return `介绍怎么查你的模型能不能跑在 ${brand || 'AWS Trainium'} 上，并给出选型/对照查表`;
+    }
+
+    // Canvas / Environment Improvements
+    if (/\bcanvases?\b/i.test(title) || /environment improvements?/i.test(title)) {
+      const who = brand || 'Cursor';
+      return `${who} 更新 Cloud Agent：Canvases 协作画布与运行环境改进，怎么影响日常工作流`;
+    }
+
+    // 数字 / 量级
+    if (/\b\d+(?:\.\d+)?\s*billion\b|\bover\s+\d+\s*billion\b|\b\d+\s*-\s*\d+\s*[×xX]\b|[×xX]\s*speed|\b\d+\s*months?\b|\b2-3\s*[×xX]\b|\b\d+BA\b|\b\d{2,4}B[-\s]|\d+\s*%|十亿|亿用户|领先.{0,8}\d+\s*个?月|narrows.{0,40}\d+\s*month/i.test(title)) {
+      if (/open.?weight|narrows|closed-?ai|开源/i.test(title) || /\bkimi\b/i.test(title)) {
+        const who = brand || 'Kimi';
+        const speed = /2-3\s*[×xX]|[×xX]\s*speed|高速/i.test(title) ? '，并推高速 API（约 2–3×）' : '';
+        const gap = /narrows.{0,40}(\d+)\s*month|领先.{0,8}(\d+)\s*个?月|to\s+(\d+)\s*month/i.exec(title);
+        const months = gap ? (gap[1] || gap[2] || gap[3] || '1') : '';
+        const gapZh = months ? `把与闭源差距压到约 ${months} 个月` : '追平闭源窗口';
+        return `${who} 开源权重${gapZh}${speed}——文章在报开闭源窗口变化与可调用性`;
+      }
+      if (/\bbillion\b|十亿|亿用户/i.test(title) && /\bstor|scal|user/i.test(title)) {
+        return `${brand || 'OpenAI'} 讲怎么把在线存储扩到服务十亿用户级（容量瓶颈与架构取舍）`;
+      }
+      const who = brand || zhThemeFromEnglishTitle(title, brand) || '这篇';
+      return `${who}：用标题里的量级数字谈选型或节奏判断（文章在给可核对的数字锚点）`;
+    }
+
+    // 产品动作动词
+    if (/^(securing|scaling|turning|building|launching|announcing)\b/i.test(title)
+        || /\bfine-tuned\b|\btraining environment\b/i.test(lower)) {
+      const theme = zhThemeFromEnglishTitle(title, brand);
+      if (theme) return `${brand ? brand + '：' : ''}${theme}——讲这项产品/工程动作的背景与做法`;
+      if (brand) return `${brand} 在讲一项具体产品/工程动作（见标题），并附背景与取舍`;
+      return null;
+    }
+
+    // Here's Why / Why X
+    if (/here[''\u2019]?s why|^why\b|为什么会|原因在于/i.test(title)) {
+      let core = title
+        .replace(/\.?\s*Here[''\u2019]?s Why\.?/ig, '')
+        .replace(/^Why\s+/i, '')
+        .replace(/：?\s*为什么.*$/, '')
+        .trim();
+      if (!/[\u4e00-\u9fff]/.test(core)) {
+        if (/reddit/i.test(core) && /prototyp|ai/i.test(core)) core = 'Reddit 自建 AI 原型工具';
+        else if (/built (its|their|his|her) own/i.test(core)) {
+          const who = (core.match(/^(\w+)/) || [])[1] || brand || '这家';
+          core = `${who} 自建工具`;
+        } else if (/ai is getting good at math|getting good at math/i.test(title)) {
+          core = 'AI 数学能力变强';
+        } else {
+          core = zhThemeFromEnglishTitle(core, brand) || (brand ? `${brand} 这件事` : '');
+        }
+      }
+      if (!core) return null;
+      const extra = firstUsefulSentence();
+      if (extra && /[\u4e00-\u9fff]/.test(extra)) {
+        return clip(`${core}：文章在拆背后原因；要点——${extra}`, 96);
+      }
+      return clip(`${core}：文章在拆背后原因与关键判断，而不只转发结论`, 90);
+    }
+
+    // 冒号副标题
+    const colon = title.match(/^([^:]{3,48}):\s*(.{6,90})$/);
+    if (colon) {
+      const left = colon[1].trim();
+      const right = colon[2].trim();
+      if (/built to solve|hardest problems|what you need|everything you|a deep dive|our thoughts|introducing\b/i.test(right)) {
+        return null;
+      }
+      if (/[\u4e00-\u9fff]/.test(left) && /[\u4e00-\u9fff]/.test(right)) {
+        return clip(`讲的是：${left}——${right}`, 88);
+      }
+      if (/open.?weight|narrows|closed-?ai|[×xX]\s*speed|\d+\s*month/i.test(title)) {
+        const who = brand || left.split(/\s+/)[0] || '这篇';
+        const speed = /2-3\s*[×xX]|[×xX]\s*speed|高速/i.test(right + left) ? '，并强调高速 API' : '';
+        return `${who} 开源权重追平闭源窗口${speed}——文章在报能力差距与调用面变化`;
+      }
+      if (/post-training|rl reward|grading|thinkingbox/i.test(right + left)) {
+        return `${brand || '这篇'} 讲如何把评分/标注转成 RL 奖励，用于 Agent 后训练`;
+      }
+      const theme = zhThemeFromEnglishTitle(title, brand) || brand;
+      if (theme) return `${theme}：围绕副标题点名的具体动作展开说明`;
+    }
+
+    // GitHub trending 仓库名
+    if (isGithubRepoSignal(item)) {
+      const repo = title.includes('/') ? title : (item.url || '').replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
+      const hint = body && /[\u4e00-\u9fff]/.test(body) ? clip(body, 40) : '';
+      return hint
+        ? `GitHub 日榜开源「${clip(repo || title, 36)}」：${hint}`
+        : `GitHub 日榜开源「${clip(repo || title, 36)}」：看热度背后的需求方向与可 demake 点（不当长文读）`;
+    }
+
+    // 正文中文要点
+    const zhSent = firstUsefulSentence();
+    if (zhSent) {
+      const head = brand || (titleHasHan ? clip(title, 24) : zhThemeFromEnglishTitle(title, brand));
+      return head ? clip(`${head}：${zhSent}`, 96) : clip(zhSent, 88);
+    }
+
+    // 周报/合集
+    if (/weekly|roundup|community wisdom|派评|近期值得关注|what'?s new in\b|\btop\s+\d+\b|links of the/i.test(lower)) {
+      return null;
+    }
+
+    // 标题够具体
+    if (title.length >= 20
+        && !/built to solve your hardest|introducing the future|the future of\b/i.test(lower)
+        && /\b(model|agent|train|secur|scal|reward|storage|api|open.?weight|scam|math|duet|trainium|chatgpt|claude|gemini|kimi|canvas)\b/i.test(lower)) {
+      if (titleHasHan) return clip(`讲的是：${title}`, 88);
+      const theme = zhThemeFromEnglishTitle(title, brand);
+      if (theme) return `${theme}——介绍相关产品/工程动作与背景取舍`;
+      if (brand) return `${brand}：围绕标题点名的产品动作展开说明`;
+      return null;
+    }
+
+    if (titleHasHan && title.length >= 12) return clip(`讲的是：${title}`, 88);
+    return null;
+  };
+
+
+  /** 撞车后换一条；成稿走源文简介，知情走扩帖切口；仍写不出则 null */
   const uniqueConcreteNote = (item) => {
     const text = stripHtmlForDisplay(item.fullText || item.summary || item.title || '')
       .replace(/\s+/g, ' ')
       .trim();
+    const draftLike = isDraftMaterial(item) || isGithubRepoSignal(item)
+      || item.type === 'blog_post' || item.type === 'podcast_episode';
     const angles = [];
+    if (draftLike) {
+      const summary = pickBlogSourceSummary(item);
+      if (summary) angles.push(summary);
+      // 旧 pickBlogConcreteAngle 若还能给出「讲什么」骨架，剥掉「写帖」尾巴后可作候补
+      const blogAngle = pickBlogConcreteAngle(item);
+      if (blogAngle) angles.push(blogAngle);
+      if (isGithubRepoSignal(item) && item.title) {
+        angles.push(`GitHub 日榜开源「${clip(item.title, 28)}」：看热度背后的需求方向与可 demake 点（不当长文读）`);
+      }
+      for (const a of angles) {
+        const note = asSourceSummaryNote(a);
+        if (note && !usedSignalNotes.has(note)) return note;
+      }
+      return null;
+    }
     const why = whyWorthReading(text, item);
     if (why) angles.push(why);
     const claim = pickAuthorClaim(text);
     if (claim) angles.push(claim);
-    if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      const blogAngle = pickBlogConcreteAngle(item);
-      if (blogAngle) angles.push(blogAngle);
-    }
-    if (isGithubRepoSignal(item) && item.title) {
-      angles.push(`开源上榜「${clip(item.title, 28)}」：看需求方向与 demake 点，别当长文读`);
-    }
     for (const a of angles) {
       const note = asAngleNote(a);
       if (note && !usedSignalNotes.has(note)) return note;
@@ -1764,27 +1993,40 @@ function renderRadar(output) {
     return null;
   };
 
-  // 返回「扩帖切口：…」；写不出具体角度 → null 降级不进正文
+  // 知情 →「扩帖切口：…」；成稿 →「源文：…」；写不出 → null 降级
   const signalNote = (item) => {
     // 即刻不进正文两区（双保险；成稿类型已剔除）
     if (item.type === 'jike_post') return null;
 
-    const text = stripHtmlForDisplay((item.fullText || item.title || '') + ' ' + (item.summary || ''));
+    const textBlob = stripHtmlForDisplay((item.fullText || item.title || '') + ' ' + (item.summary || ''));
+    const draftLike = isDraftMaterial(item) || isGithubRepoSignal(item)
+      || item.type === 'blog_post' || item.type === 'podcast_episode';
     let note = null;
 
-    if (isGithubRepoSignal(item)) {
+    if (draftLike) {
+      // 成稿：源文简介（讲什么），不要扩帖建议
+      const summary = pickBlogSourceSummary(item);
+      note = asSourceSummaryNote(summary);
+      if (!note) {
+        const blogAngle = pickBlogConcreteAngle(item);
+        note = asSourceSummaryNote(blogAngle);
+      }
+      if (!note && isGithubRepoSignal(item)) {
+        note = asSourceSummaryNote(
+          item.title
+            ? `GitHub 日榜开源「${clip(item.title, 28)}」：看热度背后的需求方向与可 demake 点（不当长文读）`
+            : 'GitHub 日榜开源：看热度背后的需求方向与可 demake 点（不当长文读）'
+        );
+      }
+    } else if (isGithubRepoSignal(item)) {
+      // 理论上 github 多在成稿；若落入知情路径仍用扩帖口径
       note = asAngleNote(
         item.title
           ? `开源上榜「${clip(item.title, 28)}」：看需求方向与 demake 点，别当长文读`
           : '开源上榜：看需求方向与 demake 点，别当长文读'
       );
-    } else if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      // 具名启发式优先，否则抽产品动作/数字/反常识；英文 why 被硬闸拒后回落中文 blogAngle
-      const why = whyWorthReading(text, item);
-      const blogAngle = pickBlogConcreteAngle(item);
-      note = asAngleNote(why) || asAngleNote(blogAngle);
     } else {
-      const why = whyWorthReading(text, item);
+      const why = whyWorthReading(textBlob, item);
       note = asAngleNote(why);
     }
 
@@ -1802,10 +2044,13 @@ function renderRadar(output) {
   };
 
   const bodyEditorialNote = (item) => {
-    // 正文只收「扩帖切口：…」；旧腔/万能备注/整句英文一律走 signalNote 重写或降级
-    if (item.reviewNote && !isGenericReviewNote(item.reviewNote)) {
-      // 统一走 asAngleNote：规范化前缀 + 拉丁字母硬闸
-      const note = asAngleNote(item.reviewNote);
+    const draftLike = isDraftMaterial(item) || isGithubRepoSignal(item)
+      || item.type === 'blog_post' || item.type === 'podcast_episode';
+    // 成稿只收「源文：…」；知情只收「扩帖切口：…」；旧腔/万能/整句英文一律重写或降级
+    if (item.reviewNote && !isGenericReviewNote(item.reviewNote, { forDraft: draftLike })) {
+      const note = draftLike
+        ? asSourceSummaryNote(item.reviewNote)
+        : asAngleNote(item.reviewNote);
       if (note && !usedSignalNotes.has(note)) {
         usedSignalNotes.add(note);
         return note;
@@ -1978,7 +2223,11 @@ function renderRadar(output) {
     const label = topicLabel[topic] || '📌 综合';
     const isRecovered = item.repeatObservation;
     const body = signalBodyText(item);
-    const note = item._bodyNote || bodyEditorialNote(item) || '扩帖切口：（本条评价降级，仅保留原文）';
+    const note = item._bodyNote || bodyEditorialNote(item) || (
+      (isDraftMaterial(item) || item.type === 'blog_post' || item.type === 'podcast_episode' || isGithubRepoSignal(item))
+        ? '源文：（本条简介降级，仅保留原文）'
+        : '扩帖切口：（本条评价降级，仅保留原文）'
+    );
 
     const out = [];
     out.push(`**${index}.** ${body}`);
@@ -2021,7 +2270,7 @@ function renderRadar(output) {
   lines.push('');
   lines.push('## 成稿原料（非 X）');
   lines.push('');
-  lines.push('> 定位：可扩早档帖的一手（博客 / 官网 / 播客等）；不成则宁缺，不拿即刻或 X 充数');
+  lines.push('> 定位：一手成稿原料（博客 / 官网 / 播客等）；评价先讲源文在说什么；不成则宁缺，不拿即刻或 X 充数');
   lines.push('');
   const rssStats = output.rssFetchStats || {};
   const blogFetched = Number(rssStats.blogFetchedTotal || 0);
