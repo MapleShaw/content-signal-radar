@@ -1406,6 +1406,24 @@ function renderRadar(output) {
   // 必须点名读者能写成帖的具体角度；写不出 → null 降级移出正文前十。
   const usedSignalNotes = new Set();
 
+  /** 切口正文：几乎无汉字、或汉字偏少且拉丁过高 → 不合格；专名夹杂英文 OK */
+  const isMostlyLatinAngle = (raw = '') => {
+    const body = String(raw || '')
+      .replace(/^扩帖切口：\s*/, '')
+      .replace(/\s+/g, '');
+    if (!body) return true;
+    const han = (body.match(/[\u4e00-\u9fff]/g) || []).length;
+    const latin = (body.match(/[A-Za-z]/g) || []).length;
+    // 几乎无汉字 → 整句英文标题
+    if (han < 4) return latin >= 6;
+    // 有足够中文壳（≥10 汉字）→ 专名再多也放行（GitHub 名 / unattended 等）
+    if (han >= 10) return false;
+    const denom = han + latin;
+    if (denom === 0) return false;
+    // 汉字偏少时：拉丁占比过高仍拒（如「AI Is Getting Good at Math——拆原因」）
+    return latin / denom > 0.50;
+  };
+
   const asAngleNote = (angle) => {
     if (!angle) return null;
     let a = String(angle).trim()
@@ -1418,6 +1436,8 @@ function renderRadar(output) {
     if (!a || a.length < 6) return null;
     if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：/.test(a)) return null;
     if (/抽一条可复用判断框架|不搬运目录|(抽框架.{0,8}不搬运)/.test(a)) return null;
+    // 硬闸：整句英文标题禁止进「扩帖切口」；专名夹杂少量英文 OK
+    if (isMostlyLatinAngle(a)) return null;
     const note = `扩帖切口：${clip(a, 72)}`;
     return note;
   };
@@ -1515,9 +1535,49 @@ function renderRadar(output) {
 
   /**
    * 成稿（blog/newsletter/官网/播客）：从 title+summary/fullText
-   * 抽出「产品动作 / 数字 / 反常识」一句；写不出返回 null。
-   * 禁止回落「抽一条可复用判断框架…不搬运目录」。
+   * 抽出「产品动作 / 数字 / 反常识」一句中文人话切口；写不出返回 null。
+   * 禁止整句英文标题当切口；禁止回落「抽框架/不搬运目录」旧腔。
+   * 可保留产品专名（OpenAI / Claude / Cursor / Trainium / Kimi 等）。
    */
+  const pickBlogBrandHint = (item = {}, title = '') => {
+    const blob = `${item.author || ''} ${item.name || ''} ${item.source || ''} ${title}`;
+    const pairs = [
+      [/ChatGPT/i, 'ChatGPT'],
+      [/OpenAI/i, 'OpenAI'],
+      [/\bClaude\b|Anthropic/i, 'Claude'],
+      [/\bCursor\b/i, 'Cursor'],
+      [/\bKimi\b/i, 'Kimi'],
+      [/DeepMind/i, 'DeepMind'],
+      [/Trainium/i, 'Trainium'],
+      [/\bGemini\b/i, 'Gemini'],
+      [/Hugging\s*Face/i, 'Hugging Face'],
+      [/\bAWS\b/i, 'AWS'],
+    ];
+    for (const [re, name] of pairs) {
+      if (re.test(blob)) return name;
+    }
+    return '';
+  };
+
+  /** 英文标题里抽可复用的中文主题短句（意译，不是 clip 原文） */
+  const zhThemeFromEnglishTitle = (title = '', brand = '') => {
+    const t = String(title || '');
+    const b = brand || pickBlogBrandHint({}, t);
+    if (/\bmath\b/i.test(t) && /good|getting|better|strong/i.test(t)) return 'AI 数学变强';
+    if (/\bstorage\b/i.test(t) && /scal|billion|user/i.test(t)) return `${b || 'OpenAI'} 存储扩到十亿用户级`;
+    if (/\bsecur/i.test(t) && /train/i.test(t)) return '锁训练环境';
+    if (/\bturning\b.+\binto\b/i.test(t) && /reward|rl|grading/i.test(t)) return '把评分变成 RL 奖励';
+    if (/scam|防诈/i.test(t) && /collaborat|government|政府/i.test(t)) return `${b || 'DeepMind'}×政府端侧防诈`;
+    if (/canvas|environment improvement/i.test(t)) return `${b || 'Cloud Agent'} Canvases/环境改进`;
+    if (/trainium|look it up|does your model run/i.test(t)) return `模型能不能跑 ${b || 'AWS Trainium'}`;
+    if (/open.?weight|narrows?.{0,20}lead|closed-?ai/i.test(t)) return `${b || '开源权重'} 追平闭源窗口`;
+    if (/beautiful|forgot to use|still forgot/i.test(t)) return '好看却没用上';
+    if (/\bpost-?training\b/i.test(t)) return `${b || 'Agent'} 后训练信号`;
+    if (/\brl reward/i.test(t)) return 'RL 奖励信号';
+    if (b) return b;
+    return '';
+  };
+
   const pickBlogConcreteAngle = (item = {}) => {
     const title = String(item.title || '')
       .replace(/\s+/g, ' ')
@@ -1531,45 +1591,130 @@ function renderRadar(output) {
     if (!title || title.length < 8) return null;
 
     const lower = `${title} ${body}`.toLowerCase();
+    const brand = pickBlogBrandHint(item, title);
+    const titleHasHan = /[\u4e00-\u9fff]/.test(title);
 
-    // 反常识 / 转折：标题本身即切口
+    // 反常识 / 转折 → 中文人话
     if (/\bstill (forgot|forget|don'?t|do not|never|can'?t)\b/i.test(title)
         || /很好看.{0,12}(忘|没用)|漂亮.{0,12}(忘|没用)|却(还是)?忘/.test(title)
         || (/\bbut\b/i.test(title) && /\b(still|never|forgot|don'?t)\b/i.test(title))
+        || /beautiful/i.test(title) && /forgot|still/i.test(title)
         || /不是.{0,12}而是/.test(title)) {
-      return clip(title, 56);
+      if (titleHasHan && /不是.{0,12}而是|却(还是)?忘|很好看|漂亮/.test(title)) {
+        return clip(title, 56);
+      }
+      const who = brand || '这功能';
+      return `${who}好看却没用上：写漂亮功能留不住日常`;
     }
 
-    // 数字 / 量级
+    // scaling / storage / billion
+    if (/\bscal(?:e|ing|es)\b/i.test(title) && /\b(storage|billion|user)/i.test(title)) {
+      const who = brand || 'OpenAI';
+      return `${who} 存储扩到十亿用户级：写容量瓶颈怎么拆的操作帖`;
+    }
+
+    // securing … training
+    if (/\bsecur/i.test(title) && /\btrain/i.test(title)) {
+      return '锁训练环境：写前沿模型训练防渗透清单帖';
+    }
+
+    // turning X into Y / RL rewards / post-training
+    if (/\bturning\b.+\binto\b/i.test(title) || /\binto rl\b|\brl rewards?\b|\bpost-training\b/i.test(lower)) {
+      if (/grading|reward|rl|annotat|label/i.test(lower)) {
+        return '把评分变成 RL 奖励：写数据标注→训练信号的转化帖';
+      }
+      return `${brand || '这篇'}：写「A 变成 B」的转化路径操作帖`;
+    }
+
+    // collaborate / scam detection
+    if (/\bcollaborate/i.test(lower) || (/\bscam detection\b/i.test(lower) && /government|fine-tuned|on-?device/i.test(lower))) {
+      const who = brand || 'DeepMind';
+      return `${who}×政府端侧防诈：写官方合作怎么落到用户侧`;
+    }
+
+    // Trainium / Look It Up / Does Your Model Run
+    if (/trainium|look it up|does your model run/i.test(title)) {
+      return `模型能不能跑 ${brand || 'AWS Trainium'}：写查表/选型对照帖`;
+    }
+
+    // Canvas / Environment Improvements（changelog 类）
+    if (/\bcanvases?\b/i.test(title) || /environment improvements?/i.test(title)) {
+      const who = brand || 'Cloud Agent';
+      return `${who} Canvases/环境改进：写协作画布怎么落到日常工作流`;
+    }
+
+    // 数字 / 量级（开源追平、倍速 API 等）→ 中文
     if (/\b\d+(?:\.\d+)?\s*billion\b|\bover\s+\d+\s*billion\b|\b\d+\s*-\s*\d+\s*[×xX]\b|[×xX]\s*speed|\b\d+\s*months?\b|\b2-3\s*[×xX]\b|\b\d+BA\b|\b\d{2,4}B[-\s]|\d+\s*%|十亿|亿用户|领先.{0,8}\d+\s*个?月|narrows.{0,40}\d+\s*month/i.test(title)) {
-      return clip(title, 56);
+      if (/open.?weight|narrows|closed-?ai|开源/i.test(title) || /\bkimi\b/i.test(title)) {
+        const who = brand || 'Kimi';
+        const speed = /2-3\s*[×xX]|[×xX]\s*speed|高速/i.test(title) ? ' + 高速 API' : '';
+        const gap = /narrows.{0,40}(\d+)\s*month|领先.{0,8}(\d+)\s*个?月|to\s+(\d+)\s*month/i.exec(title);
+        const months = gap ? (gap[1] || gap[2] || gap[3] || '1') : '';
+        const gapZh = months ? `追平闭源到约 ${months} 个月` : '追平闭源窗口';
+        return `${who} 开源权重${gapZh}${speed}：写开闭源窗口帖`;
+      }
+      if (/\bbillion\b|十亿|亿用户/i.test(title) && /\bstor|scal|user/i.test(title)) {
+        return `${brand || 'OpenAI'} 存储扩到十亿用户级：写容量瓶颈怎么拆的操作帖`;
+      }
+      const who = brand || zhThemeFromEnglishTitle(title, brand) || '这篇';
+      return `${who}：写标题里的量级数字怎么落到选型/节奏判断帖`;
     }
 
-    // 产品动作（securing / scaling / turning X into Y / collaborate / post-training …）
+    // 其它产品动作动词开头
     if (/^(securing|scaling|turning|building|launching|announcing)\b/i.test(title)
-        || /\bturning\b.+\binto\b/i.test(title)
-        || /\bcollaborate(?:s|d)? with\b|\bcollaborate to\b|\bpost-training\b|\binto rl\b|\bfine-tuned\b|\blook it up\b|\bscam detection\b|\btraining environment\b/i.test(lower)) {
-      return clip(title, 56);
+        || /\bfine-tuned\b|\btraining environment\b/i.test(lower)) {
+      const theme = zhThemeFromEnglishTitle(title, brand);
+      if (theme) return `${theme}：写产品动作怎么落到可操作清单帖`;
+      if (brand) return `${brand}：写产品动作怎么落到可操作清单帖`;
+      return null;
     }
 
-    // Here's Why → 拆原因（兼容直/弯引号）
-    if (/here[''\u2019]?s why|为什么会|原因在于/i.test(title)) {
-      const core = title.replace(/\.?\s*Here[''\u2019]?s Why\.?/ig, '').replace(/：?\s*为什么.*$/, '').trim();
-      return clip(core ? `${core}——拆原因，不转发结论` : title, 56);
+    // Here's Why / Why X … → 中文核心 +「——拆原因，不转发结论」
+    if (/here[''\u2019]?s why|^why\b|为什么会|原因在于/i.test(title)) {
+      let core = title
+        .replace(/\.?\s*Here[''\u2019]?s Why\.?/ig, '')
+        .replace(/^Why\s+/i, '')
+        .replace(/：?\s*为什么.*$/, '')
+        .trim();
+      if (!/[\u4e00-\u9fff]/.test(core)) {
+        // 常见 Why 句式意译
+        if (/reddit/i.test(core) && /prototyp|ai/i.test(core)) core = 'Reddit 自建 AI 原型工具';
+        else if (/built (its|their|his|her) own/i.test(core)) {
+          const who = (core.match(/^(\w+)/) || [])[1] || brand || '这家';
+          core = `${who} 自建工具`;
+        } else {
+          core = zhThemeFromEnglishTitle(core, brand) || (brand ? `${brand} 这件事` : '');
+        }
+      }
+      if (!core) return null;
+      return clip(`${core}——拆原因，不转发结论`, 56);
     }
 
-    // 冒号副标题：副标题非营销空话才用
-    const colon = title.match(/^([^:]{3,48}):\s*(.{6,70})$/);
+    // 冒号副标题：意译成中文「主题——具体动作」，禁止左右英文原样拼接
+    const colon = title.match(/^([^:]{3,48}):\s*(.{6,90})$/);
     if (colon) {
       const left = colon[1].trim();
       const right = colon[2].trim();
       if (/built to solve|hardest problems|what you need|everything you|a deep dive|our thoughts|introducing\b/i.test(right)) {
         return null; // 纯发布口号，宁缺
       }
-      return clip(`${left}——${right}`, 56);
+      if (/[\u4e00-\u9fff]/.test(left) && /[\u4e00-\u9fff]/.test(right)) {
+        return clip(`${left}——${right}`, 56);
+      }
+      // 英文冒号题：压成中文主题——动作
+      if (/open.?weight|narrows|closed-?ai|[×xX]\s*speed|\d+\s*month/i.test(title)) {
+        const who = brand || left.split(/\s+/)[0] || '这篇';
+        const speed = /2-3\s*[×xX]|[×xX]\s*speed|高速/i.test(right + left) ? ' + 高速 API' : '';
+        return `${who} 开源权重追平闭源窗口${speed}：写开闭源差距帖`;
+      }
+      if (/post-training|rl reward|grading|thinkingbox/i.test(right + left)) {
+        return '把评分变成 RL 奖励：写数据标注→训练信号的转化帖';
+      }
+      const theme = zhThemeFromEnglishTitle(title, brand) || brand || '这篇';
+      return `${theme}——写副标题点名的具体动作帖`;
     }
 
-    // 正文硬判断
+    // 正文硬判断（英文 claim 由 asAngleNote 硬闸挡掉）
     const claim = pickAuthorClaim(body);
     if (claim) return claim;
 
@@ -1578,12 +1723,19 @@ function renderRadar(output) {
       return null;
     }
 
-    // 标题够具体（含产品/模型关键词）→ 直接压成切口
+    // 标题够具体但英文化：产品名 + 中文动作句（禁止 clip 英文 title）
     if (title.length >= 20
         && !/built to solve your hardest|introducing the future|the future of\b/i.test(lower)
-        && /\b(model|agent|train|secur|scal|reward|storage|api|open.?weight|scam|math|duet|trainium|chatgpt|claude|gemini|kimi)\b/i.test(lower)) {
-      return clip(title, 56);
+        && /\b(model|agent|train|secur|scal|reward|storage|api|open.?weight|scam|math|duet|trainium|chatgpt|claude|gemini|kimi|canvas)\b/i.test(lower)) {
+      if (titleHasHan) return clip(title, 56);
+      const theme = zhThemeFromEnglishTitle(title, brand);
+      if (theme) return `${theme}：写产品动作怎么落到可复用判断帖`;
+      if (brand) return `${brand}：写标题点名的产品动作怎么落地`;
+      return null;
     }
+
+    // 中文标题本身够具体可直接用
+    if (titleHasHan && title.length >= 12) return clip(title, 56);
 
     return null;
   };
@@ -1627,10 +1779,10 @@ function renderRadar(output) {
           : '开源上榜：看需求方向与 demake 点，别当长文读'
       );
     } else if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      // 具名启发式优先，否则抽产品动作/数字/反常识；写不出 → null（由 uniqueConcreteNote / 降级处理）
+      // 具名启发式优先，否则抽产品动作/数字/反常识；英文 why 被硬闸拒后回落中文 blogAngle
       const why = whyWorthReading(text, item);
       const blogAngle = pickBlogConcreteAngle(item);
-      note = asAngleNote(why || blogAngle);
+      note = asAngleNote(why) || asAngleNote(blogAngle);
     } else {
       const why = whyWorthReading(text, item);
       note = asAngleNote(why);
@@ -1639,16 +1791,21 @@ function renderRadar(output) {
     if (!note || usedSignalNotes.has(note)) {
       note = uniqueConcreteNote(item);
     }
+    // 出口再闸一次：仍偏英文则降级不进正文
+    if (note && isMostlyLatinAngle(note)) {
+      note = uniqueConcreteNote(item);
+      if (note && isMostlyLatinAngle(note)) note = null;
+    }
     if (!note) return null;
     usedSignalNotes.add(note);
     return note;
   };
 
   const bodyEditorialNote = (item) => {
-    // 正文只收「扩帖切口：…」；旧腔/万能备注一律走 signalNote 重写或降级
+    // 正文只收「扩帖切口：…」；旧腔/万能备注/整句英文一律走 signalNote 重写或降级
     if (item.reviewNote && !isGenericReviewNote(item.reviewNote)) {
-      let note = item.reviewNote.trim();
-      if (!/^扩帖切口：/.test(note)) note = asAngleNote(note);
+      // 统一走 asAngleNote：规范化前缀 + 拉丁字母硬闸
+      const note = asAngleNote(item.reviewNote);
       if (note && !usedSignalNotes.has(note)) {
         usedSignalNotes.add(note);
         return note;
