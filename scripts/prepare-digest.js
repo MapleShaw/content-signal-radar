@@ -49,7 +49,7 @@ const TITLE_BODY_MAX = 1000;
 const REPLY_TEXT_MAX = 180;
 const INFO_SECTION_CAP = 10;   // 知情（X）最多条数
 const DRAFT_SECTION_CAP = 10;  // 成稿原料（非 X）最多条数
-const DRAFT_MATERIAL_TYPES = new Set(['blog_post', 'jike_post', 'podcast_episode', 'bilibili_dynamic']);
+const DRAFT_MATERIAL_TYPES = new Set(['blog_post', 'podcast_episode', 'bilibili_dynamic']); // 2026-10-26：jike_post 移出成稿原料
 
 function isXSignal(item = {}) {
   return item.type === 'x_tweet';
@@ -59,7 +59,7 @@ function isDraftMaterial(item = {}) {
   return DRAFT_MATERIAL_TYPES.has(item.type);
 }
 
-/** 万能「保留理由：…」仅作内部/附录，不得进正文评价行 */
+/** 万能/旧腔评价仅作内部/附录，不得进正文评价行 */
 function isGenericReviewNote(note = '') {
   const n = String(note || '').trim();
   if (!n) return true;
@@ -67,9 +67,16 @@ function isGenericReviewNote(note = '') {
   if (/分数刚过线/.test(n)) return true;
   if (/主题词没命中/.test(n) && /先当热度/.test(n)) return true;
   if (/形式分偏低/.test(n)) return true;
-  // 万能主题句（软修前 whyWorthReading 兜底）；不得进正文评价
+  // 旧腔禁句（2026-10-26 扩帖切口改革）
+  if (/能否扩成帖/.test(n)) return true;
+  if (/别停在 Agent/.test(n)) return true;
   if (/值得看：这条多出来的具体信息/.test(n)) return true;
-  if (/值得看：/.test(n) && /（钩子：/.test(n) && /不要和同题空话合并/.test(n)) return true;
+  if (/值得看：/.test(n) && /（钩子：/.test(n)) return true;
+  if (/不要和同题空话合并/.test(n)) return true;
+  if (/^看点：/.test(n) || /\]\s*看点：/.test(n)) return true;
+  if (/标签说明/.test(n)) return true;
+  // 正文评价必须是「扩帖切口：…」人话一句
+  if (!/^扩帖切口：/.test(n)) return true;
   return false;
 }
 
@@ -420,9 +427,14 @@ function filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources) {
 }
 
 async function fetchDirectRSSSources(mergedSources) {
-  const results = { jike: [], rss_blogs: [], bilibili: [] };
+  const results = {
+    jike: [],
+    rss_blogs: [],
+    bilibili: [],
+    rssFetchStats: { blogs: {}, jike: {}, bilibili: {}, blogFetchedTotal: 0, blogZeroSources: [] }
+  };
 
-  // 抓即刻账号
+  // 抓即刻账号（2026-10-26 起配置可为空；抓到也不进正文两区）
   const jikeAccounts = mergedSources.jike_accounts || [];
   if (jikeAccounts.length > 0) {
     console.error(`[fetchDirectRSS] Fetching ${jikeAccounts.length} jike accounts...`);
@@ -431,6 +443,7 @@ async function fetchDirectRSSSources(mergedSources) {
     jikeAccounts.map(async (account) => {
       if (!account.rsshub) return [];
       const items = await fetchRSSFeed(account.rsshub);
+      results.rssFetchStats.jike[account.name] = items.length;
       console.error(`[fetchDirectRSS] jike ${account.name}: ${items.length} items`);
       return items.slice(0, 5).map(item => ({
         type: 'jike_post',
@@ -455,10 +468,13 @@ async function fetchDirectRSSSources(mergedSources) {
   const rssResults = await Promise.all(
     rssBlogs.map(async (blog) => {
       const items = await fetchRSSFeed(blog.indexUrl);
+      results.rssFetchStats.blogs[blog.name] = items.length;
+      if (items.length === 0) results.rssFetchStats.blogZeroSources.push(blog.name);
       console.error(`[fetchDirectRSS] rss blog ${blog.name}: ${items.length} items`);
       return items.slice(0, 3).map(item => ({
         type: 'blog_post',
         name: blog.name,
+        author: blog.name,
         title: item.title || '',
         summary: clip(item.summary, 280),
         url: item.link || '',
@@ -469,6 +485,7 @@ async function fetchDirectRSSSources(mergedSources) {
     })
   );
   results.rss_blogs = rssResults.flat();
+  results.rssFetchStats.blogFetchedTotal = results.rss_blogs.length;
 
   // 抓 Bilibili 账号
   const bilibiliAccounts = mergedSources.bilibili_accounts || [];
@@ -479,6 +496,7 @@ async function fetchDirectRSSSources(mergedSources) {
     bilibiliAccounts.map(async (account) => {
       if (!account.rsshub) return [];
       const items = await fetchRSSFeed(account.rsshub);
+      results.rssFetchStats.bilibili[account.name] = items.length;
       console.error(`[fetchDirectRSS] bilibili ${account.name}: ${items.length} items`);
       return items.slice(0, 3).map(item => ({
         type: 'bilibili_dynamic',
@@ -1380,10 +1398,26 @@ function renderRadar(output) {
     return /github\.com\/[^/\s?#]+\/[^/\s?#]+\/?(?:[?#].*)?$/.test(url) || sourceName.includes('github trending');
   };
 
-  // Editorial note under each signal: WHY it matters. Never restate title or metrics
-  // (those already appear on the header lines above).
+  // Editorial note: 正文评价只保留一句人话，固定前缀「扩帖切口：…」
+  // 必须点名读者能写成帖的具体角度；写不出 → null 降级移出正文前十。
   const usedSignalNotes = new Set();
-  /** 从作者原文抽硬判断/具体动作；没有则 null（兜底勿用万能主题句） */
+
+  const asAngleNote = (angle) => {
+    if (!angle) return null;
+    let a = String(angle).trim()
+      .replace(/^扩帖切口：\s*/, '')
+      .replace(/^\[.*?\]\s*/, '')
+      .replace(/^看点：\s*/, '')
+      .replace(/^值得看：\s*/, '')
+      .replace(/\s*→\s*可写性高.*$/, '')
+      .trim();
+    if (!a || a.length < 6) return null;
+    if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：/.test(a)) return null;
+    const note = `扩帖切口：${clip(a, 72)}`;
+    return note;
+  };
+
+  /** 从作者原文抽硬判断/具体动作，再压成可写切口；没有则 null */
   const pickAuthorClaim = (raw = '') => {
     const cleaned = stripHtmlForDisplay(raw)
       .replace(/https?:\/\/\S+/g, '')
@@ -1394,147 +1428,156 @@ function renderRadar(output) {
       .split(/(?<=[。！？.!?])/)
       .map((s) => s.trim().replace(/^@\w+\s+/, ''))
       .filter((s) => s.length >= 12);
-    // 硬判断 / 具体动作标记：优先于纯叙事首句
-    const hardRe = /不应该|不该|应该|意味着|关键是|关键在|本质|核心|其实|不是.{0,16}而是|与其|不如|别只|不要|立刻|具体|换成|替代|判断|结论|工作流|可写成|适合当|值得写成|所以我想|终于把|做完/;
+    const hardRe = /不应该|不该|应该|意味着|关键是|关键在|本质|核心|其实|不是.{0,16}而是|与其|不如|别只|不要|立刻|具体|换成|替代|判断|结论|工作流|所以我想|终于把|做完|overestimate|underestimate|develop a system/;
     const hard = parts.find((s) => hardRe.test(s));
-    if (hard) return clip(hard, 56);
-    const first = parts.find((s) => s.length >= 16 && !/^(RT\b|发布了:?\s*$)/i.test(s));
-    if (first) return clip(first, 56);
+    if (hard) {
+      // 压成切口：去掉纯开场套话；纠正型碎碎念不够成切口则丢弃
+      let claim = hard.replace(/^(Great interview\.?\s*)/i, '').trim();
+      if (claim.length < 10) claim = hard;
+      if (/^(记错了|更正|补充一下|其实我想说)/.test(claim) && claim.length < 40) return null;
+      if (/^(RT\b|发布了)/i.test(claim)) return null;
+      return clip(claim, 56);
+    }
+    return null; // 不再用「首句截断」充评价
+  };
+
+  /** 返回不含前缀的具体扩帖角度；写不出返回 null */
+  const whyWorthReading = (rawText, item = {}) => {
+    const t = stripHtmlForDisplay(rawText || '');
+    const lower = t.toLowerCase();
+    const handle = String(item.handle || item.author || '').toLowerCase();
+
+    // 具名高信号切口（示例口径）
+    if (/huge launch|one huge launch|showing up every day|make a video every day|大发布|每天.{0,6}(露脸|出现|发)/.test(lower)
+        || (handle.includes('zarazhangrui') && /launch|timeline|every day/.test(lower))) {
+      return '别押大发布、押每天露脸的内容系统';
+    }
+    if (/可视化|自动化流水线|自动化管理|定时任务|自动化任务/.test(t)
+        || (handle.includes('khazix') && /agent|流水线|管理界面/.test(lower))) {
+      return '游戏化/可视化管理界面：把散落的 Agent 定时任务收成一张可操作看板';
+    }
+    if (/约束语言|语言大师/.test(t)) {
+      return 'Agent 产品本质是约束语言——下一波赢家更像语言大师而不是功能清单党';
+    }
+    if (/yobiru friends|personal agent.{0,40}(分享|朋友|亲朋)|对外发布或分享/.test(lower) || /personal agent.{0,30}(share|friend)/.test(lower)) {
+      return 'personal agent 对外分享/互聊/协商日程：把私人助手做成可分发关系网';
+    }
+    if (/sent from ai agent|sent from iphone/.test(lower)) {
+      return '「Sent from AI agent」会不会变成新签名文化——工具痕迹本身成身份信号';
+    }
+    if (/小龙虾|科幻片成真|私人助理/.test(t) && /coding agent|claude|沉迷/.test(lower + t)) {
+      return '老板第一次用 Coding Agent 的科幻感 vs 天天用的人的平淡——门槛下降后的沉浸落差';
+    }
+    if (/earliest|early.?stage|前\s*100|早期/.test(lower) && /audience|用户|builder|验证|测想法/.test(lower)) {
+      return '早期优势是用受众测想法/找种子用户，不是分发本身';
+    }
+    if (/security audit|unattended upgrades|disconnect|断开|\bvps\b|take them down|下线|停机/.test(lower)) {
+      return '安全事件下的自保清单：全站审计 + unattended upgrades，可复用成操作帖';
+    }
+    if (/供应链|\bnpm\b|postinstall|依赖投毒/.test(lower)) {
+      return '供应链/依赖投毒：锁版本、审 postinstall、扫来源——写成检查清单帖';
+    }
+    if (/\bphp\b/.test(lower) && (/end of php|不看好|\bvibe\b|ai-assisted/.test(lower))) {
+      return 'AI vibe coding 语境下旧栈（PHP）还有没有生存切口——技术选型争论帖';
+    }
+    if (/planning|规划/.test(lower) && /coding|编码|workflow|工作流/.test(lower)) {
+      return '规划模型 vs 编码模型的分工工作流，可当 Agent 编排对照案例';
+    }
+    if (/drop-?in|replacement|faster|替代|更快/.test(lower) && /tsrs|tool|runtime|运行/.test(lower)) {
+      return '具体工具替换+量级收益：写成「换栈/换工具」短案例，别和 Agent 空话混写';
+    }
+    if (/proactive|off your plate|主动|替你/.test(lower) && /claude|\bagent\b|助手/.test(lower)) {
+      return '产品叙事从「能做什么」转向「主动替你扛事」——对照自己的 Agent 定位';
+    }
+    if (/两极|分化|极化/.test(t) && /agent|Agent/.test(t)) {
+      return 'Agent 技术终点 vs 产品终点两极化，拆成对照帖';
+    }
+    if (/kindle|刷机|koreader|电子书/.test(lower) && /ai|rss|开源/.test(lower)) {
+      return 'Kindle 刷机 + AI RSS 的硬件改造开源切口';
+    }
+    if (/忍住|不更新|不拍|系列/.test(t) && /恶搞|anthropic|达里奥|视频/.test(lower + t)) {
+      return '忍住不拍系列恶搞的内容取舍——什么题材该停、什么判断该留';
+    }
+    if (/thariq|boris/.test(lower) && /claude code|skill|agent sdk|离职|负责人|社区/.test(lower + t)) {
+      return '分清 Thariq（社区/Skill 教学）与 Boris（Claude Code 产品线）——别把人事信号误读成产品停摆';
+    }
+
+    // 兜底：作者硬判断压成切口；写不出返回 null → 降级
+    const claim = pickAuthorClaim(t);
+    if (claim && claim.length >= 10) return claim;
     return null;
   };
 
-  const whyWorthReading = (rawText, topicHint) => {
-    const t = stripHtmlForDisplay(rawText || '');
-    const lower = t.toLowerCase();
-    // Prefer a concrete claim from keyword patterns; else author hard claim (not topic boilerplate).
-    if (/earliest|early.?stage|前\s*100|早期/.test(lower) && /audience|用户|builder|验证|测想法/.test(lower)) {
-      return '看点：早期优势是用受众测想法/找种子用户，不是分发本身。';
-    }
-    // Incident self-protection (keep narrow so "patched a hole in Node" does not steal PHP takes).
-    if (/disconnect|断开|\bvps\b|take them down|下线|停机/.test(lower)) {
-      return '看点：安全事件下的具体自保动作，可写成操作清单或踩坑对照。';
-    }
-    if (/供应链|\bnpm\b|postinstall|依赖投毒/.test(lower)) {
-      return '看点：供应链/依赖风险的具体动作，可写成检查清单。';
-    }
-    // PHP stack debate: allow "AI-assisted" but prefer end-of-PHP framing.
-    if (/\bphp\b/.test(lower) && (/end of php|不看好|\bvibe\b|ai-assisted/.test(lower))) {
-      return '看点：在 AI vibe coding 语境下为 PHP（旧栈）留空间，可当技术选型争论素材。';
-    }
-    if (/planning|规划/.test(lower) && /coding|编码|workflow|工作流/.test(lower)) {
-      return '看点：规划模型 vs 编码模型的分工工作流，可当 Agent 编排案例。';
-    }
-    if (/drop-?in|replacement|faster|替代|更快/.test(lower) && /tsrs|tool|runtime|运行/.test(lower)) {
-      return '看点：具体工具替换+量级收益，适合当「换栈/换工具」短案例，别和同日 Agent 空话混写。';
-    }
-    if (/proactive|off your plate|主动|替你/.test(lower) && /claude|\bagent\b|助手/.test(lower)) {
-      return '看点：产品叙事从「能做什么」转向「主动替你扛事」，可对照自己的 Agent 定位。';
-    }
-    // 两极语义收窄：勿用「自动化」——流水线/自动化管理会被误标成两极化
-    if (/两极|分化|极化/.test(t) && /agent|Agent/.test(t)) {
-      return '看点：Agent 的技术终点 vs 产品终点两极化，适合拆成对照帖。';
-    }
-    // 自动化流水线/管理：独立看点，不套两极化文案
-    if (/自动化流水线|自动化管理|流水线|可视化|定时任务|自动化任务/.test(t)) {
-      return '看点：个人 Agent 自动化流水线/管理界面实践，可当 demake 案例而非概念贴。';
-    }
-    if (/本地|读取|软件|personal agent|个人事务|生活方式/.test(t) && /agent|Agent|AI/.test(t)) {
-      return '看点：个人 Agent 改变线下服务选择的行为信号，偏生活向可写切口。';
-    }
-    // 兜底：作者原句硬判断/具体动作；写不出返回 null → 调用方降级移出正文
-    const claim = pickAuthorClaim(t);
-    if (claim) return `看点：${claim}`;
-    return null;
-  };
-  /** 撞车后换作者硬判断/具体一句；仍写不出则返回 null（调用方降级移出正文） */
-  const uniqueConcreteNote = (item, topicHint) => {
+  /** 撞车后换一条具体切口；仍写不出则 null */
+  const uniqueConcreteNote = (item) => {
     const text = stripHtmlForDisplay(item.fullText || item.summary || item.title || '')
       .replace(/\s+/g, ' ')
       .trim();
-    const handle = item.handle ? `@${item.handle}` : (item.author || '');
+    const angles = [];
+    const why = whyWorthReading(text, item);
+    if (why) angles.push(why);
     const claim = pickAuthorClaim(text);
-    const candidates = [];
-    if (claim) {
-      candidates.push(`[${topicHint}] 看点：${claim}${handle ? `（${handle}）` : ''}`);
+    if (claim) angles.push(claim);
+    // 长内容：用标题压成「从 X 抽可复用判断」
+    if (item.type === 'blog_post' || item.type === 'podcast_episode') {
+      const title = clip(String(item.title || '').replace(/\s+/g, ' ').trim(), 36);
+      const source = item.author || item.name || '';
+      if (title.length >= 8) {
+        angles.push(`从「${title}」抽一条可复用判断框架${source ? `（${source}）` : ''}，不搬运目录`);
+      }
     }
-    const parts = text
-      .replace(/https?:\/\/\S+/g, '')
-      .split(/(?<=[。！？.!?])/)
-      .map((s) => s.trim())
-      .filter((s) => s.length >= 14);
-    for (const s of parts.slice(0, 6)) {
-      const hook = clip(s.replace(/^@\w+\s+/, ''), 52);
-      candidates.push(`[${topicHint}] 看点：${hook}${hook.length >= 52 ? '…' : ''}${handle ? `（${handle}）` : ''}`);
+    if (isGithubRepoSignal(item) && item.title) {
+      angles.push(`开源上榜「${clip(item.title, 28)}」：看需求方向与 demake 点，别当长文读`);
     }
-    const snippet = clip(text.replace(/^@\w+\s+/, ''), 52);
-    if (snippet.length >= 12) {
-      candidates.push(`[${topicHint}] 看点：「${snippet}${snippet.length >= 52 ? '…' : ''}」`);
-    }
-    for (const c of candidates) {
-      if (!usedSignalNotes.has(c)) return c;
+    for (const a of angles) {
+      const note = asAngleNote(a);
+      if (note && !usedSignalNotes.has(note)) return note;
     }
     return null;
   };
 
-  // 返回评价文案；写不出不撞车的具体看点时返回 null → 降级不进正文
+  // 返回「扩帖切口：…」；写不出具体角度 → null 降级不进正文
   const signalNote = (item) => {
+    // 即刻不进正文两区（双保险；成稿类型已剔除）
+    if (item.type === 'jike_post') return null;
+
     const text = stripHtmlForDisplay((item.fullText || item.title || '') + ' ' + (item.summary || ''));
-    const topic = extractTopic(text);
-    const writeHigh = (item.scoring && item.scoring.writeability >= 0.8);
-    const topicHint = {
-      security: '安全/供应链',
-      context: '上下文/记忆',
-      agent: 'Agent',
-      enterprise_workflow: '企业工作流',
-      coding_agent: '编码 Agent',
-      creator: '创作者',
-      revenue: '营收/定价',
-      indie: '独立开发',
-      distribution: '分发',
-      model: '模型',
-      product: '产品',
-      workflow: '工作流',
-      general: '综合',
-    }[topic] || '综合';
+    let note = null;
 
-    let note;
     if (isGithubRepoSignal(item)) {
-      note = `[开源] 看上榜原因与需求方向，别当长文读。${item.title ? `（${clip(item.title, 36)}）` : ''}`;
+      note = asAngleNote(
+        item.title
+          ? `开源上榜「${clip(item.title, 28)}」：看需求方向与 demake 点，别当长文读`
+          : '开源上榜：看需求方向与 demake 点，别当长文读'
+      );
     } else if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      const hook = clip(String(item.title || item.summary || '').replace(/\s+/g, ' ').trim(), 40);
-      note = hook.length >= 8
-        ? `[长内容/${topicHint}] 抽框架，不搬运目录。（钩子：${hook}${hook.length >= 40 ? '…' : ''}）`
-        : `[长内容/${topicHint}] 优先抽可复用判断框架，不搬运目录。`;
-    } else {
-      const why = whyWorthReading(text, topicHint);
-      if (!why) {
-        note = uniqueConcreteNote(item, topicHint);
-        if (!note) return null;
-      } else {
-        note = `[${topicHint}] ${why}`;
+      const title = clip(String(item.title || item.summary || '').replace(/\s+/g, ' ').trim(), 36);
+      const source = item.author || item.name || '';
+      if (title.length >= 8) {
+        note = asAngleNote(`从「${title}」抽一条可复用判断框架${source ? `（${source}）` : ''}，不搬运目录`);
       }
+    } else {
+      const why = whyWorthReading(text, item);
+      note = asAngleNote(why);
     }
 
-    if (usedSignalNotes.has(note)) {
-      note = uniqueConcreteNote(item, topicHint);
-      if (!note) return null;
+    if (!note || usedSignalNotes.has(note)) {
+      note = uniqueConcreteNote(item);
     }
+    if (!note) return null;
     usedSignalNotes.add(note);
-    if (writeHigh) note += ' → 可写性高，优先扩成帖子';
     return note;
   };
 
   const bodyEditorialNote = (item) => {
-    // 正文禁止输出万能「保留理由：…」；仅用具体 signalNote
+    // 正文只收「扩帖切口：…」；旧腔/万能备注一律走 signalNote 重写或降级
     if (item.reviewNote && !isGenericReviewNote(item.reviewNote)) {
-      // 非万能的内部备注（如 seen fallback）仍可用，但也要去重
-      let note = item.reviewNote;
-      if (usedSignalNotes.has(note)) {
-        note = uniqueConcreteNote(item, '综合');
-        if (!note) return null;
+      let note = item.reviewNote.trim();
+      if (!/^扩帖切口：/.test(note)) note = asAngleNote(note);
+      if (note && !usedSignalNotes.has(note)) {
+        usedSignalNotes.add(note);
+        return note;
       }
-      usedSignalNotes.add(note);
-      return note;
     }
     return signalNote(item);
   };
@@ -1555,9 +1598,9 @@ function renderRadar(output) {
     return picked;
   };
 
-  const xCandidates = topSignals.filter(isXSignal);
-  const draftCandidatesPool = topSignals.filter(isDraftMaterial);
-  // 成稿区：尽量露出 blog/jike 高信号，不与 X 混排、不用 X 补位
+  const xCandidates = topSignals.filter(isXSignal); // 知情仅 X
+  const draftCandidatesPool = topSignals.filter((s) => isDraftMaterial(s) && s.type !== 'jike_post');
+  // 成稿区：只留 blog/podcast 等；不与 X 混排、不用即刻/X 补位
   infoItems = pickWithNotes(xCandidates, INFO_SECTION_CAP);
   draftItems = pickWithNotes(draftCandidatesPool, DRAFT_SECTION_CAP);
   signalItems = [...infoItems, ...draftItems];
@@ -1703,7 +1746,7 @@ function renderRadar(output) {
     const label = topicLabel[topic] || '📌 综合';
     const isRecovered = item.repeatObservation;
     const body = signalBodyText(item);
-    const note = item._bodyNote || bodyEditorialNote(item) || '（本条评价降级，仅保留原文）';
+    const note = item._bodyNote || bodyEditorialNote(item) || '扩帖切口：（本条评价降级，仅保留原文）';
 
     const out = [];
     out.push(`**${index}.** ${body}`);
@@ -1746,14 +1789,27 @@ function renderRadar(output) {
   lines.push('');
   lines.push('## 成稿原料（非 X）');
   lines.push('');
-  lines.push('> 定位：可扩早档帖的一手（博客 / 即刻 / 官网等）；不成则宁缺，不拿 X 充数');
+  lines.push('> 定位：可扩早档帖的一手（博客 / 官网 / 播客等）；不成则宁缺，不拿即刻或 X 充数');
   lines.push('');
+  const rssStats = output.rssFetchStats || {};
+  const blogFetched = Number(rssStats.blogFetchedTotal || 0);
+  const blogZero = Array.isArray(rssStats.blogZeroSources) ? rssStats.blogZeroSources : [];
   if (draftItems.length === 0) {
-    lines.push('_今日成稿原料不足（高信号非 X 为空）。_');
+    const zeroHint = blogFetched === 0
+      ? `今日新源/博客抓到 0 条，成稿区为空（未用即刻/X 充数）${blogZero.length ? `；0 条源：${blogZero.slice(0, 8).join('、')}${blogZero.length > 8 ? '…' : ''}` : ''}`
+      : `今日成稿原料不足（RSS 博客抓到 ${blogFetched} 条但未进高信号前十；未用即刻/X 充数）`;
+    lines.push(`_${zeroHint}_`);
     lines.push('');
   } else {
     for (const [i, item] of draftItems.entries()) {
       lines.push(...renderSignalEntry(item, i + 1));
+    }
+    if (blogFetched === 0) {
+      lines.push('_注：当日 RSS 博客抓到 0；上方成稿若有条目来自远程 feed-blogs/播客，非即刻充数。_');
+      lines.push('');
+    } else if (blogZero.length > 0) {
+      lines.push(`_注：部分博客源抓到 0：${blogZero.slice(0, 8).join('、')}${blogZero.length > 8 ? '…' : ''}_`);
+      lines.push('');
     }
   }
 
@@ -1790,11 +1846,14 @@ function renderRadar(output) {
     `${stats.xBuilders || 0} builders`,
     `${totalTweets} tweets`,
     `${stats.blogPosts || 0} blogs`,
+    `rss-blogs-fetched ${blogFetched}`,
+    blogZero.length ? `rss-zero ${blogZero.length}` : null,
     `${stats.podcastEpisodes || 0} podcasts`,
     `知情${infoItems.length}+成稿${draftItems.length}/${topSignals.length} high-signal`,
     demotedForNote.length ? `${demotedForNote.length} note-demoted` : null,
     stats.recoveredSeenCount ? `${stats.recoveredSeenCount} recovered` : null,
     lowSignalCount > 0 ? `${lowSignalCount} filtered` : null,
+    (stats.highSignalCounts?.jike_post || 0) > 0 ? 'jike-excluded-from-body' : null,
   ].filter(Boolean).join(' · ');
   lines.push(`<sub>${footerParts} · ${output.config.outputMode} mode</sub>`);
   lines.push('');
@@ -1843,11 +1902,13 @@ async function main() {
   const mergedSources = mergeSources(profiles, config.sourceProfiles, customSources);
   const filtered = filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources);
 
-  // 抓取即刻 RSS 和自定义 RSS 博客
+  // 抓取即刻 RSS 和自定义 RSS 博客（即刻 2026-10-26 起配置可为空，不进正文两区）
   const directRSS = await fetchDirectRSSSources(mergedSources);
+  // jike 仍可进入 scored 池统计，但 DRAFT_MATERIAL_TYPES 已剔除且 signalNote 对 jike 返回 null
   filtered.x.push(...directRSS.jike);
   filtered.blogs.push(...directRSS.rss_blogs);
   filtered.x.push(...directRSS.bilibili);
+  const rssFetchStats = directRSS.rssFetchStats || { blogs: {}, blogFetchedTotal: 0, blogZeroSources: [] };
 
   const rawScoredSignals = buildScoredSignals(filtered, config);
   const rawCounts = countSignalsByType(rawScoredSignals);
@@ -1938,6 +1999,7 @@ async function main() {
       type: s.type,
       scoring: { total: s.scoring.total, relevance: s.scoring.relevance }
     })),
+    rssFetchStats,
     appendixSignals,
     demotedSignals: demotedSignals.map(s => ({
       title: s.title,

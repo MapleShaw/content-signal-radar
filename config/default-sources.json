@@ -57,77 +57,259 @@
         }
       ],
       "x_accounts": [
-        { "name": "Andrej Karpathy", "handle": "karpathy" },
-        { "name": "Swyx", "handle": "swyx" },
-        { "name": "Josh Woodward", "handle": "joshwoodward" },
-        { "name": "Kevin Weil", "handle": "kevinweil" },
-        { "name": "Peter Yang", "handle": "petergyang" },
-        { "name": "Nan Yu", "handle": "thenanyu" },
-        { "name": "Madhu Guru", "handle": "realmadhuguru" },
-        { "name": "Amanda Askell", "handle": "AmandaAskell" },
-        { "name": "Cat Wu", "handle": "_catwu" },
-        { "name": "Thariq", "handle": "trq212" },
-        { "name": "Google Labs", "handle": "GoogleLabs" },
-        { "name": "Amjad Masad", "handle": "amasad" },
-        { "name": "Guillermo Rauch", "handle": "rauchg" },
-        { "name": "Alex Albert", "handle": "alexalbert__" },
-        { "name": "Aaron Levie", "handle": "levie" },
-        { "name": "Ryo Lu", "handle": "ryolu_" },
-        { "name": "Garry Tan", "handle": "garrytan" },
-        { "name": "Matt Turck", "handle": "mattturck" },
-        { "name": "Zara Zhang", "handle": "zarazhangrui" },
-        { "name": "Nikunj Kothari", "handle": "nikunj" },
-        { "name": "Peter Steinberger", "handle": "steipete" },
-        { "name": "Dan Shipper", "handle": "danshipper" },
-        { "name": "Aditya Agarwal", "handle": "adityaag" },
-        { "name": "Sam Altman", "handle": "sama" },
-        { "name": "Claude", "handle": "claudeai" }
+        {
+          "name": "Andrej Karpathy",
+          "handle": "karpathy"
+        },
+        {
+          "name": "Swyx",
+          "handle": "swyx"
+        },
+        {
+          "name": "Josh Woodward",
+          "handle": "joshwoodward"
+        },
+        {
+          "name": "Kevin Weil",
+          "handle": "kevinweil"
+        },
+        {
+          "name": "Peter Yang",
+          "handle": "petergyang"
+        },
+        {
+          "name": "Nan Yu",
+          "handle": "thenanyu"
+        },
+        {
+          "name": "Madhu Guru",
+          "handle": "realmadhuguru"
+        },
+        {
+          "name": "Amanda Askell",
+          "handle": "AmandaAskell"
+        },
+        {
+          "name": "Cat Wu",
+          "handle": "_catwu"
+        },
+        {
+          "name": "Thariq",
+          "handle": "trq212"
+        },
+        {
+          "name": "Google Labs",
+          "handle": "GoogleLabs"
+        },
+        {
+          "name": "Amjad Masad",
+          "handle": "amasad"
+        },
+        {
+          "name": "Guillermo Rauch",
+          "handle": "rauchg"
+        },
+        {
+          "name": "Alex Albert",
+          "handle": "alexalbert__"
+        },
+        {
+          "name": "Aaron Levie",
+          "handle": "levie"
+        },
+        {
+          "name": "Ryo Lu",
+          "handle": "ryolu_"
+        },
+        {
+          "name": "Garry Tan",
+          "handle": "garrytan"
+        },
+        {
+          "name": "Matt Turck",
+          "handle": "mattturck"
+        },
+        {
+          "name": "Zara Zhang",
+          "handle": "zarazhangrui"
+        },
+        {
+          "name": "Nikunj Kothari",
+          "handle": "nikunj"
+        },
+        {
+          "name": "Peter Steinberger",
+          "handle": "steipete"
+        },
+        {
+          "name": "Dan Shipper",
+          "handle": "danshipper"
+        },
+        {
+          "name": "Aditya Agarwal",
+          "handle": "adityaag"
+        },
+        {
+          "name": "Sam Altman",
+          "handle": "sama"
+        },
+        {
+          "name": "Claude",
+          "handle": "claudeai"
+        }
       ]
     },
     "maple": {
-      "description": "Maple-focused additions for product, agent, creator, and distribution signals",
+      "description": "Maple-focused additions for product, agent, creator, and distribution signals | P0 2026-10-16：handle 与 custom 对齐（leerob/xiangyuli，无 sagacity）；日报不并入 default | P1 2026-10-16：去 watch 号 thedankoe/lexfridman/naval；B 站移出日报 | 2026-10-26：成稿 blogs P0/P1 RSS；即刻移出正文/成稿",
       "x_accounts": [
-        { "name": "Cat Wu", "handle": "_catwu" },
-        { "name": "Zara Zhang", "handle": "zarazhangrui" },
-        { "name": "Pieter Levels", "handle": "levelsio" },
-        { "name": "Dan Koe", "handle": "thedankoe" },
-        { "name": "Tuan Dinh", "handle": "tdinh_me" },
-        { "name": "Lex Fridman", "handle": "lexfridman" },
-        { "name": "Lee Robinson", "handle": "leeerob" },
-        { "name": "Peter Steinberger", "handle": "steipete" },
-        { "name": "Naval", "handle": "naval" },
-        { "name": "Greg Isenberg", "handle": "gregisenberg" },
-        { "name": "xiaohu", "handle": "xiaohu" },
-        { "name": "ZHO_ZHO_ZHO", "handle": "ZHO_ZHO_ZHO" },
-        { "name": "yihui indie", "handle": "yihui_indie" },
-        { "name": "aiwarts", "handle": "aiwarts" },
-        { "name": "XianyuLi", "handle": "XianyuLi" },
-        { "name": "CuiMao", "handle": "CuiMao" },
-        { "name": "indiehackercase", "handle": "indiehackercase" },
-        { "name": "Khazix0918", "handle": "Khazix0918" },
-        { "name": "Jackywine", "handle": "Jackywine" },
-        { "name": "cellinlab", "handle": "cellinlab" },
-        { "name": "idoubicc", "handle": "idoubicc" },
-        { "name": "PandaTalk8", "handle": "PandaTalk8" },
-        { "name": "AI Jasonyu", "handle": "AI_Jasonyu" },
-        { "name": "app_sail", "handle": "app_sail" },
-        { "name": "yangyi", "handle": "yangyi" },
-        { "name": "op7418", "handle": "op7418" },
-        { "name": "lxfater", "handle": "lxfater" },
-        { "name": "bearliu", "handle": "bearliu" },
-        { "name": "geekbb", "handle": "geekbb" },
-        { "name": "hzlzh", "handle": "hzlzh" },
-        { "name": "foxshuo", "handle": "foxshuo" },
-        { "name": "luoleiorg", "handle": "luoleiorg" },
-        { "name": "turingou", "handle": "turingou" },
-        { "name": "waylybaye", "handle": "waylybaye" },
-        { "name": "lifesinger", "handle": "lifesinger" },
-        { "name": "sagacity", "handle": "sagacity" },
-        { "name": "interjc", "handle": "interjc" },
-        { "name": "oran_ge", "handle": "oran_ge" },
-        { "name": "vista8", "handle": "vista8" },
-        { "name": "dotey", "handle": "dotey" },
-        { "name": "ruanyf", "handle": "ruanyf" }
+        {
+          "name": "Cat Wu",
+          "handle": "_catwu"
+        },
+        {
+          "name": "Zara Zhang",
+          "handle": "zarazhangrui"
+        },
+        {
+          "name": "Pieter Levels",
+          "handle": "levelsio"
+        },
+        {
+          "name": "Tuan Dinh",
+          "handle": "tdinh_me"
+        },
+        {
+          "name": "Lee Robinson",
+          "handle": "leerob"
+        },
+        {
+          "name": "Peter Steinberger",
+          "handle": "steipete"
+        },
+        {
+          "name": "Greg Isenberg",
+          "handle": "gregisenberg"
+        },
+        {
+          "name": "xiaohu",
+          "handle": "xiaohu"
+        },
+        {
+          "name": "ZHO_ZHO_ZHO",
+          "handle": "ZHO_ZHO_ZHO"
+        },
+        {
+          "name": "yihui indie",
+          "handle": "yihui_indie"
+        },
+        {
+          "name": "aiwarts",
+          "handle": "aiwarts"
+        },
+        {
+          "name": "Xiangyu 香鱼",
+          "handle": "xiangyuli"
+        },
+        {
+          "name": "CuiMao",
+          "handle": "CuiMao"
+        },
+        {
+          "name": "indiehackercase",
+          "handle": "indiehackercase"
+        },
+        {
+          "name": "Khazix0918",
+          "handle": "Khazix0918"
+        },
+        {
+          "name": "Jackywine",
+          "handle": "Jackywine"
+        },
+        {
+          "name": "cellinlab",
+          "handle": "cellinlab"
+        },
+        {
+          "name": "idoubicc",
+          "handle": "idoubicc"
+        },
+        {
+          "name": "PandaTalk8",
+          "handle": "PandaTalk8"
+        },
+        {
+          "name": "AI Jasonyu",
+          "handle": "AI_Jasonyu"
+        },
+        {
+          "name": "app_sail",
+          "handle": "app_sail"
+        },
+        {
+          "name": "yangyi",
+          "handle": "yangyi"
+        },
+        {
+          "name": "op7418",
+          "handle": "op7418"
+        },
+        {
+          "name": "lxfater",
+          "handle": "lxfater"
+        },
+        {
+          "name": "bearliu",
+          "handle": "bearliu"
+        },
+        {
+          "name": "geekbb",
+          "handle": "geekbb"
+        },
+        {
+          "name": "hzlzh",
+          "handle": "hzlzh"
+        },
+        {
+          "name": "foxshuo",
+          "handle": "foxshuo"
+        },
+        {
+          "name": "luoleiorg",
+          "handle": "luoleiorg"
+        },
+        {
+          "name": "turingou",
+          "handle": "turingou"
+        },
+        {
+          "name": "waylybaye",
+          "handle": "waylybaye"
+        },
+        {
+          "name": "lifesinger",
+          "handle": "lifesinger"
+        },
+        {
+          "name": "interjc",
+          "handle": "interjc"
+        },
+        {
+          "name": "oran_ge",
+          "handle": "oran_ge"
+        },
+        {
+          "name": "vista8",
+          "handle": "vista8"
+        },
+        {
+          "name": "dotey",
+          "handle": "dotey"
+        },
+        {
+          "name": "ruanyf",
+          "handle": "ruanyf"
+        }
       ],
       "blogs": [
         {
@@ -141,20 +323,136 @@
           "type": "rss",
           "indexUrl": "https://sspai.com/feed",
           "fetchMethod": "http"
+        },
+        {
+          "name": "OpenAI News",
+          "type": "rss",
+          "indexUrl": "https://openai.com/news/rss.xml",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Cursor Changelog",
+          "type": "rss",
+          "indexUrl": "https://cursor.com/changelog/rss.xml",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "DeepMind Blog",
+          "type": "rss",
+          "indexUrl": "https://deepmind.google/blog/rss.xml",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Google AI",
+          "type": "rss",
+          "indexUrl": "https://blog.google/technology/ai/rss/",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Hugging Face Blog",
+          "type": "rss",
+          "indexUrl": "https://huggingface.co/blog/feed.xml",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Anthropic Engineering",
+          "type": "scrape",
+          "indexUrl": "https://www.anthropic.com/engineering",
+          "articleBaseUrl": "https://www.anthropic.com/engineering/",
+          "fetchMethod": "http",
+          "_note": "2026-10-26：maple-only 显式保留，原 default scrape"
+        },
+        {
+          "name": "Claude Blog",
+          "type": "scrape",
+          "indexUrl": "https://claude.com/blog",
+          "articleBaseUrl": "https://claude.com/blog/",
+          "fetchMethod": "http",
+          "_note": "2026-10-26：maple-only 显式保留，原 default scrape"
+        },
+        {
+          "name": "Product Hunt",
+          "type": "rss",
+          "indexUrl": "https://www.producthunt.com/feed",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Lenny's Newsletter",
+          "type": "rss",
+          "indexUrl": "https://www.lennysnewsletter.com/feed",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "Latent Space",
+          "type": "rss",
+          "indexUrl": "https://www.latent.space/feed",
+          "fetchMethod": "http"
+        },
+        {
+          "name": "simonw",
+          "type": "rss",
+          "indexUrl": "https://simonwillison.net/atom/everything/",
+          "fetchMethod": "http"
         }
       ],
       "podcasts": [],
-      "bilibili_accounts": [
-        { "name": "影视飓风", "uid": "385670211", "rsshub": "https://rsshub.ktachibana.party/bilibili/user/dynamic/385670211" },
-        { "name": "赛博禅心", "uid": "313468110", "rsshub": "https://rsshub.ktachibana.party/bilibili/user/dynamic/313468110" }
+      "bilibili_accounts": [],
+      "_disabled_bilibili_accounts": [
+        {
+          "name": "影视飓风",
+          "uid": "385670211",
+          "rsshub": "https://rsshub.ktachibana.party/bilibili/user/dynamic/385670211",
+          "enabled": false,
+          "_p1_note": "2026-10-16 P1：移出日报（远程 RSSHub 不稳定/噪声）"
+        },
+        {
+          "name": "赛博禅心",
+          "uid": "313468110",
+          "rsshub": "https://rsshub.ktachibana.party/bilibili/user/dynamic/313468110",
+          "enabled": false,
+          "_p1_note": "2026-10-16 P1：移出日报（远程 RSSHub 不稳定/噪声）"
+        }
       ],
-      "jike_accounts": [
-        { "name": "歸藏", "uuid": "0ae2afa7-9b10-4b3a-ab7e-15fbf847038d", "rsshub": "https://rsshub.ktachibana.party/jike/user/0ae2afa7-9b10-4b3a-ab7e-15fbf847038d" },
-        { "name": "孟岩", "uuid": "c28c4303-ea82-4043-9938-cc6ed14f83d0", "rsshub": "https://rsshub.ktachibana.party/jike/user/c28c4303-ea82-4043-9938-cc6ed14f83d0" },
-        { "name": "李继刚", "uuid": "752D3103-1107-43A0-BA49-20EC29D09E36", "rsshub": "https://rsshub.ktachibana.party/jike/user/752D3103-1107-43A0-BA49-20EC29D09E36" },
-        { "name": "阑夕", "uuid": "FBAA4408-2343-45AD-9B4F-4ABD52FB84CA", "rsshub": "https://rsshub.ktachibana.party/jike/user/FBAA4408-2343-45AD-9B4F-4ABD52FB84CA" },
-        { "name": "汗青HQ", "uuid": "E76DDB17-C788-4A7B-A4F7-4206F60F2B4A", "rsshub": "https://rsshub.ktachibana.party/jike/user/E76DDB17-C788-4A7B-A4F7-4206F60F2B4A" }
-      ]
+      "_disabled_bilibili_accounts_note": "P1：B 站从 maple 日报移出；要恢复把条目移回 bilibili_accounts",
+      "_disabled_jike_accounts": [
+        {
+          "name": "歸藏",
+          "uuid": "0ae2afa7-9b10-4b3a-ab7e-15fbf847038d",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/0ae2afa7-9b10-4b3a-ab7e-15fbf847038d",
+          "enabled": false,
+          "_note": "2026-10-26：移出成稿原料与正文两区（知情仅 X；成稿不含 jike_post）"
+        },
+        {
+          "name": "孟岩",
+          "uuid": "c28c4303-ea82-4043-9938-cc6ed14f83d0",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/c28c4303-ea82-4043-9938-cc6ed14f83d0",
+          "enabled": false,
+          "_note": "2026-10-26：移出成稿原料与正文两区（知情仅 X；成稿不含 jike_post）"
+        },
+        {
+          "name": "李继刚",
+          "uuid": "752D3103-1107-43A0-BA49-20EC29D09E36",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/752D3103-1107-43A0-BA49-20EC29D09E36",
+          "enabled": false,
+          "_note": "2026-10-26：移出成稿原料与正文两区（知情仅 X；成稿不含 jike_post）"
+        },
+        {
+          "name": "阑夕",
+          "uuid": "FBAA4408-2343-45AD-9B4F-4ABD52FB84CA",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/FBAA4408-2343-45AD-9B4F-4ABD52FB84CA",
+          "enabled": false,
+          "_note": "2026-10-26：移出成稿原料与正文两区（知情仅 X；成稿不含 jike_post）"
+        },
+        {
+          "name": "汗青HQ",
+          "uuid": "E76DDB17-C788-4A7B-A4F7-4206F60F2B4A",
+          "rsshub": "https://rsshub.ktachibana.party/jike/user/E76DDB17-C788-4A7B-A4F7-4206F60F2B4A",
+          "enabled": false,
+          "_note": "2026-10-26：移出成稿原料与正文两区（知情仅 X；成稿不含 jike_post）"
+        }
+      ],
+      "_disabled_jike_accounts_note": "2026-10-26：即刻创作者移出成稿/正文；要恢复把条目移回 jike_accounts",
+      "jike_accounts": []
     }
   }
 }
