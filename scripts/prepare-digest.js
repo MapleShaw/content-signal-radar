@@ -14,7 +14,7 @@ const NO_SEEN = process.argv.includes('--no-seen');
 // same-day dedup result into a "new signal insufficient" message.
 const ALLOW_SEEN_FALLBACK = process.argv.includes('--allow-seen-fallback');
 
-const FEED_X_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
+const FEED_X_URL = process.env.FEED_X_URL || 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-x.json';
 const FEED_PODCASTS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-podcasts.json';
 const FEED_BLOGS_URL = 'https://raw.githubusercontent.com/zarazhangrui/follow-builders/main/feed-blogs.json';
 
@@ -41,6 +41,135 @@ function uniqBy(items, keyFn) {
 function clip(text = '', max = 280) {
   if (!text) return '';
   return text.length <= max ? text : `${text.slice(0, max - 1)}...`;
+}
+
+// 正文展示：默认接近全文，只有极长才截断（推文/即刻通常远小于此上限）
+const BODY_TEXT_MAX = 1200;
+const TITLE_BODY_MAX = 1000;
+const REPLY_TEXT_MAX = 180;
+const INFO_SECTION_CAP = 10;   // 知情（X·个人/创作者）最多条数
+const DRAFT_SECTION_CAP = 10;  // 成稿原料（博客/官网/官方X/播客等）最多条数
+const DRAFT_MATERIAL_TYPES = new Set(['blog_post', 'podcast_episode', 'bilibili_dynamic']); // 2026-10-26：jike_post 移出成稿原料
+// 2026-10-27：官方产品/实验室 X 也可进成稿（转发+观点）；个人号仍归知情
+const DEFAULT_OFFICIAL_X_HANDLES = [
+  'openai', 'kimi_moonshot', 'deepseek_ai', 'anthropicai', 'cursor_ai',
+  'googledeepmind', 'xai', 'huggingface', 'claudeai', 'metaai', 'mistralai',
+];
+let OFFICIAL_X_HANDLES = new Set(DEFAULT_OFFICIAL_X_HANDLES);
+
+function refreshOfficialXHandles(mergedSources = {}) {
+  const fromConfig = (mergedSources.x_accounts || [])
+    .filter((a) => a && (a.official === true || a.layer === 'draft' || a.asDraft === true))
+    .map((a) => String(a.handle || '').toLowerCase())
+    .filter(Boolean);
+  OFFICIAL_X_HANDLES = new Set([...DEFAULT_OFFICIAL_X_HANDLES, ...fromConfig]);
+}
+
+function isXSignal(item = {}) {
+  return item.type === 'x_tweet';
+}
+
+function isOfficialXSignal(item = {}) {
+  if (!isXSignal(item)) return false;
+  const h = String(item.handle || '').toLowerCase();
+  return Boolean(h) && OFFICIAL_X_HANDLES.has(h);
+}
+
+function isDraftMaterial(item = {}) {
+  return DRAFT_MATERIAL_TYPES.has(item.type) || isOfficialXSignal(item);
+}
+
+/** 万能/旧腔评价仅作内部/附录，不得进正文评价行 */
+function isGenericReviewNote(note = '', opts = {}) {
+  const n = String(note || '').trim();
+  if (!n) return true;
+  if (/^保留理由：/.test(n)) return true;
+  if (/分数刚过线/.test(n)) return true;
+  if (/主题词没命中/.test(n) && /先当热度/.test(n)) return true;
+  if (/形式分偏低/.test(n)) return true;
+  // 旧腔禁句（2026-10-26 扩帖切口改革）
+  if (/能否扩成帖/.test(n)) return true;
+  if (/别停在 Agent/.test(n)) return true;
+  if (/值得看：这条多出来的具体信息/.test(n)) return true;
+  if (/值得看：/.test(n) && /（钩子：/.test(n)) return true;
+  if (/不要和同题空话合并/.test(n)) return true;
+  if (/^看点：/.test(n) || /\]\s*看点：/.test(n)) return true;
+  if (/标签说明/.test(n)) return true;
+  // 成稿万能空话（2026-10-26 draft-note-fix）
+  if (/抽一条可复用判断框架/.test(n)) return true;
+  if (/不搬运目录/.test(n)) return true;
+  if (/抽框架/.test(n) && /不搬运/.test(n)) return true;
+  // 成稿「拆原因」套话（2026-10-26 晚加长去套话）
+  if (/拆背后原因与关键判断/.test(n)) return true;
+  if (/不只转发结论/.test(n)) return true;
+  if (/而不只转发结论/.test(n)) return true;
+  if (/文章在拆背后原因/.test(n)) return true;
+  if (/拆原因[，,]?\s*不转发结论/.test(n)) return true;
+  if (/拆背后原因/.test(n) && /转发结论/.test(n)) return true;
+  if (/——拆原因/.test(n) || /文章在拆背后/.test(n)) return true;
+  // 正文评价：知情「扩帖切口：…」；成稿「源文：…」（2026-10-26 晚）
+  if (!/^(扩帖切口|源文)：/.test(n)) return true;
+  // 成稿区不再收「扩帖切口 / 写xxx帖」主导的评价
+  if (opts.forDraft) {
+    if (/^扩帖切口：/.test(n)) return true;
+    if (/写.{0,24}帖/.test(n) || /扩帖/.test(n)) return true;
+  }
+  return false;
+}
+
+/** 从 item/tweet 上可选字段取高赞回复摘要；没有正文则返回空数组（渲染层标「评论未取到」） */
+function extractTopReplies(source = {}) {
+  const raw =
+    source.topReplies ||
+    source.replySummaries ||
+    source.top_replies ||
+    source.replyTexts ||
+    source.comments ||
+    [];
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  return raw
+    .map((r) => {
+      if (typeof r === 'string') return { text: r.trim(), likes: 0, author: '' };
+      const text = String(r.text || r.summary || r.content || r.body || '').trim();
+      if (!text) return null;
+      return {
+        text,
+        likes: Number(r.likes || r.favorite_count || r.likeCount || 0) || 0,
+        author: String(r.author || r.handle || r.user?.screen_name || r.user?.name || '').replace(/^@/, ''),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 3);
+}
+
+/** 展示层去 HTML：先解实体再剥标签，避免即刻 RSS 的 &lt;br&gt; 残留 */
+function stripHtmlForDisplay(text = '') {
+  let s = String(text || '');
+  s = s
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+  s = s
+    .replace(/<br\s*\/?\s*>/gi, '\n')
+    .replace(/<img\b[^>]*>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    // RSS/即刻摘要常在标签中途被截断，清掉尾部残缺标签
+    .replace(/<(?:img\b|br\b)?[^>]*$/gi, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return s;
+}
+
+function signalBodyText(item = {}) {
+  const raw = stripHtmlForDisplay(item.fullText || item.summary || item.title || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return clip(raw, BODY_TEXT_MAX);
 }
 
 function includesAny(text = '', keywords = []) {
@@ -102,6 +231,36 @@ function normalizeEngagement(metrics = {}) {
   return 0.15;
 }
 
+
+/** Reply heuristic: feed has isQuote but often no inReplyToId/isReply. */
+function isReplyTweet(tweet = {}) {
+  if (tweet.isQuote) return false; // quote-tweets count as main-post form
+  if (tweet.isReply === true || tweet.inReplyToId || tweet.in_reply_to_status_id) return true;
+  const text = String(tweet.text || '').trim();
+  return /^@[\w]+/.test(text);
+}
+
+/** Writability: default 0.55; >=0.8 only for clear tutorial/list/adaptable angle + substance. */
+function scoreWriteability(text = '') {
+  const raw = String(text || '');
+  const t = raw.toLowerCase();
+  const wordCount = t.trim().split(/\s+/).filter(Boolean).length;
+  const hasSubstance = wordCount >= 25 || raw.replace(/\s+/g, ' ').trim().length >= 120;
+  const hasTutorial = /\b(how to|step[- ]by[- ]step|guide|tutorial|checklist|playbook|walkthrough)\b/.test(t)
+    || /教程|清单|步骤|怎么做|如何做/.test(raw)
+    || /(^|\n)\s*(?:[-*•]|\d+[.)])\s+\S+/m.test(raw);
+  const hasAngle = /\b(why |lesson|mistake|unpopular|contrarian|framework|takeaway|here'?s how)\b/.test(t)
+    || /为什么|教训|误区|框架|可改编|写作角度/.test(raw);
+  if ((hasTutorial || hasAngle) && hasSubstance) return 0.85;
+  if (hasTutorial || (hasAngle && wordCount >= 18)) return 0.8;
+  // Soft keyword alone must not jump to 0.8
+  if (includesAny(t, ['why', 'how', 'learn', 'mistake', 'distribution', 'brand', 'agent', 'product', 'workflow'])) {
+    return hasSubstance ? 0.65 : 0.55;
+  }
+  return 0.55;
+}
+
+
 function normalizeConfig(input = {}) {
   return {
     name: input.name || 'Content Signal Radar',
@@ -138,12 +297,12 @@ function normalizeConfig(input = {}) {
       _catwu: 1.2,
       zarazhangrui: 1.25,
       levelsio: 1.15,
-      thedankoe: 1.0,
       tdinh_me: 1.0,
-      lexfridman: 0.95,
-      leeerob: 1.2,
+      lexfridman: 0.35,
+      leerob: 1.2,
       steipete: 1.1,
-      naval: 1.0,
+      naval: 0.35,
+      thedankoe: 0.35,
       gregisenberg: 1.0,
       rauchg: 1.15,
       karpathy: 1.1
@@ -151,7 +310,7 @@ function normalizeConfig(input = {}) {
     sourceWeightReasons: input.sourceWeightReasons || {
       zarazhangrui: '高密度 agent / builder 信号,且和你的关注方向高度一致',
       _catwu: '产品与 builder 视角兼具,噪音相对低',
-      leeerob: 'AI 产品、开发者工具、分发视角稳定',
+      leerob: 'AI 产品、开发者工具、分发视角稳定',
       levelsio: '独立开发 + 分发 + 出海视角强',
       rauchg: '产品范式变化和 platform 视角常有高信号',
       steipete: '开发者工具与 AI 工作流洞察稳定',
@@ -162,8 +321,8 @@ function normalizeConfig(input = {}) {
       writeability: input.scoring?.writeability ?? 0.18,
       actionability: input.scoring?.actionability ?? 0.2,
       novelty: input.scoring?.novelty ?? 0.12,
-      engagement: input.scoring?.engagement ?? 0.07,
-      recency: input.scoring?.recency ?? 0.08,
+      engagement: input.scoring?.engagement ?? 0.10,
+      recency: input.scoring?.recency ?? 0.05,
       minimum: input.scoring?.minimum ?? 0.58,
       sourceWeightCap: input.scoring?.sourceWeightCap ?? 1.3
     },
@@ -179,6 +338,17 @@ function normalizeConfig(input = {}) {
 }
 
 async function fetchJSON(url) {
+  if (!url) return null;
+  // Support local absolute paths and file:// URLs (e.g. FEED_X_URL override).
+  if (url.startsWith('file://') || url.startsWith('/') || /^[A-Za-z]:[\\/]/.test(url)) {
+    const filePath = url.startsWith('file://') ? decodeURIComponent(url.slice('file://'.length)) : url;
+    try {
+      const text = await readFile(filePath, 'utf8');
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  }
   const res = await fetch(url);
   if (!res.ok) return null;
   return res.json();
@@ -294,9 +464,14 @@ function filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources) {
 }
 
 async function fetchDirectRSSSources(mergedSources) {
-  const results = { jike: [], rss_blogs: [], bilibili: [] };
+  const results = {
+    jike: [],
+    rss_blogs: [],
+    bilibili: [],
+    rssFetchStats: { blogs: {}, jike: {}, bilibili: {}, blogFetchedTotal: 0, blogZeroSources: [] }
+  };
 
-  // 抓即刻账号
+  // 抓即刻账号（2026-10-26 起配置可为空；抓到也不进正文两区）
   const jikeAccounts = mergedSources.jike_accounts || [];
   if (jikeAccounts.length > 0) {
     console.error(`[fetchDirectRSS] Fetching ${jikeAccounts.length} jike accounts...`);
@@ -305,6 +480,7 @@ async function fetchDirectRSSSources(mergedSources) {
     jikeAccounts.map(async (account) => {
       if (!account.rsshub) return [];
       const items = await fetchRSSFeed(account.rsshub);
+      results.rssFetchStats.jike[account.name] = items.length;
       console.error(`[fetchDirectRSS] jike ${account.name}: ${items.length} items`);
       return items.slice(0, 5).map(item => ({
         type: 'jike_post',
@@ -329,10 +505,13 @@ async function fetchDirectRSSSources(mergedSources) {
   const rssResults = await Promise.all(
     rssBlogs.map(async (blog) => {
       const items = await fetchRSSFeed(blog.indexUrl);
+      results.rssFetchStats.blogs[blog.name] = items.length;
+      if (items.length === 0) results.rssFetchStats.blogZeroSources.push(blog.name);
       console.error(`[fetchDirectRSS] rss blog ${blog.name}: ${items.length} items`);
       return items.slice(0, 3).map(item => ({
         type: 'blog_post',
         name: blog.name,
+        author: blog.name,
         title: item.title || '',
         summary: clip(item.summary, 280),
         url: item.link || '',
@@ -343,6 +522,7 @@ async function fetchDirectRSSSources(mergedSources) {
     })
   );
   results.rss_blogs = rssResults.flat();
+  results.rssFetchStats.blogFetchedTotal = results.rss_blogs.length;
 
   // 抓 Bilibili 账号
   const bilibiliAccounts = mergedSources.bilibili_accounts || [];
@@ -353,6 +533,7 @@ async function fetchDirectRSSSources(mergedSources) {
     bilibiliAccounts.map(async (account) => {
       if (!account.rsshub) return [];
       const items = await fetchRSSFeed(account.rsshub);
+      results.rssFetchStats.bilibili[account.name] = items.length;
       console.error(`[fetchDirectRSS] bilibili ${account.name}: ${items.length} items`);
       return items.slice(0, 3).map(item => ({
         type: 'bilibili_dynamic',
@@ -572,18 +753,18 @@ function classifySignalIntent(text = '', type = '') {
 function computeSectionScore(scoring, signalIntent) {
   const { relevance, writeability, actionability, novelty, engagement, recency } = scoring;
   if (signalIntent === 'x_angle') {
-    return relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.07 + recency * 0.08;
+    return relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.10 + recency * 0.05;
   }
   if (signalIntent === 'product_signal') {
-    return relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.07 + recency * 0.08;
+    return relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.10 + recency * 0.05;
   }
   if (signalIntent === 'both') {
-    const xScore = relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.07 + recency * 0.08;
-    const pScore = relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.07 + recency * 0.08;
+    const xScore = relevance * 0.35 + writeability * 1.3 * 0.18 + actionability * 0.2 + novelty * 1.2 * 0.12 + engagement * 0.10 + recency * 0.05;
+    const pScore = relevance * 1.15 * 0.35 + writeability * 0.18 + actionability * 1.3 * 0.2 + novelty * 0.12 + engagement * 0.10 + recency * 0.05;
     return Math.max(xScore, pScore);
   }
   // 'neither' — no section boost
-  return relevance * 0.35 + writeability * 0.18 + actionability * 0.2 + novelty * 0.12 + engagement * 0.07 + recency * 0.08;
+  return relevance * 0.35 + writeability * 0.18 + actionability * 0.2 + novelty * 0.12 + engagement * 0.10 + recency * 0.05;
 }
 
 // Per-handle deduplication: if a handle has 3+ signals, keep only the top 2 by total score
@@ -654,6 +835,7 @@ function detectReviewNeed({ engagement, relevance, sourceWeight, wordCount, sign
 function autoResolveReview(scoredSignals) {
   const keep = [];
   const demote = [];
+  const appendix = [];
 
   for (const signal of scoredSignals) {
     if (!signal.needsReview) {
@@ -679,23 +861,26 @@ function autoResolveReview(scoredSignals) {
 
     // Rule 3: HIGH_ENG_LOW_MATCH — high engagement overrides low keyword match → keep
     if (reasons.includes('HIGH_ENG_LOW_MATCH')) {
-      signal.reviewNote = '高互动信号，关键词未命中但互动强 — 按互动判断保留';
+      signal.reviewNote = '保留理由：主题词没命中，但互动很强，先当热度信号看具体在吵什么';
       signal.needsReview = false;
       keep.push(signal);
       continue;
     }
 
-    // Rule 4: HIGH_SOURCE_LOW_ENG — authoritative source, keep as potential early signal
+    // Rule 4: HIGH_SOURCE_LOW_ENG — do NOT occupy top-N; park in appendix / demote score
     if (reasons.includes('HIGH_SOURCE_LOW_ENG')) {
-      signal.reviewNote = '权重源新帖，互动偏低但值得关注';
+      signal.reviewNote = '附录：关注账号但互动偏低，只观察不进正文前十';
+      signal.appendixOnly = true;
       signal.needsReview = false;
-      keep.push(signal);
+      // Cap so source weight alone cannot push it into high-signal top-N
+      signal.scoring.total = Number(Math.min(signal.scoring.total, 0.5).toFixed(3));
+      appendix.push(signal);
       continue;
     }
 
     // Rule 5: PENALIZED_BUT_ENGAGED — engagement redeems it
     if (reasons.includes('PENALIZED_BUT_ENGAGED') && engagement >= 0.5) {
-      signal.reviewNote = '内容形式偏低信号，但互动可以 — 保留';
+      signal.reviewNote = '保留理由：形式分偏低，互动还行，看有没有一句能用的结论';
       signal.needsReview = false;
       keep.push(signal);
       continue;
@@ -703,7 +888,7 @@ function autoResolveReview(scoredSignals) {
 
     // Default: keep if total score is above a relaxed threshold (0.52)
     if (signal.scoring.total >= 0.52) {
-      signal.reviewNote = '边界信号，分数尚可 — 保留';
+      signal.reviewNote = '保留理由：分数刚过线，先存着；除非有一句硬判断，否则别急着写';
       signal.needsReview = false;
       keep.push(signal);
     } else {
@@ -711,7 +896,7 @@ function autoResolveReview(scoredSignals) {
     }
   }
 
-  return { keep, demote };
+  return { keep, demote, appendix };
 }
 
 function buildScoredSignals(filtered, config) {
@@ -721,10 +906,13 @@ function buildScoredSignals(filtered, config) {
 
   for (const account of filtered.x || []) {
     for (const tweet of account.tweets || []) {
+      // Only main posts; drop reply/comment threads. Quotes (isQuote) stay.
+      if (isReplyTweet(tweet)) continue;
+
       const text = tweet.text || '';
       const textLower = text.toLowerCase();
       const relevance = includesAny(text, keywords) ? 1 : 0.45;
-      const writeability = includesAny(textLower, ['why', 'how', 'learn', 'mistake', 'distribution', 'brand', 'agent', 'product']) ? 0.8 : 0.55;
+      const writeability = scoreWriteability(text);
       const actionability = includesAny(textLower, ['launch', 'ship', 'workflow', 'process', 'experiment', 'agent', 'automation']) ? 0.85 : 0.5;
       const novelty = tweet.isQuote ? 0.55 : 0.7;
       const penalty = lowSignalPenalty(text);
@@ -739,7 +927,11 @@ function buildScoredSignals(filtered, config) {
         recency * weights.recency
       );
       const sourceWeight = Math.min(config.sourceWeights?.[account.handle] ?? 1, weights.sourceWeightCap ?? 1.3);
-      const weightedScore = applyOutputModeBoosts(baseScore * sourceWeight * penalty, config.outputMode, { type: 'x_tweet' });
+      let weightedScore = applyOutputModeBoosts(baseScore * sourceWeight * penalty, config.outputMode, { type: 'x_tweet' });
+      // High-source + very low engagement: demote so source weight alone cannot take top-N
+      if (sourceWeight >= 1.1 && engagement <= 0.35) {
+        weightedScore = Math.min(weightedScore, 0.5);
+      }
       const signalIntent = classifySignalIntent(text, 'x_tweet');
 
       const scoringObj = {
@@ -758,14 +950,21 @@ function buildScoredSignals(filtered, config) {
         engagement, relevance, sourceWeight, wordCount, signalIntent, penalty
       });
 
+      const normalizedText = text.replace(/\s+/g, ' ').trim();
+      const topReplies = extractTopReplies(tweet);
       signals.push({
         type: 'x_tweet',
         author: account.name,
         handle: account.handle,
-        title: clip(text.replace(/\s+/g, ' ').trim(), 90),
-        summary: clip(text.replace(/\s+/g, ' ').trim(), 220),
+        // 接近全文：标题行即正文主展示，仅极长截断
+        title: clip(normalizedText, TITLE_BODY_MAX),
+        summary: clip(normalizedText, BODY_TEXT_MAX),
+        fullText: normalizedText,
+        topReplies,
         url: tweet.url,
         publishedAt: tweet.createdAt,
+        isQuote: !!tweet.isQuote,
+        isReply: false,
         signalIntent,
         metrics: {
           likes: tweet.likes || 0,
@@ -803,7 +1002,7 @@ function buildScoredSignals(filtered, config) {
     const jikeContent = signal.summary || signal.title.replace(/^(发布了|转发了):\s*/, '');
     const text = `${signal.title} ${jikeContent}`.trim();
     const relevance = includesAny(text, keywords) ? 1 : 0.45;
-    const writeability = includesAny(text.toLowerCase(), ['why', 'how', 'learn', 'mistake', 'distribution', 'brand', 'agent', 'product']) ? 0.8 : 0.55;
+    const writeability = scoreWriteability(text);
     const actionability = includesAny(text.toLowerCase(), ['launch', 'ship', 'workflow', 'process', 'experiment', 'agent', 'automation']) ? 0.85 : 0.5;
     const novelty = 0.7;
     const engagement = 0.3;
@@ -835,6 +1034,7 @@ function buildScoredSignals(filtered, config) {
       handle: signal.handle,
       title: signal.title,
       summary: signal.summary,
+      fullText: String(jikeContent || signal.summary || signal.title || '').replace(/\s+/g, ' ').trim(),
       url: signal.url,
       publishedAt: signal.publishedAt,
       signalIntent,
@@ -890,7 +1090,8 @@ function buildScoredSignals(filtered, config) {
       type: 'blog_post',
       author: blog.name,
       title: blog.title,
-      summary: clip(blog.description || blog.content || '', 220),
+      summary: clip(blog.description || blog.content || '', BODY_TEXT_MAX),
+      fullText: clip(blog.description || blog.content || '', BODY_TEXT_MAX),
       url: blog.url,
       publishedAt: blog.publishedAt,
       signalIntent: 'product_signal',
@@ -940,7 +1141,8 @@ function buildScoredSignals(filtered, config) {
       type: 'podcast_episode',
       author: podcast.name,
       title: podcast.title,
-      summary: clip(podcast.transcript || '', 220),
+      summary: clip(podcast.transcript || '', BODY_TEXT_MAX),
+      fullText: clip(podcast.transcript || '', BODY_TEXT_MAX),
       url: podcast.url,
       publishedAt: podcast.publishedAt,
       signalIntent: 'product_signal',
@@ -1144,7 +1346,7 @@ function renderMarkdown(output) {
 function renderRadar(output) {
   // ── Data ──
   const allSignals = output.scoredSignals || [];
-  const topSignals = allSignals.filter(s => s.scoring.total >= output.config.scoring.minimum);
+  const topSignals = allSignals.filter(s => s.scoring.total >= output.config.scoring.minimum && !s.appendixOnly);
   const totalTweets = output.stats?.totalTweets || 0;
   // xDrafts removed — section no longer used
   const lowSignalCount = allSignals.filter(s =>
@@ -1185,9 +1387,11 @@ function renderRadar(output) {
     general: '📌 综合',
   };
 
-  // ── Unified signal list ──
-  // Merge all top signals into one list (brief + x_angles + product_signals are now one)
-  const signalItems = topSignals.slice(0, Math.max(output.config.limits.brief + 3, 8));
+  // ── 分区列表（知情 X / 成稿非 X）；挑选在 signalNote 就绪后执行 ──
+  let signalItems = [];
+  let infoItems = [];
+  let draftItems = [];
+  let demotedForNote = [];
 
   // ── buildLead(): dynamic editorial judgment ──
   const buildLead = () => {
@@ -1231,36 +1435,777 @@ function renderRadar(output) {
     return /github\.com\/[^/\s?#]+\/[^/\s?#]+\/?(?:[?#].*)?$/.test(url) || sourceName.includes('github trending');
   };
 
-  const signalNote = (item) => {
-    const text = (item.title || '') + ' ' + (item.summary || '');
-    const topic = extractTopic(text);
-    const writeHigh = item.scoring.writeability >= 0.8;
+  // Editorial note（2026-10-26 晚）：
+  // 知情（X）→「扩帖切口：…」；成稿（blog/播客/官网/github）→「源文：…」中文简介讲什么。
+  // 写不出具体内容 → null 降级移出正文前十。
+  const usedSignalNotes = new Set();
 
-    const notes = {
-      security: '供应链信任比代码质量更脆弱——这类信号出现时，先查自己的依赖再说别的。',
-      context: '瓶颈正在从"模型能不能做"转向"人能不能给够上下文"，产品设计的重心在移动。',
-      agent: '不再是"能做什么"的问题，而是"能不能持续超出预期"——评价框架在变。',
-      enterprise_workflow: 'AI 工具从可选变成默认，企业采购逻辑正在翻转。',
-      coding_agent: '工程师的稀缺能力从写代码变成审查判断，边界已经在移动了。',
-      creator: '发布量不是护城河，信号密度和观点锐度才是——创作者竞争维度在变。',
-      revenue: '定价和分发比功能复杂度更关键，从 0 到 MRR 的路径正在重塑。',
-      indie: '独立开发者的核心优势是决策链条短，这类信号可以直接映射到自己的项目。',
-      distribution: '触达正在成为稀缺资源，比产品本身更难复制。',
-      model: '能力拉平的窗口在压缩，产品层差异化的时间窗口也跟着缩。',
-      product: '这条暴露了一个产品判断的转折点，值得对照自己的项目想一遍。',
-      workflow: '自动化边界每扩张一轮，就在重新定义谁的时间更值钱。',
-      general: '值得看——不因为新，而因为它能帮你校准方向判断。',
+  /** 去掉「源文：/扩帖切口：」与主题前缀后，取尾部关键句（≥16 字）做雷同闸 */
+  const noteTailKey = (raw = '') => {
+    let body = String(raw || '')
+      .replace(/^(扩帖切口|源文)：\s*/, '')
+      .replace(/^\[.*?\]\s*/, '')
+      .trim();
+    // 主题前缀：到第一个中文冒号/破折号为止
+    body = body.replace(/^[^：—\-]{0,48}[：:—\-]{1,2}\s*/, '');
+    body = body.replace(/\s+/g, '');
+    if (body.length < 16) return '';
+    return body.slice(-24);
+  };
+
+  const isNoteCollision = (candidate) => {
+    if (!candidate) return true;
+    if (usedSignalNotes.has(candidate)) return true;
+    const tail = noteTailKey(candidate);
+    if (!tail || tail.length < 16) return false;
+    for (const used of usedSignalNotes) {
+      const ut = noteTailKey(used);
+      if (!ut) continue;
+      if (ut === tail || ut.endsWith(tail) || tail.endsWith(ut)) return true;
+      // 关键套话片段命中也算撞
+      if (tail.length >= 16 && ut.includes(tail.slice(0, 16))) return true;
+      if (ut.length >= 16 && tail.includes(ut.slice(0, 16))) return true;
+    }
+    return false;
+  };
+
+  /** 剥离评价前缀后做拉丁硬闸：几乎无汉字、或汉字偏少且拉丁过高 → 不合格；专名夹杂英文 OK */
+  const stripNotePrefix = (raw = '') => String(raw || '')
+    .replace(/^(扩帖切口|源文)：\s*/, '')
+    .replace(/^\[.*?\]\s*/, '')
+    .replace(/^看点：\s*/, '')
+    .replace(/^值得看：\s*/, '')
+    .trim();
+
+  const isMostlyLatinAngle = (raw = '') => {
+    const body = stripNotePrefix(raw).replace(/\s+/g, '');
+    if (!body) return true;
+    const han = (body.match(/[\u4e00-\u9fff]/g) || []).length;
+    const latin = (body.match(/[A-Za-z]/g) || []).length;
+    // 几乎无汉字 → 整句英文标题
+    if (han < 4) return latin >= 6;
+    // 有足够中文壳（≥10 汉字）→ 专名再多也放行（GitHub 名 / unattended 等）
+    if (han >= 10) return false;
+    const denom = han + latin;
+    if (denom === 0) return false;
+    // 汉字偏少时：拉丁占比过高仍拒（如「AI Is Getting Good at Math——拆原因」）
+    return latin / denom > 0.50;
+  };
+
+  /** 知情（X）：规范化为「扩帖切口：…」 */
+  const asAngleNote = (angle) => {
+    if (!angle) return null;
+    let a = stripNotePrefix(angle)
+      .replace(/\s*→\s*可写性高.*$/, '')
+      .trim();
+    if (!a || a.length < 6) return null;
+    if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：/.test(a)) return null;
+    if (/抽一条可复用判断框架|不搬运目录|(抽框架.{0,8}不搬运)/.test(a)) return null;
+    // 硬闸：整句英文标题禁止进「扩帖切口」；专名夹杂少量英文 OK
+    if (isMostlyLatinAngle(a)) return null;
+    return `扩帖切口：${clip(a, 72)}`;
+  };
+
+  /** 成稿：规范化为「源文：…」中文简介（目标约 70～120 汉字，可含专名） */
+  const asSourceSummaryNote = (summary) => {
+    if (!summary) return null;
+    let a = stripNotePrefix(summary)
+      .replace(/\s*→\s*可写性高.*$/, '')
+      .replace(/[：:]\s*写.{0,40}帖\s*$/u, '')
+      .replace(/——写.{0,40}帖\s*$/u, '')
+      .replace(/：写.{0,40}$/u, '')
+      .trim();
+    if (!a || a.length < 8) return null;
+    if (/能否扩成帖|别停在 Agent|值得看：这条多出来|不要和同题空话合并|^看点：/.test(a)) return null;
+    if (/抽一条可复用判断框架|不搬运目录|(抽框架.{0,8}不搬运)/.test(a)) return null;
+    // 禁「拆原因」套话出口
+    if (/拆背后原因与关键判断|不只转发结论|而不只转发结论|文章在拆背后原因|拆原因[，,]?\s*不转发结论|——拆原因|文章在拆背后/.test(a)) return null;
+    if (/写.{0,24}帖/.test(a) && a.length < 28) return null;
+    if (isMostlyLatinAngle(a)) return null;
+    // 目标 70～120 汉字；上限放宽，勿在 90 砍断
+    return `源文：${clip(a, 140)}`;
+  };
+
+  /** 从作者原文抽硬判断/具体动作，再压成可写切口；没有则 null */
+  const pickAuthorClaim = (raw = '') => {
+    const cleaned = stripHtmlForDisplay(raw)
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!cleaned) return null;
+    const parts = cleaned
+      .split(/(?<=[。！？.!?])/)
+      .map((s) => s.trim().replace(/^@\w+\s+/, ''))
+      .filter((s) => s.length >= 12);
+    const hardRe = /不应该|不该|应该|意味着|关键是|关键在|本质|核心|其实|不是.{0,16}而是|与其|不如|别只|不要|立刻|具体|换成|替代|判断|结论|工作流|所以我想|终于把|做完|overestimate|underestimate|develop a system/;
+    const hard = parts.find((s) => hardRe.test(s));
+    if (hard) {
+      // 压成切口：去掉纯开场套话；纠正型碎碎念不够成切口则丢弃
+      let claim = hard.replace(/^(Great interview\.?\s*)/i, '').trim();
+      if (claim.length < 10) claim = hard;
+      if (/^(记错了|更正|补充一下|其实我想说)/.test(claim) && claim.length < 40) return null;
+      if (/^(RT\b|发布了)/i.test(claim)) return null;
+      return clip(claim, 56);
+    }
+    return null; // 不再用「首句截断」充评价
+  };
+
+  /** 返回不含前缀的具体扩帖角度；写不出返回 null */
+  const whyWorthReading = (rawText, item = {}) => {
+    const t = stripHtmlForDisplay(rawText || '');
+    const lower = t.toLowerCase();
+    const handle = String(item.handle || item.author || '').toLowerCase();
+
+    // 具名高信号切口（示例口径）
+    if (/huge launch|one huge launch|showing up every day|make a video every day|大发布|每天.{0,6}(露脸|出现|发)/.test(lower)
+        || (handle.includes('zarazhangrui') && /launch|timeline|every day/.test(lower))) {
+      return '别押大发布、押每天露脸的内容系统';
+    }
+    if (/可视化|自动化流水线|自动化管理|定时任务|自动化任务/.test(t)
+        || (handle.includes('khazix') && /agent|流水线|管理界面/.test(lower))) {
+      return '游戏化/可视化管理界面：把散落的 Agent 定时任务收成一张可操作看板';
+    }
+    if (/约束语言|语言大师/.test(t)) {
+      return 'Agent 产品本质是约束语言——下一波赢家更像语言大师而不是功能清单党';
+    }
+    if (/yobiru friends|personal agent.{0,40}(分享|朋友|亲朋)|对外发布或分享/.test(lower) || /personal agent.{0,30}(share|friend)/.test(lower)) {
+      return 'personal agent 对外分享/互聊/协商日程：把私人助手做成可分发关系网';
+    }
+    if (/sent from ai agent|sent from iphone/.test(lower)) {
+      return '「Sent from AI agent」会不会变成新签名文化——工具痕迹本身成身份信号';
+    }
+    if (/小龙虾|科幻片成真|私人助理/.test(t) && /coding agent|claude|沉迷/.test(lower + t)) {
+      return '老板第一次用 Coding Agent 的科幻感 vs 天天用的人的平淡——门槛下降后的沉浸落差';
+    }
+    if (/earliest|early.?stage|前\s*100|早期/.test(lower) && /audience|用户|builder|验证|测想法/.test(lower)) {
+      return '早期优势是用受众测想法/找种子用户，不是分发本身';
+    }
+    if (/security audit|unattended upgrades|disconnect|断开|\bvps\b|take them down|下线|停机/.test(lower)) {
+      return '安全事件下的自保清单：全站审计 + unattended upgrades，可复用成操作帖';
+    }
+    if (/供应链|\bnpm\b|postinstall|依赖投毒/.test(lower)) {
+      return '供应链/依赖投毒：锁版本、审 postinstall、扫来源——写成检查清单帖';
+    }
+    if (/\bphp\b/.test(lower) && (/end of php|不看好|\bvibe\b|ai-assisted/.test(lower))) {
+      return 'AI vibe coding 语境下旧栈（PHP）还有没有生存切口——技术选型争论帖';
+    }
+    if (/planning|规划/.test(lower) && /coding|编码|workflow|工作流/.test(lower)) {
+      return '规划模型 vs 编码模型的分工工作流，可当 Agent 编排对照案例';
+    }
+    if (/drop-?in|replacement|faster|替代|更快/.test(lower) && /tsrs|tool|runtime|运行/.test(lower)) {
+      return '具体工具替换+量级收益：写成「换栈/换工具」短案例，别和 Agent 空话混写';
+    }
+    if (/proactive|off your plate|主动|替你/.test(lower) && /claude|\bagent\b|助手/.test(lower)) {
+      return '产品叙事从「能做什么」转向「主动替你扛事」——对照自己的 Agent 定位';
+    }
+    if (/两极|分化|极化/.test(t) && /agent|Agent/.test(t)) {
+      return 'Agent 技术终点 vs 产品终点两极化，拆成对照帖';
+    }
+    if (/kindle|刷机|koreader|电子书/.test(lower) && /ai|rss|开源/.test(lower)) {
+      return 'Kindle 刷机 + AI RSS 的硬件改造开源切口';
+    }
+    if (/忍住|不更新|不拍|系列/.test(t) && /恶搞|anthropic|达里奥|视频/.test(lower + t)) {
+      return '忍住不拍系列恶搞的内容取舍——什么题材该停、什么判断该留';
+    }
+    if (/thariq|boris/.test(lower) && /claude code|skill|agent sdk|离职|负责人|社区/.test(lower + t)) {
+      return '分清 Thariq（社区/Skill 教学）与 Boris（Claude Code 产品线）——别把人事信号误读成产品停摆';
+    }
+
+    // 兜底：作者硬判断压成切口；写不出返回 null → 降级
+    const claim = pickAuthorClaim(t);
+    if (claim && claim.length >= 10) return claim;
+    return null;
+  };
+
+  /**
+   * 成稿（blog/newsletter/官网/播客）：从 title+summary/fullText
+   * 抽出「产品动作 / 数字 / 反常识」一句中文人话切口；写不出返回 null。
+   * 禁止整句英文标题当切口；禁止回落「抽框架/不搬运目录」旧腔。
+   * 可保留产品专名（OpenAI / Claude / Cursor / Trainium / Kimi 等）。
+   */
+  const pickBlogBrandHint = (item = {}, title = '') => {
+    const blob = `${item.author || ''} ${item.name || ''} ${item.source || ''} ${title}`;
+    const pairs = [
+      [/ChatGPT/i, 'ChatGPT'],
+      [/OpenAI/i, 'OpenAI'],
+      [/\bClaude\b|Anthropic/i, 'Claude'],
+      [/\bCursor\b/i, 'Cursor'],
+      [/\bKimi\b/i, 'Kimi'],
+      [/DeepMind/i, 'DeepMind'],
+      [/Trainium/i, 'Trainium'],
+      [/\bGemini\b/i, 'Gemini'],
+      [/Hugging\s*Face/i, 'Hugging Face'],
+      [/\bAWS\b/i, 'AWS'],
+    ];
+    for (const [re, name] of pairs) {
+      if (re.test(blob)) return name;
+    }
+    return '';
+  };
+
+  /** 英文标题里抽可复用的中文主题短句（意译，不是 clip 原文） */
+  const zhThemeFromEnglishTitle = (title = '', brand = '') => {
+    const t = String(title || '');
+    const b = brand || pickBlogBrandHint({}, t);
+    if (/\bmath\b/i.test(t) && /good|getting|better|strong/i.test(t)) return 'AI 数学变强';
+    if (/\bstorage\b/i.test(t) && /scal|billion|user/i.test(t)) return `${b || 'OpenAI'} 存储扩到十亿用户级`;
+    if (/\bsecur/i.test(t) && /train/i.test(t)) return '锁训练环境';
+    if (/\bturning\b.+\binto\b/i.test(t) && /reward|rl|grading/i.test(t)) return '把评分变成 RL 奖励';
+    if (/scam|防诈/i.test(t) && /collaborat|government|政府/i.test(t)) return `${b || 'DeepMind'}×政府端侧防诈`;
+    if (/canvas|environment improvement/i.test(t)) return `${b || 'Cloud Agent'} Canvases/环境改进`;
+    if (/trainium|look it up|does your model run/i.test(t)) return `模型能不能跑 ${b || 'AWS Trainium'}`;
+    if (/open.?weight|narrows?.{0,20}lead|closed-?ai/i.test(t)) return `${b || '开源权重'} 追平闭源窗口`;
+    if (/beautiful|forgot to use|still forgot/i.test(t)) return '好看却没用上';
+    if (/\bpost-?training\b/i.test(t)) return `${b || 'Agent'} 后训练信号`;
+    if (/\brl reward/i.test(t)) return 'RL 奖励信号';
+    if (b) return b;
+    return '';
+  };
+
+  const pickBlogConcreteAngle = (item = {}) => {
+    const title = String(item.title || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^\[AINews\]\s*/i, '')
+      .replace(/^🧠\s*/, '')
+      .replace(/^Community Wisdom:\s*/i, '');
+    const body = stripHtmlForDisplay(`${item.summary || ''} ${item.fullText || ''}`)
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!title || title.length < 8) return null;
+
+    const lower = `${title} ${body}`.toLowerCase();
+    const brand = pickBlogBrandHint(item, title);
+    const titleHasHan = /[\u4e00-\u9fff]/.test(title);
+
+    // 反常识 / 转折 → 中文人话
+    if (/\bstill (forgot|forget|don'?t|do not|never|can'?t)\b/i.test(title)
+        || /很好看.{0,12}(忘|没用)|漂亮.{0,12}(忘|没用)|却(还是)?忘/.test(title)
+        || (/\bbut\b/i.test(title) && /\b(still|never|forgot|don'?t)\b/i.test(title))
+        || /beautiful/i.test(title) && /forgot|still/i.test(title)
+        || /不是.{0,12}而是/.test(title)) {
+      if (titleHasHan && /不是.{0,12}而是|却(还是)?忘|很好看|漂亮/.test(title)) {
+        return clip(title, 56);
+      }
+      const who = brand || '这功能';
+      return `${who}好看却没用上：写漂亮功能留不住日常`;
+    }
+
+    // scaling / storage / billion
+    if (/\bscal(?:e|ing|es)\b/i.test(title) && /\b(storage|billion|user)/i.test(title)) {
+      const who = brand || 'OpenAI';
+      return `${who} 存储扩到十亿用户级：写容量瓶颈怎么拆的操作帖`;
+    }
+
+    // securing … training
+    if (/\bsecur/i.test(title) && /\btrain/i.test(title)) {
+      return '锁训练环境：写前沿模型训练防渗透清单帖';
+    }
+
+    // turning X into Y / RL rewards / post-training
+    if (/\bturning\b.+\binto\b/i.test(title) || /\binto rl\b|\brl rewards?\b|\bpost-training\b/i.test(lower)) {
+      if (/grading|reward|rl|annotat|label/i.test(lower)) {
+        return '把评分变成 RL 奖励：写数据标注→训练信号的转化帖';
+      }
+      return `${brand || '这篇'}：写「A 变成 B」的转化路径操作帖`;
+    }
+
+    // collaborate / scam detection
+    if (/\bcollaborate/i.test(lower) || (/\bscam detection\b/i.test(lower) && /government|fine-tuned|on-?device/i.test(lower))) {
+      const who = brand || 'DeepMind';
+      return `${who}×政府端侧防诈：写官方合作怎么落到用户侧`;
+    }
+
+    // Trainium / Look It Up / Does Your Model Run
+    if (/trainium|look it up|does your model run/i.test(title)) {
+      return `模型能不能跑 ${brand || 'AWS Trainium'}：写查表/选型对照帖`;
+    }
+
+    // Canvas / Environment Improvements（changelog 类）
+    if (/\bcanvases?\b/i.test(title) || /environment improvements?/i.test(title)) {
+      const who = brand || 'Cloud Agent';
+      return `${who} Canvases/环境改进：写协作画布怎么落到日常工作流`;
+    }
+
+    // 数字 / 量级（开源追平、倍速 API 等）→ 中文
+    if (/\b\d+(?:\.\d+)?\s*billion\b|\bover\s+\d+\s*billion\b|\b\d+\s*-\s*\d+\s*[×xX]\b|[×xX]\s*speed|\b\d+\s*months?\b|\b2-3\s*[×xX]\b|\b\d+BA\b|\b\d{2,4}B[-\s]|\d+\s*%|十亿|亿用户|领先.{0,8}\d+\s*个?月|narrows.{0,40}\d+\s*month/i.test(title)) {
+      if (/open.?weight|narrows|closed-?ai|开源/i.test(title) || /\bkimi\b/i.test(title)) {
+        const who = brand || 'Kimi';
+        const speed = /2-3\s*[×xX]|[×xX]\s*speed|高速/i.test(title) ? ' + 高速 API' : '';
+        const gap = /narrows.{0,40}(\d+)\s*month|领先.{0,8}(\d+)\s*个?月|to\s+(\d+)\s*month/i.exec(title);
+        const months = gap ? (gap[1] || gap[2] || gap[3] || '1') : '';
+        const gapZh = months ? `追平闭源到约 ${months} 个月` : '追平闭源窗口';
+        return `${who} 开源权重${gapZh}${speed}：写开闭源窗口帖`;
+      }
+      if (/\bbillion\b|十亿|亿用户/i.test(title) && /\bstor|scal|user/i.test(title)) {
+        return `${brand || 'OpenAI'} 存储扩到十亿用户级：写容量瓶颈怎么拆的操作帖`;
+      }
+      const who = brand || zhThemeFromEnglishTitle(title, brand) || '这篇';
+      return `${who}：写标题里的量级数字怎么落到选型/节奏判断帖`;
+    }
+
+    // 其它产品动作动词开头
+    if (/^(securing|scaling|turning|building|launching|announcing)\b/i.test(title)
+        || /\bfine-tuned\b|\btraining environment\b/i.test(lower)) {
+      const theme = zhThemeFromEnglishTitle(title, brand);
+      if (theme) return `${theme}：写产品动作怎么落到可操作清单帖`;
+      if (brand) return `${brand}：写产品动作怎么落到可操作清单帖`;
+      return null;
+    }
+
+    // Here's Why / Why X … → 必须落到本篇具体产品/动作；禁止「拆原因」套话尾
+    if (/here[''\u2019]?s why|^why\b|为什么会|原因在于/i.test(title)) {
+      let core = title
+        .replace(/\.?\s*Here[''\u2019]?s Why\.?/ig, '')
+        .replace(/^Why\s+/i, '')
+        .replace(/：?\s*为什么.*$/, '')
+        .trim();
+      if (!/[\u4e00-\u9fff]/.test(core)) {
+        if (/reddit/i.test(core) && /prototyp|ai/i.test(core)) {
+          return 'Reddit 自建 AI 原型工具：写自研管线相对外购的取舍帖';
+        }
+        if (/ai is getting good at math|getting good at math/i.test(title)) {
+          return 'AI 数学变强：写开题证明案例与可预测题型帖';
+        }
+        if (/built (its|their|his|her) own/i.test(core)) {
+          const who = (core.match(/^(\w+)/) || [])[1] || brand || '这家';
+          core = `${who} 自建工具`;
+        } else {
+          core = zhThemeFromEnglishTitle(core, brand) || (brand ? `${brand} 这件事` : '');
+        }
+      }
+      if (!core) return null;
+      // 有具体主题才给切口；禁止回落同一句「拆原因」尾
+      return clip(`${core}：写本篇点名的具体原因/动作帖`, 56);
+    }
+
+    // 冒号副标题：意译成中文「主题——具体动作」，禁止左右英文原样拼接
+    const colon = title.match(/^([^:]{3,48}):\s*(.{6,90})$/);
+    if (colon) {
+      const left = colon[1].trim();
+      const right = colon[2].trim();
+      if (/built to solve|hardest problems|what you need|everything you|a deep dive|our thoughts|introducing\b/i.test(right)) {
+        return null; // 纯发布口号，宁缺
+      }
+      if (/[\u4e00-\u9fff]/.test(left) && /[\u4e00-\u9fff]/.test(right)) {
+        return clip(`${left}——${right}`, 56);
+      }
+      // 英文冒号题：压成中文主题——动作
+      if (/open.?weight|narrows|closed-?ai|[×xX]\s*speed|\d+\s*month/i.test(title)) {
+        const who = brand || left.split(/\s+/)[0] || '这篇';
+        const speed = /2-3\s*[×xX]|[×xX]\s*speed|高速/i.test(right + left) ? ' + 高速 API' : '';
+        return `${who} 开源权重追平闭源窗口${speed}：写开闭源差距帖`;
+      }
+      if (/post-training|rl reward|grading|thinkingbox/i.test(right + left)) {
+        return '把评分变成 RL 奖励：写数据标注→训练信号的转化帖';
+      }
+      const theme = zhThemeFromEnglishTitle(title, brand) || brand || '这篇';
+      return `${theme}——写副标题点名的具体动作帖`;
+    }
+
+    // 正文硬判断（英文 claim 由 asAngleNote 硬闸挡掉）
+    const claim = pickAuthorClaim(body);
+    if (claim) return claim;
+
+    // 周报/合集/派评：不硬凑
+    if (/weekly|roundup|community wisdom|派评|近期值得关注|what'?s new in\b|\btop\s+\d+\b|links of the/i.test(lower)) {
+      return null;
+    }
+
+    // 标题够具体但英文化：产品名 + 中文动作句（禁止 clip 英文 title）
+    if (title.length >= 20
+        && !/built to solve your hardest|introducing the future|the future of\b/i.test(lower)
+        && /\b(model|agent|train|secur|scal|reward|storage|api|open.?weight|scam|math|duet|trainium|chatgpt|claude|gemini|kimi|canvas)\b/i.test(lower)) {
+      if (titleHasHan) return clip(title, 56);
+      const theme = zhThemeFromEnglishTitle(title, brand);
+      if (theme) return `${theme}：写产品动作怎么落到可复用判断帖`;
+      if (brand) return `${brand}：写标题点名的产品动作怎么落地`;
+      return null;
+    }
+
+    // 中文标题本身够具体可直接用
+    if (titleHasHan && title.length >= 12) return clip(title, 56);
+
+    return null;
+  };
+
+  /**
+   * 成稿源文简介：用 title+summary/fullText 压成 1～2 句中文「讲什么」
+   * （谁 + 具体动作/数字 + 文中第二信息），目标约 70～120 汉字；
+   * 不要「写xxx帖/扩帖切口」。禁止整句英文；禁止回落「抽框架/不搬运目录/拆原因」套话。
+   */
+  const pickBlogSourceSummary = (item = {}) => {
+    const title = String(item.title || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^\[AINews\]\s*/i, '')
+      .replace(/^🧠\s*/, '')
+      .replace(/^Community Wisdom:\s*/i, '');
+    const body = stripHtmlForDisplay(`${item.summary || ''} ${item.fullText || ''}`)
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!title || title.length < 8) return null;
+
+    const lower = `${title} ${body}`.toLowerCase();
+    const brand = pickBlogBrandHint(item, title);
+    const titleHasHan = /[\u4e00-\u9fff]/.test(title);
+    const blob = `${title} ${body}`;
+
+    // 从正文抽一句可意译的中文要点（第二信息）
+    const firstUsefulSentence = () => {
+      const parts = body
+        .split(/(?<=[。！？.!?])/)
+        .map((s) => s.trim())
+        .filter((s) => s.length >= 20 && s.length <= 220);
+      const zh = parts.find((s) => /[\u4e00-\u9fff]/.test(s) && !/订阅|关注我们|点击|版权/.test(s));
+      if (zh) return clip(zh.replace(/\s+/g, ' '), 48);
+      return null;
     };
 
-    let note = notes[topic] || notes.general;
-    if (isGithubRepoSignal(item)) {
-      note = '这是开源项目/仓库信号，不是长内容；重点看它为什么上榜、解决什么问题、是否代表某类需求升温。';
-    } else if (item.type === 'blog_post' || item.type === 'podcast_episode') {
-      note = '长内容比推文更容易暴露底层逻辑。' + note;
+    /** Here's Why：必须抽出本篇具体产品名/数字/动作；写不出则 null */
+    const buildWhySummary = () => {
+      // Reddit Proto / 自建原型
+      if (/reddit/i.test(blob) && /prototyp/i.test(blob)) {
+        const bits = ['Reddit 讲为何自建 AI 原型工具 Proto'];
+        if (/blair|metcalf/i.test(blob)) bits[0] = 'Reddit 主 UX 工程师 Blair Metcalf 讲为何自建 AI 原型工具 Proto';
+        const extras = [];
+        if (/figma/i.test(blob) && /mcp|cursor/i.test(blob)) extras.push('接 Figma MCP + Cursor 管线');
+        else if (/figma|mcp|cursor/i.test(blob)) extras.push('接设计系统 MCP / Cursor 管线');
+        if (/100\s*%|full adoption|reached 100/i.test(blob)) extras.push('UX/产品侧接近全员采纳');
+        if (/\b700\b/.test(blob)) extras.push('700+ 原型在线');
+        if (/no git|without git|minutes/i.test(blob)) extras.push('设计师分钟级出可分享原型、不必碰 Git');
+        if (!extras.length) extras.push('相对外购工具要自研管线的取舍，并落到设计师侧怎么用');
+        return clip(`${bits[0]}：${extras.join('，')}；文中还提领导评审与工程交接怎么接`, 130);
+      }
+      // AI math
+      if (/math/i.test(blob) && /good|getting|better|strong|here[''\u2019]?s why/i.test(blob)) {
+        const extras = [];
+        if (/erd[oö]s|unit distance|counterexample/i.test(blob)) extras.push('点到 OpenAI 对 Erdős 单位距离猜想的反例');
+        if (/navier.?stokes/i.test(blob)) extras.push('Navier-Stokes 等开题证明');
+        if (/anthropic/i.test(blob) && /fermat|riemann/i.test(blob)) extras.push('Anthropic 侧 Fermat/Riemann 进展');
+        else if (/anthropic|fermat|riemann/i.test(blob)) extras.push('Anthropic 等侧的形式化/开题进展');
+        if (/depth.?first|verifier|harness|parallel test/i.test(blob)) extras.push('对照人类广度搜索 vs 模型深度搜索+验证器');
+        if (/predict|pattern|tractab|which problems/i.test(blob)) extras.push('并讨论哪些题型可预测下一步会破');
+        if (!extras.length) {
+          // 仅有标题：仍给本篇具体锚（开题/证明/题型），禁止套话尾
+          return clip('Latent Space 讲 AI 数学能力变强：用近期模型啃开题与证明的案例解释为何突然能做，并讨论可预测下一批会破的题型，以及人和模型在搜索方式上的差别', 130);
+        }
+        const head = brand || '这篇';
+        return clip(`${head} 讲 AI 数学能力变强：${extras.join('，')}`, 130);
+      }
+      // built its own …
+      if (/built (its|their|his|her) own/i.test(title)) {
+        const who = brand || (title.match(/^(\w+)/) || [])[1] || '这家';
+        const what = /prototyp/i.test(title) ? '原型工具'
+          : /agent/i.test(title) ? 'Agent 工具'
+          : /model/i.test(title) ? '模型管线'
+          : '自研工具';
+        const extra = firstUsefulSentence();
+        if (extra) return clip(`${who} 讲为何自建${what}：要点——${extra}；文中还落到相对外购的取舍`, 130);
+        return clip(`${who} 讲为何自建${what}：相对外购要自研的产品/工程取舍，并落到团队怎么用这套管线`, 130);
+      }
+      // 通用 Why：必须从正文抠到产品名或数字，否则 null
+      const products = [];
+      for (const [re, name] of [
+        [/\bChatGPT\b/i, 'ChatGPT'], [/\bOpenAI\b/i, 'OpenAI'], [/\bClaude\b/i, 'Claude'],
+        [/\bCursor\b/i, 'Cursor'], [/\bFigma\b/i, 'Figma'], [/\bProto\b/i, 'Proto'],
+        [/\bTrainium\b/i, 'Trainium'], [/\bKimi\b/i, 'Kimi'], [/\bGemini\b/i, 'Gemini'],
+      ]) {
+        if (re.test(blob) && !products.includes(name)) products.push(name);
+      }
+      const nums = blob.match(/\b\d+(?:\.\d+)?\s*(?:%|x|×|billion|million|个月|天|页)?\b|\b\d{2,4}\+\b/ig) || [];
+      const zhExtra = firstUsefulSentence();
+      let core = title
+        .replace(/\.?\s*Here[''\u2019]?s Why\.?/ig, '')
+        .replace(/^Why\s+/i, '')
+        .replace(/：?\s*为什么.*$/, '')
+        .trim();
+      if (!/[\u4e00-\u9fff]/.test(core)) {
+        core = zhThemeFromEnglishTitle(core, brand) || (brand ? `${brand} 这件事` : '');
+      }
+      if (!core) return null;
+      if (!products.length && !nums.length && !zhExtra) return null; // 宁缺勿套话
+      const detail = [
+        products.length ? `点名 ${products.slice(0, 3).join('/')}` : '',
+        nums.length ? `给出 ${nums.slice(0, 2).join('、')} 等数字锚` : '',
+        zhExtra ? `要点——${zhExtra}` : '',
+      ].filter(Boolean).join('，');
+      return clip(`${core}：${detail}；文中还落到可核对的结论与取舍`, 130);
+    };
+
+    // 反常识 / 转折
+    if (/\bstill (forgot|forget|don'?t|do not|never|can'?t)\b/i.test(title)
+        || /很好看.{0,12}(忘|没用)|漂亮.{0,12}(忘|没用)|却(还是)?忘/.test(title)
+        || (/\bbut\b/i.test(title) && /\b(still|never|forgot|don'?t)\b/i.test(title))
+        || /beautiful/i.test(title) && /forgot|still/i.test(title)
+        || /不是.{0,12}而是/.test(title)) {
+      if (titleHasHan && /不是.{0,12}而是|却(还是)?忘|很好看|漂亮/.test(title)) {
+        return clip(`讲的是：${title}；文中还落到好看≠留存的产品落差与日常用不上的原因`, 130);
+      }
+      const who = brand || '该产品';
+      return `${who} 做得很漂亮，但用户日常仍用不上——对照「好看≠留存」的产品落差，并落到功能没进工作流的具体卡点`;
     }
-    if (writeHigh) note += ' → 可写性高，优先扩成帖子';
+
+    // scaling / storage / billion
+    if (/\bscal(?:e|ing|es)\b/i.test(title) && /\b(storage|billion|user)/i.test(title)) {
+      const who = brand || 'OpenAI';
+      return `${who} 续篇讲怎么把 ChatGPT 在线存储扩到服务十亿用户级：拆容量瓶颈与架构取舍，文中还落到扩容路径与工程权衡，方便对照自家存储方案`;
+    }
+
+    // securing … training
+    if (/\bsecur/i.test(title) && /\btrain/i.test(title)) {
+      const who = brand || 'OpenAI';
+      return `${who} 介绍如何锁住前沿模型训练环境：防渗透、隔离边界与安全基线怎么落；文中还提威胁模型、访问控制与可复用的防护清单，方便对照自家训练机房`;
+    }
+
+    // turning X into Y / RL rewards / post-training
+    if (/\bturning\b.+\binto\b/i.test(title) || /\binto rl\b|\brl rewards?\b|\bpost-training\b/i.test(lower)) {
+      if (/grading|reward|rl|annotat|label|thinkingbox/i.test(lower)) {
+        return `${brand || 'Hugging Face'} 讲如何把数据库评分转成 RL 奖励，并用 ThinkingBox 做 Agent 后训练；文中还落到标注信号怎么接到训练闭环，以及后训练管线怎么搭`;
+      }
+      return `${brand || '这篇'} 讲一条「A 变成 B」的转化路径：数据/训练信号怎么接，文中还提落地时的取舍与可复用步骤`;
+    }
+
+    // collaborate / scam detection
+    if (/\bcollaborate/i.test(lower) || (/\bscam detection\b/i.test(lower) && /government|fine-tuned|on-?device/i.test(lower))) {
+      const who = brand || 'DeepMind';
+      return `${who} 与新加坡政府合作：端侧微调模型做诈骗检测，怎么落到用户设备侧；文中还提 fine-tuned on-device 与官方合作怎么产品化`;
+    }
+
+    // Trainium
+    if (/trainium|look it up|does your model run/i.test(title)) {
+      return `介绍怎么查你的模型能不能跑在 ${brand || 'AWS Trainium'} 上，并给出选型/对照查表；文中还落到查表入口、兼容性判断与对照路径，方便做推理芯片与成本选型`;
+    }
+
+    // Canvas / Environment Improvements
+    if (/\bcanvases?\b/i.test(title) || /environment improvements?/i.test(title)) {
+      const who = brand || 'Cursor';
+      return `${who} 更新 Cloud Agent：Canvases 协作画布与运行环境改进，怎么影响日常 Agent 工作流；文中还提画布协作、环境配置与团队日常怎么接到现有流程`;
+    }
+
+    // 数字 / 量级
+    if (/\b\d+(?:\.\d+)?\s*billion\b|\bover\s+\d+\s*billion\b|\b\d+\s*-\s*\d+\s*[×xX]\b|[×xX]\s*speed|\b\d+\s*months?\b|\b2-3\s*[×xX]\b|\b\d+BA\b|\b\d{2,4}B[-\s]|\d+\s*%|十亿|亿用户|领先.{0,8}\d+\s*个?月|narrows.{0,40}\d+\s*month/i.test(title)) {
+      if (/open.?weight|narrows|closed-?ai|开源/i.test(title) || /\bkimi\b/i.test(title)) {
+        const who = brand || 'Kimi';
+        const speed = /2-3\s*[×xX]|[×xX]\s*speed|高速/i.test(title) ? '，并推高速 API（约 2–3×）' : '';
+        const gap = /narrows.{0,40}(\d+)\s*month|领先.{0,8}(\d+)\s*个?月|to\s+(\d+)\s*month/i.exec(title);
+        const months = gap ? (gap[1] || gap[2] || gap[3] || '1') : '';
+        const gapZh = months ? `把与闭源差距压到约 ${months} 个月` : '追平闭源窗口';
+        return `${who} 开源权重${gapZh}${speed}——文章在报开闭源窗口变化与可调用性，并落到权重可得性与 API 速度对照`;
+      }
+      if (/\bbillion\b|十亿|亿用户/i.test(title) && /\bstor|scal|user/i.test(title)) {
+        return `${brand || 'OpenAI'} 讲怎么把在线存储扩到服务十亿用户级：容量瓶颈与架构取舍，文中还落到扩容路径与工程权衡`;
+      }
+      const who = brand || zhThemeFromEnglishTitle(title, brand) || '这篇';
+      return `${who}：用标题里的量级数字谈选型或节奏判断——文章在给可核对的数字锚点，并落到这些数字对选型/排期的含义`;
+    }
+
+    // 产品动作动词
+    if (/^(securing|scaling|turning|building|launching|announcing)\b/i.test(title)
+        || /\bfine-tuned\b|\btraining environment\b/i.test(lower)) {
+      const theme = zhThemeFromEnglishTitle(title, brand);
+      const extra = firstUsefulSentence();
+      if (theme && extra) return clip(`${brand ? brand + '：' : ''}${theme}——讲这项产品/工程动作的背景与做法；要点——${extra}`, 130);
+      if (theme) return `${brand ? brand + '：' : ''}${theme}——讲这项产品/工程动作的背景与做法，文中还提落地取舍与可核对步骤`;
+      if (brand) return `${brand} 在讲一项具体产品/工程动作（见标题），并附背景、取舍与可落地步骤`;
+      return null;
+    }
+
+    // Here's Why / Why X
+    if (/here[''\u2019]?s why|^why\b|为什么会|原因在于/i.test(title)) {
+      return buildWhySummary();
+    }
+
+    // 冒号副标题
+    const colon = title.match(/^([^:]{3,48}):\s*(.{6,90})$/);
+    if (colon) {
+      const left = colon[1].trim();
+      const right = colon[2].trim();
+      if (/built to solve|hardest problems|what you need|everything you|a deep dive|our thoughts|introducing\b/i.test(right)) {
+        return null;
+      }
+      if (/[\u4e00-\u9fff]/.test(left) && /[\u4e00-\u9fff]/.test(right)) {
+        return clip(`讲的是：${left}——${right}；文中还展开副标题点名的具体动作与背景`, 130);
+      }
+      if (/open.?weight|narrows|closed-?ai|[×xX]\s*speed|\d+\s*month/i.test(title)) {
+        const who = brand || left.split(/\s+/)[0] || '这篇';
+        const speed = /2-3\s*[×xX]|[×xX]\s*speed|高速/i.test(right + left) ? '，并强调高速 API' : '';
+        return `${who} 开源权重追平闭源窗口${speed}——文章在报能力差距与调用面变化，并落到权重/API 怎么用`;
+      }
+      if (/post-training|rl reward|grading|thinkingbox/i.test(right + left)) {
+        return `${brand || '这篇'} 讲如何把评分/标注转成 RL 奖励，用于 Agent 后训练；文中还落到信号怎么接到训练闭环`;
+      }
+      const theme = zhThemeFromEnglishTitle(title, brand) || brand;
+      if (theme) return `${theme}：围绕副标题点名的具体动作展开说明，并补背景取舍与可核对步骤`;
+    }
+
+    // GitHub trending 仓库名
+    if (isGithubRepoSignal(item)) {
+      const repo = title.includes('/') ? title : (item.url || '').replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
+      const hint = body && /[\u4e00-\u9fff]/.test(body) ? clip(body, 48) : '';
+      return hint
+        ? `GitHub 日榜开源「${clip(repo || title, 36)}」：${hint}；看热度背后的需求方向与可 demake 点（不当长文读）`
+        : `GitHub 日榜开源「${clip(repo || title, 36)}」：看热度背后的需求方向与可 demake 点；不当长文读，只抓可复用的产品切口与落地场景`;
+    }
+
+    // 正文中文要点
+    const zhSent = firstUsefulSentence();
+    if (zhSent) {
+      const head = brand || (titleHasHan ? clip(title, 24) : zhThemeFromEnglishTitle(title, brand));
+      return head
+        ? clip(`${head}：${zhSent}；文中还围绕该要点展开背景与可核对结论`, 130)
+        : clip(`${zhSent}；文中还围绕该要点展开背景与可核对结论`, 130);
+    }
+
+    // 周报/合集
+    if (/weekly|roundup|community wisdom|派评|近期值得关注|what'?s new in\b|\btop\s+\d+\b|links of the/i.test(lower)) {
+      return null;
+    }
+
+    // 标题够具体
+    if (title.length >= 20
+        && !/built to solve your hardest|introducing the future|the future of\b/i.test(lower)
+        && /\b(model|agent|train|secur|scal|reward|storage|api|open.?weight|scam|math|duet|trainium|chatgpt|claude|gemini|kimi|canvas)\b/i.test(lower)) {
+      if (titleHasHan) return clip(`讲的是：${title}；文中还展开相关产品/工程动作与背景取舍`, 130);
+      const theme = zhThemeFromEnglishTitle(title, brand);
+      if (theme) return `${theme}——介绍相关产品/工程动作与背景取舍，文中还落到可核对的步骤或数字锚点`;
+      if (brand) return `${brand}：围绕标题点名的产品动作展开说明，并补背景取舍与可落地步骤`;
+      return null;
+    }
+
+    if (titleHasHan && title.length >= 12) {
+      return clip(`讲的是：${title}；文中还展开相关背景、具体动作与可核对结论`, 130);
+    }
+    return null;
+  };
+
+
+  /** 撞车后换一条；成稿走源文简介，知情走扩帖切口；仍写不出则 null */
+  const uniqueConcreteNote = (item) => {
+    const text = stripHtmlForDisplay(item.fullText || item.summary || item.title || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const draftLike = isDraftMaterial(item) || isGithubRepoSignal(item)
+      || item.type === 'blog_post' || item.type === 'podcast_episode';
+    const angles = [];
+    if (draftLike) {
+      const summary = pickBlogSourceSummary(item);
+      if (summary) angles.push(summary);
+      // 旧 pickBlogConcreteAngle 若还能给出「讲什么」骨架，剥掉「写帖」尾巴后可作候补
+      const blogAngle = pickBlogConcreteAngle(item);
+      if (blogAngle) angles.push(blogAngle);
+      if (isGithubRepoSignal(item) && item.title) {
+        angles.push(`GitHub 日榜开源「${clip(item.title, 28)}」：看热度背后的需求方向与可 demake 点（不当长文读）`);
+      }
+      for (const a of angles) {
+        const note = asSourceSummaryNote(a);
+        if (note && !isNoteCollision(note)) return note;
+      }
+      return null;
+    }
+    const why = whyWorthReading(text, item);
+    if (why) angles.push(why);
+    const claim = pickAuthorClaim(text);
+    if (claim) angles.push(claim);
+    for (const a of angles) {
+      const note = asAngleNote(a);
+      if (note && !isNoteCollision(note)) return note;
+    }
+    return null;
+  };
+
+  // 知情 →「扩帖切口：…」；成稿 →「源文：…」；写不出 → null 降级
+  const signalNote = (item) => {
+    // 即刻不进正文两区（双保险；成稿类型已剔除）
+    if (item.type === 'jike_post') return null;
+
+    const textBlob = stripHtmlForDisplay((item.fullText || item.title || '') + ' ' + (item.summary || ''));
+    const draftLike = isDraftMaterial(item) || isGithubRepoSignal(item)
+      || item.type === 'blog_post' || item.type === 'podcast_episode';
+    let note = null;
+
+    if (draftLike) {
+      // 成稿：源文简介（讲什么），不要扩帖建议
+      const summary = pickBlogSourceSummary(item);
+      note = asSourceSummaryNote(summary);
+      if (!note) {
+        const blogAngle = pickBlogConcreteAngle(item);
+        note = asSourceSummaryNote(blogAngle);
+      }
+      if (!note && isGithubRepoSignal(item)) {
+        note = asSourceSummaryNote(
+          item.title
+            ? `GitHub 日榜开源「${clip(item.title, 28)}」：看热度背后的需求方向与可 demake 点（不当长文读）`
+            : 'GitHub 日榜开源：看热度背后的需求方向与可 demake 点（不当长文读）'
+        );
+      }
+    } else if (isGithubRepoSignal(item)) {
+      // 理论上 github 多在成稿；若落入知情路径仍用扩帖口径
+      note = asAngleNote(
+        item.title
+          ? `开源上榜「${clip(item.title, 28)}」：看需求方向与 demake 点，别当长文读`
+          : '开源上榜：看需求方向与 demake 点，别当长文读'
+      );
+    } else {
+      const why = whyWorthReading(textBlob, item);
+      note = asAngleNote(why);
+    }
+
+    if (!note || isNoteCollision(note)) {
+      note = uniqueConcreteNote(item);
+    }
+    // 出口再闸一次：仍偏英文或尾部雷同则降级不进正文
+    if (note && isMostlyLatinAngle(note)) {
+      note = uniqueConcreteNote(item);
+      if (note && isMostlyLatinAngle(note)) note = null;
+    }
+    if (note && isNoteCollision(note)) {
+      note = uniqueConcreteNote(item);
+      if (note && isNoteCollision(note)) note = null;
+    }
+    if (!note) return null;
+    usedSignalNotes.add(note);
     return note;
   };
+
+  const bodyEditorialNote = (item) => {
+    const draftLike = isDraftMaterial(item) || isGithubRepoSignal(item)
+      || item.type === 'blog_post' || item.type === 'podcast_episode';
+    // 成稿只收「源文：…」；知情只收「扩帖切口：…」；旧腔/万能/整句英文一律重写或降级
+    if (item.reviewNote && !isGenericReviewNote(item.reviewNote, { forDraft: draftLike })) {
+      const note = draftLike
+        ? asSourceSummaryNote(item.reviewNote)
+        : asAngleNote(item.reviewNote);
+      if (note && !isNoteCollision(note)) {
+        usedSignalNotes.add(note);
+        return note;
+      }
+    }
+    return signalNote(item);
+  };
+
+  // ── 正文分区挑选：知情（X）与成稿原料（非 X）分开；成稿绝不拿 X 充数 ──
+  const pickWithNotes = (candidates, cap) => {
+    const picked = [];
+    for (const item of candidates) {
+      if (picked.length >= cap) break;
+      const note = bodyEditorialNote(item);
+      if (!note) {
+        demotedForNote.push(item);
+        continue;
+      }
+      item._bodyNote = note;
+      picked.push(item);
+    }
+    return picked;
+  };
+
+  const xCandidates = topSignals.filter((s) => isXSignal(s) && !isOfficialXSignal(s)); // 知情：非官方 X
+  const draftCandidatesPool = topSignals.filter((s) => isDraftMaterial(s) && s.type !== 'jike_post');
+  // 成稿区：blog/播客/官网 + 官方 X；个人 X / 即刻不充数
+  infoItems = pickWithNotes(xCandidates, INFO_SECTION_CAP);
+  draftItems = pickWithNotes(draftCandidatesPool, DRAFT_SECTION_CAP);
+  signalItems = [...infoItems, ...draftItems];
 
   // ── engagementBadge(item) ──
   const fmtK = (n) => {
@@ -1329,7 +2274,11 @@ function renderRadar(output) {
     const actions = [];
 
     // 1. Most writable signal → recommend writing a post
-    const mostWritable = signalItems.find(s => s.scoring.writeability >= 0.8);
+    const mostWritable = signalItems.find(s =>
+      s.scoring.writeability >= 0.8
+      && !s.appendixOnly
+      && (s.scoring.engagement || 0) > 0.35
+    );
     if (mostWritable) {
       const author = mostWritable.handle ? `@${mostWritable.handle}` : mostWritable.author || '';
       actions.push(`**写帖优先**：${author ? author + ' 的' : ''}「${clip(mostWritable.title, 40)}」可写性最高，建议明早扩成 X 长帖`);
@@ -1381,7 +2330,7 @@ function renderRadar(output) {
   const dateStr = new Date(output.generatedAt).toLocaleString('zh-CN', { timeZone: output.config.timezone, hour12: false });
   const reviewCount = signalItems.filter(s => s.needsReview === true).length;
   const reviewSuffix = reviewCount > 0 ? ` · ${reviewCount} 条待二次确认` : '';
-  lines.push(`> ${dateStr} · ${topSignals.length} 条高信号 · ${totalTweets} 条原始推文${reviewSuffix}`);
+  lines.push(`> ${dateStr} · 知情 ${infoItems.length} · 成稿 ${draftItems.length} · 共 ${topSignals.length} 条高信号 · ${totalTweets} 条原始推文${reviewSuffix}`);
   lines.push('');
 
   // 今日判断
@@ -1390,25 +2339,101 @@ function renderRadar(output) {
   lines.push(buildLead());
   lines.push('');
 
-  // 信号（unified list）— compact format
-  lines.push('---');
-  lines.push('');
-  lines.push('## 信号');
-  lines.push('');
-  for (const [i, item] of signalItems.entries()) {
-    const text = (item.title || '') + ' ' + (item.summary || '');
-    const topic = extractTopic(text);
+  // 分区渲染：知情（X）/ 成稿原料（非 X）
+  const renderSignalEntry = (item, index) => {
+    const blob = (item.fullText || item.title || '') + ' ' + (item.summary || '');
+    const topic = extractTopic(blob);
     const badge = engagementBadge(item);
     const source = sourceTag(item);
     const label = topicLabel[topic] || '📌 综合';
     const isRecovered = item.repeatObservation;
+    const body = signalBodyText(item);
+    const note = item._bodyNote || bodyEditorialNote(item) || (
+      (isDraftMaterial(item) || item.type === 'blog_post' || item.type === 'podcast_episode' || isGithubRepoSignal(item))
+        ? '源文：（本条简介降级，仅保留原文）'
+        : '扩帖切口：（本条评价降级，仅保留原文）'
+    );
 
-    lines.push(`**${i + 1}.** ${item.title}`);
-    lines.push(`\`${label}\`${isRecovered ? ' · 🔄 重复观察' : ''} · ${source}${badge ? ' · ' + badge : ''}`);
+    const out = [];
+    out.push(`**${index}.** ${body}`);
+    out.push(`\`${label}\`${isRecovered ? ' · 🔄 重复观察' : ''} · ${source}${badge ? ' · ' + badge : ''}`);
+    out.push('');
+    out.push(`> ${note}`);
+    if (isXSignal(item)) {
+      const replies = Array.isArray(item.topReplies) ? item.topReplies : [];
+      if (replies.length > 0) {
+        out.push('评论摘要：');
+        for (const r of replies.slice(0, 3)) {
+          const who = r.author ? `@${r.author}：` : '';
+          out.push(`- ${who}${clip(r.text, REPLY_TEXT_MAX)}`);
+        }
+      } else {
+        out.push('评论未取到');
+      }
+    }
+    if (item.url) out.push(`[→ 原文](${item.url})`);
+    out.push('');
+    return out;
+  };
+
+  lines.push('---');
+  lines.push('');
+  lines.push('## 知情（X）');
+  lines.push('');
+  lines.push('> 定位：了解最新');
+  lines.push('');
+  if (infoItems.length === 0) {
+    lines.push('_今日暂无足够强的 X 高信号。_');
     lines.push('');
-    lines.push(`> ${item.reviewNote || signalNote(item)}`);
-    if (item.url) lines.push(`[→ 原文](${item.url})`);
+  } else {
+    for (const [i, item] of infoItems.entries()) {
+      lines.push(...renderSignalEntry(item, i + 1));
+    }
+  }
+
+  lines.push('---');
+  lines.push('');
+  lines.push('## 成稿原料（一手 / 官方）');
+  lines.push('');
+  lines.push('> 定位：一手成稿原料（博客 / 官网 / 官方 X / 播客等）；评价先讲源文在说什么；不成则宁缺，不拿即刻或个人 X 充数');
+  lines.push('');
+  const rssStats = output.rssFetchStats || {};
+  const blogFetched = Number(rssStats.blogFetchedTotal || 0);
+  const blogZero = Array.isArray(rssStats.blogZeroSources) ? rssStats.blogZeroSources : [];
+  if (draftItems.length === 0) {
+    const zeroHint = blogFetched === 0
+      ? `今日新源/博客抓到 0 条，成稿区为空（未用即刻/个人 X 充数）${blogZero.length ? `；0 条源：${blogZero.slice(0, 8).join('、')}${blogZero.length > 8 ? '…' : ''}` : ''}`
+      : `今日成稿原料不足（RSS 博客抓到 ${blogFetched} 条但未进高信号前十；未用即刻/个人 X 充数）`;
+    lines.push(`_${zeroHint}_`);
     lines.push('');
+  } else {
+    for (const [i, item] of draftItems.entries()) {
+      lines.push(...renderSignalEntry(item, i + 1));
+    }
+    if (blogFetched === 0) {
+      lines.push('_注：当日 RSS 博客抓到 0；上方成稿若有条目来自远程 feed-blogs/播客，非即刻充数。_');
+      lines.push('');
+    } else if (blogZero.length > 0) {
+      lines.push(`_注：部分博客源抓到 0：${blogZero.slice(0, 8).join('、')}${blogZero.length > 8 ? '…' : ''}_`);
+      lines.push('');
+    }
+  }
+
+  // 附录：权重源低互动（不占正文前十）
+  const appendixItems = (output.appendixSignals || []).slice(0, 5);
+  if (appendixItems.length > 0) {
+    lines.push('---');
+    lines.push('');
+    lines.push('### 附录：权重源低互动');
+    lines.push('');
+    for (const item of appendixItems) {
+      const source = sourceTag(item);
+      const badge = engagementBadge(item);
+      lines.push(`- ${item.title}`);
+      lines.push(`  ${source}${badge ? ' · ' + badge : ''} · ${item.reviewNote || '附录观察'}`);
+      if (item.url) lines.push(`  [→ 原文](${item.url})`);
+      lines.push('');
+    }
   }
 
   // 下一步（collapsed into a compact block）
@@ -1427,10 +2452,14 @@ function renderRadar(output) {
     `${stats.xBuilders || 0} builders`,
     `${totalTweets} tweets`,
     `${stats.blogPosts || 0} blogs`,
+    `rss-blogs-fetched ${blogFetched}`,
+    blogZero.length ? `rss-zero ${blogZero.length}` : null,
     `${stats.podcastEpisodes || 0} podcasts`,
-    `${topSignals.length} high-signal`,
+    `知情${infoItems.length}+成稿${draftItems.length}/${topSignals.length} high-signal`,
+    demotedForNote.length ? `${demotedForNote.length} note-demoted` : null,
     stats.recoveredSeenCount ? `${stats.recoveredSeenCount} recovered` : null,
     lowSignalCount > 0 ? `${lowSignalCount} filtered` : null,
+    (stats.highSignalCounts?.jike_post || 0) > 0 ? 'jike-excluded-from-body' : null,
   ].filter(Boolean).join(' · ');
   lines.push(`<sub>${footerParts} · ${output.config.outputMode} mode</sub>`);
   lines.push('');
@@ -1477,13 +2506,16 @@ async function main() {
   }
 
   const mergedSources = mergeSources(profiles, config.sourceProfiles, customSources);
+  refreshOfficialXHandles(mergedSources);
   const filtered = filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources);
 
-  // 抓取即刻 RSS 和自定义 RSS 博客
+  // 抓取即刻 RSS 和自定义 RSS 博客（即刻 2026-10-26 起配置可为空，不进正文两区）
   const directRSS = await fetchDirectRSSSources(mergedSources);
+  // jike 仍可进入 scored 池统计，但 DRAFT_MATERIAL_TYPES 已剔除且 signalNote 对 jike 返回 null
   filtered.x.push(...directRSS.jike);
   filtered.blogs.push(...directRSS.rss_blogs);
   filtered.x.push(...directRSS.bilibili);
+  const rssFetchStats = directRSS.rssFetchStats || { blogs: {}, blogFetchedTotal: 0, blogZeroSources: [] };
 
   const rawScoredSignals = buildScoredSignals(filtered, config);
   const rawCounts = countSignalsByType(rawScoredSignals);
@@ -1499,7 +2531,7 @@ async function main() {
   if (NO_SEEN) process.stderr.write('[seen-signals] Bypassed (--no-seen)\n');
 
   // Auto-resolve all needsReview flags — no LLM needed
-  const { keep: reviewedSignals, demote: demotedSignals } = autoResolveReview(unseenSignals);
+  const { keep: reviewedSignals, demote: demotedSignals, appendix: appendixSignals = [] } = autoResolveReview(unseenSignals);
   const fallback = NO_SEEN || !ALLOW_SEEN_FALLBACK
     ? { signals: reviewedSignals, recovered: [] }
     : recoverFallbackSignals(rawScoredSignals, reviewedSignals, seenMap, config, 5);
@@ -1511,6 +2543,9 @@ async function main() {
   );
   if (demotedSignals.length > 0) {
     process.stderr.write(`[auto-review] Demoted ${demotedSignals.length} low-signal flagged item(s)\n`);
+  }
+  if (appendixSignals.length > 0) {
+    process.stderr.write(`[auto-review] Appendix ${appendixSignals.length} high-source low-eng item(s)\n`);
   }
   if (recoveredSeenSignals.length > 0) {
     process.stderr.write(`[seen-signals] Recovered ${recoveredSeenSignals.length} high-score seen fallback signal(s)\n`);
@@ -1571,6 +2606,8 @@ async function main() {
       type: s.type,
       scoring: { total: s.scoring.total, relevance: s.scoring.relevance }
     })),
+    rssFetchStats,
+    appendixSignals,
     demotedSignals: demotedSignals.map(s => ({
       title: s.title,
       handle: s.handle,
