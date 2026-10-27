@@ -47,16 +47,36 @@ function clip(text = '', max = 280) {
 const BODY_TEXT_MAX = 1200;
 const TITLE_BODY_MAX = 1000;
 const REPLY_TEXT_MAX = 180;
-const INFO_SECTION_CAP = 10;   // 知情（X）最多条数
-const DRAFT_SECTION_CAP = 10;  // 成稿原料（非 X）最多条数
+const INFO_SECTION_CAP = 10;   // 知情（X·个人/创作者）最多条数
+const DRAFT_SECTION_CAP = 10;  // 成稿原料（博客/官网/官方X/播客等）最多条数
 const DRAFT_MATERIAL_TYPES = new Set(['blog_post', 'podcast_episode', 'bilibili_dynamic']); // 2026-10-26：jike_post 移出成稿原料
+// 2026-10-27：官方产品/实验室 X 也可进成稿（转发+观点）；个人号仍归知情
+const DEFAULT_OFFICIAL_X_HANDLES = [
+  'openai', 'kimi_moonshot', 'deepseek_ai', 'anthropicai', 'cursor_ai',
+  'googledeepmind', 'xai', 'huggingface', 'claudeai', 'metaai', 'mistralai',
+];
+let OFFICIAL_X_HANDLES = new Set(DEFAULT_OFFICIAL_X_HANDLES);
+
+function refreshOfficialXHandles(mergedSources = {}) {
+  const fromConfig = (mergedSources.x_accounts || [])
+    .filter((a) => a && (a.official === true || a.layer === 'draft' || a.asDraft === true))
+    .map((a) => String(a.handle || '').toLowerCase())
+    .filter(Boolean);
+  OFFICIAL_X_HANDLES = new Set([...DEFAULT_OFFICIAL_X_HANDLES, ...fromConfig]);
+}
 
 function isXSignal(item = {}) {
   return item.type === 'x_tweet';
 }
 
+function isOfficialXSignal(item = {}) {
+  if (!isXSignal(item)) return false;
+  const h = String(item.handle || '').toLowerCase();
+  return Boolean(h) && OFFICIAL_X_HANDLES.has(h);
+}
+
 function isDraftMaterial(item = {}) {
-  return DRAFT_MATERIAL_TYPES.has(item.type);
+  return DRAFT_MATERIAL_TYPES.has(item.type) || isOfficialXSignal(item);
 }
 
 /** 万能/旧腔评价仅作内部/附录，不得进正文评价行 */
@@ -2180,9 +2200,9 @@ function renderRadar(output) {
     return picked;
   };
 
-  const xCandidates = topSignals.filter(isXSignal); // 知情仅 X
+  const xCandidates = topSignals.filter((s) => isXSignal(s) && !isOfficialXSignal(s)); // 知情：非官方 X
   const draftCandidatesPool = topSignals.filter((s) => isDraftMaterial(s) && s.type !== 'jike_post');
-  // 成稿区：只留 blog/podcast 等；不与 X 混排、不用即刻/X 补位
+  // 成稿区：blog/播客/官网 + 官方 X；个人 X / 即刻不充数
   infoItems = pickWithNotes(xCandidates, INFO_SECTION_CAP);
   draftItems = pickWithNotes(draftCandidatesPool, DRAFT_SECTION_CAP);
   signalItems = [...infoItems, ...draftItems];
@@ -2373,17 +2393,17 @@ function renderRadar(output) {
 
   lines.push('---');
   lines.push('');
-  lines.push('## 成稿原料（非 X）');
+  lines.push('## 成稿原料（一手 / 官方）');
   lines.push('');
-  lines.push('> 定位：一手成稿原料（博客 / 官网 / 播客等）；评价先讲源文在说什么；不成则宁缺，不拿即刻或 X 充数');
+  lines.push('> 定位：一手成稿原料（博客 / 官网 / 官方 X / 播客等）；评价先讲源文在说什么；不成则宁缺，不拿即刻或个人 X 充数');
   lines.push('');
   const rssStats = output.rssFetchStats || {};
   const blogFetched = Number(rssStats.blogFetchedTotal || 0);
   const blogZero = Array.isArray(rssStats.blogZeroSources) ? rssStats.blogZeroSources : [];
   if (draftItems.length === 0) {
     const zeroHint = blogFetched === 0
-      ? `今日新源/博客抓到 0 条，成稿区为空（未用即刻/X 充数）${blogZero.length ? `；0 条源：${blogZero.slice(0, 8).join('、')}${blogZero.length > 8 ? '…' : ''}` : ''}`
-      : `今日成稿原料不足（RSS 博客抓到 ${blogFetched} 条但未进高信号前十；未用即刻/X 充数）`;
+      ? `今日新源/博客抓到 0 条，成稿区为空（未用即刻/个人 X 充数）${blogZero.length ? `；0 条源：${blogZero.slice(0, 8).join('、')}${blogZero.length > 8 ? '…' : ''}` : ''}`
+      : `今日成稿原料不足（RSS 博客抓到 ${blogFetched} 条但未进高信号前十；未用即刻/个人 X 充数）`;
     lines.push(`_${zeroHint}_`);
     lines.push('');
   } else {
@@ -2486,6 +2506,7 @@ async function main() {
   }
 
   const mergedSources = mergeSources(profiles, config.sourceProfiles, customSources);
+  refreshOfficialXHandles(mergedSources);
   const filtered = filterFeedBySources(feedX, feedPodcasts, feedBlogs, mergedSources);
 
   // 抓取即刻 RSS 和自定义 RSS 博客（即刻 2026-10-26 起配置可为空，不进正文两区）
