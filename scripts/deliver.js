@@ -81,6 +81,9 @@ async function sendTelegram(text, botToken, chatId) {
     remaining = remaining.slice(splitAt);
   }
 
+  // Bound every outbound call so a slow/hanging API can't exhaust resources (CWE-770)
+  const REQUEST_TIMEOUT_MS = 10000;
+
   for (const chunk of chunks) {
     const res = await fetch(
       `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -92,7 +95,8 @@ async function sendTelegram(text, botToken, chatId) {
           text: chunk,
           parse_mode: 'Markdown',
           disable_web_page_preview: true
-        })
+        }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
       }
     );
 
@@ -109,7 +113,8 @@ async function sendTelegram(text, botToken, chatId) {
               chat_id: chatId,
               text: chunk,
               disable_web_page_preview: true
-            })
+            }),
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
           }
         );
       } else {
@@ -117,7 +122,7 @@ async function sendTelegram(text, botToken, chatId) {
       }
     }
 
-    // Small delay between chunks to avoid rate limiting
+    // Delay between chunks to avoid hitting Telegram's rate limits
     if (chunks.length > 1) await new Promise(r => setTimeout(r, 500));
   }
 }
@@ -140,7 +145,9 @@ async function sendEmail(text, apiKey, toEmail) {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
       })}`,
       text: text
-    })
+    }),
+    // Bound the request so a slow/hanging API can't exhaust resources (CWE-770)
+    signal: AbortSignal.timeout(10000)
   });
 
   if (!res.ok) {
